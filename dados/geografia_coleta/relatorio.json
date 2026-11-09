@@ -1,0 +1,111 @@
+{
+  "fonte": "Wikipédia em português",
+  "categoria": "Categoria:Geografia",
+  "profundidade_subcategorias": 0,
+  "coletado_em_utc": "2026-11-09T17:08:54.613260+00:00",
+  "quantidade_artigos": 11,
+  "total_bytes_texto": 180372,
+  "meta_bytes": 10000000000,
+  "atingiu_meta": false,
+  "artigos": [
+    {
+      "pageid": 7837873,
+      "titulo": "Ambiente extremo",
+      "url": "https://pt.wikipedia.org/wiki/Ambiente_extremo",
+      "revisao_id": 72100267,
+      "revisao_data": "2026-04-19T13:28:00Z",
+      "arquivo": "textos/7837873.txt",
+      "bytes_texto": 1848
+    },
+    {
+      "pageid": 896,
+      "titulo": "Geografia",
+      "url": "https://pt.wikipedia.org/wiki/Geografia",
+      "revisao_id": 72733831,
+      "revisao_data": "2026-07-31T07:04:16Z",
+      "arquivo": "textos/896.txt",
+      "bytes_texto": 35233
+    },
+    {
+      "pageid": 595111,
+      "titulo": "Biogeoquímica",
+      "url": "https://pt.wikipedia.org/wiki/Biogeoqu%C3%ADmica",
+      "revisao_id": 70183852,
+      "revisao_data": "2025-05-26T13:14:07Z",
+      "arquivo": "textos/595111.txt",
+      "bytes_texto": 8528
+    },
+    {
+      "pageid": 7688263,
+      "titulo": "Direito Administrativo Geográfico",
+      "url": "https://pt.wikipedia.org/wiki/Direito_Administrativo_Geogr%C3%A1fico",
+      "revisao_id": 72025575,
+      "revisao_data": "2026-04-04T18:59:13Z",
+      "arquivo": "textos/7688263.txt",
+      "bytes_texto": 21879
+    },
+    {
+      "pageid": 7189499,
+      "titulo": "Fronteira linguística",
+      "url": "https://pt.wikipedia.org/wiki/Fronteira_lingu%C3%ADstica",
+      "revisao_id": 66421008,
+      "revisao_data": "2023-08-15T14:16:09Z",
+      "arquivo": "textos/7189499.txt",
+      "bytes_texto": 6316
+    },
+    {
+      "pageid": 57905,
+      "titulo": "Geografia física",
+      "url": "https://pt.wikipedia.org/wiki/Geografia_f%C3%ADsica",
+      "revisao_id": 73306247,
+      "revisao_data": "2026-10-27T19:22:03Z",
+      "arquivo": "textos/57905.txt",
+      "bytes_texto": 17426
+    },
+    {
+      "pageid": 7548115,
+      "titulo": "Geografia técnica",
+      "url": "https://pt.wikipedia.org/wiki/Geografia_t%C3%A9cnica",
+      "revisao_id": 71636500,
+      "revisao_data": "2026-01-29T22:01:32Z",
+      "arquivo": "textos/7548115.txt",
+      "bytes_texto": 1885
+    },
+    {
+      "pageid": 43717,
+      "titulo": "Geógrafo",
+      "url": "https://pt.wikipedia.org/wiki/Ge%C3%B3grafo",
+      "revisao_id": 73082384,
+      "revisao_data": "2026-09-29T12:24:28Z",
+      "arquivo": "textos/43717.txt",
+      "bytes_texto": 20336
+    },
+    {
+      "pageid": 1194,
+      "titulo": "Latitude",
+      "url": "https://pt.wikipedia.org/wiki/Latitude",
+      "revisao_id": 73266191,
+      "revisao_data": "2026-10-22T02:48:58Z",
+      "arquivo": "textos/1194.txt",
+      "bytes_texto": 61483
+    },
+    {
+      "pageid": 4573663,
+      "titulo": "Periurbanização",
+      "url": "https://pt.wikipedia.org/wiki/Periurbaniza%C3%A7%C3%A3o",
+      "revisao_id": 72512294,
+      "revisao_data": "2026-06-27T03:36:54Z",
+      "arquivo": "textos/4573663.txt",
+      "bytes_texto": 4428
+    },
+    {
+      "pageid": 7263868,
+      "titulo": "Problema de Weber",
+      "url": "https://pt.wikipedia.org/wiki/Problema_de_Weber",
+      "revisao_id": 68167663,
+      "revisao_data": "2024-06-23T13:39:34Z",
+      "arquivo": "textos/7263868.txt",
+      "bytes_texto": 1010
+    }
+  ]
+}

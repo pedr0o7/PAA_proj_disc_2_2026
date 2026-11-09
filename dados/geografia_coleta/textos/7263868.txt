@@ -1,0 +1,5 @@
+Na geometria, o problema de Weber, em homenagem a Alfred Weber, é um dos problemas mais famosos da teoria da localização. Requer encontrar um ponto no plano que minimize a soma dos custos de transporte desde este ponto até n pontos de destino, onde os diferentes pontos de destino podem estar associados a diferentes custos por unidade de distância. 
+O problema de Weber generaliza o conceito de mediana geométrica, que assume que os custos de transporte por unidade de distância são os mesmos para todos os pontos de destino, e o problema de calcular o Ponto de Fermat, a mediana geométrica de três pontos. Por esta razão, às vezes é chamado de problema de Fermat-Weber, embora o mesmo nome também tenha sido usado para o problema da mediana geométrica não ponderada. O problema de Weber, por sua vez, é generalizado pelo problema de atração-repulsão, que permite que alguns dos custos sejam negativos, de modo que uma maior distância de alguns pontos seja melhorar. 
+
+
+== Referências ==

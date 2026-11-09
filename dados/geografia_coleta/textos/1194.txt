@@ -1,0 +1,2081 @@
+Em geografia, latitude é uma coordenada que especifica a posição norte–sul de um ponto na superfície da Terra ou de outro corpo celeste. A latitude é dada como um ângulo que varia de −90° no polo sul a 90° no polo norte, com 0° no Equador. Linhas de latitude constante, ou paralelos, correm de leste a oeste como círculos paralelos ao equador. Latitude e longitude são usadas juntas como um par de coordenadas para especificar uma localização na superfície da Terra.
+Por si só, o termo "latitude" normalmente se refere à latitude geodésica, conforme definido abaixo. Resumidamente, a latitude geodésica de um ponto é o ângulo formado entre o vetor perpendicular (ou normal) à superfície elipsoidal a partir do ponto e o plano do equador.
+
+
+== Contexto ==
+Dois níveis de abstração são empregados nas definições de latitude e longitude. No primeiro passo, a superfície física é modelada pelo geoide, uma superfície que se aproxima do nível médio do mar sobre os oceanos e sua continuação sob as massas terrestres. O segundo passo é aproximar o geoide por uma superfície de referência matematicamente mais simples. A escolha mais simples para a superfície de referência é uma esfera, mas o geoide é mais precisamente modelado por um elipsoide de revolução. As definições de latitude e longitude em tais superfícies de referência são detalhadas nas seções seguintes. Linhas de latitude e longitude constantes juntas constituem uma grade na superfície de referência. A latitude de um ponto na superfície real é aquela do ponto correspondente na superfície de referência, a correspondência sendo ao longo da normal à superfície de referência, que passa pelo ponto na superfície física. Latitude e longitude, juntamente com alguma especificação de altura, constituem um sistema de coordenadas geográficas conforme definido na especificação da norma ISO 19111.
+Como existem muitos elipsoides de referência diferentes, a latitude precisa de uma característica na superfície não é única: isso é destacado na norma ISO, que afirma que "sem a especificação completa do sistema de referência de coordenadas, as coordenadas (ou seja, latitude e longitude) são, na melhor das hipóteses, ambíguas e, na pior, sem sentido". Isso é de grande importância em aplicações precisas, como o Sistema de Posicionamento Global (GPS), mas no uso comum, onde não é necessária alta precisão, o elipsoide de referência geralmente não é declarado.
+Em textos em inglês, o ângulo de latitude, definido abaixo, é geralmente denotado pela letra grega minúscula phi (ϕ ou φ). É medido em graus, minutos e segundos ou graus decimais, ao norte ou ao sul do equador. Para fins de navegação, as posições são dadas em graus e minutos decimais. Por exemplo, o farol de The Needles está a 50°39.734′ N 001°35.500′ W.
+Este artigo relaciona-se a sistemas de coordenadas para a Terra: ele pode ser adaptado para cobrir a Lua, planetas e outros objetos celestes (latitude planetográfica).
+Para um breve histórico, veja História da latitude.
+
+
+=== Determinação ===
+
+Na navegação celestial, a latitude é determinada pelo método da altura do meridiano.
+Medições mais precisas de latitude requerem uma compreensão do campo gravitacional da Terra, seja para configurar teodolitos ou para determinar as órbitas dos satélites GPS. O estudo da forma da Terra juntamente com seu campo gravitacional é a ciência da geodesia.
+
+
+== Latitude na esfera ==
+
+
+=== A grade na esfera ===
+A grade é formada pelas linhas de latitude constante e longitude constante, que são construídas com referência ao eixo de rotação da Terra. Os pontos de referência primários são os polos onde o eixo de rotação da Terra intersecta a superfície de referência. Planos que contêm o eixo de rotação intersectam a superfície nos meridianos; e o ângulo entre qualquer plano meridiano e aquele através de Greenwich (o Meridiano Principal) define a longitude: meridianos são linhas de longitude constante. O plano através do centro da Terra e perpendicular ao eixo de rotação intersecta a superfície em um grande círculo chamado Equador. Planos paralelos ao plano equatorial intersectam a superfície em círculos de latitude constante; esses são os paralelos. O Equador tem latitude de 0°, o Polo Norte tem latitude de 90° Norte (escrito 90° N ou +90°), e o Polo Sul tem latitude de 90° Sul (escrito 90° S ou −90°). A latitude de um ponto arbitrário é o ângulo entre o plano equatorial e o normal à superfície nesse ponto: o normal à superfície da esfera está ao longo do vetor radial.
+A latitude, conforme definida desta forma para a esfera, é frequentemente chamada de latitude esférica, para evitar ambiguidades com a latitude geodésica e as latitudes auxiliares definidas nas seções subsequentes deste artigo.
+
+
+=== Latitudes nomeadas na Terra ===
+
+Além do equador, outros quatro paralelos são significativos:
+
+O plano da órbita da Terra ao redor do Sol é chamado de eclíptica, e o plano perpendicular ao eixo de rotação da Terra é o plano equatorial. O ângulo entre a eclíptica e o plano equatorial é chamado de inclinação axial, obliquidade ou inclinação da eclíptica, e é convencionalmente denotado por i. A latitude dos círculos tropicais é igual a i e a latitude dos círculos polares é seu complemento (90° - i). O eixo de rotação varia lentamente ao longo do tempo e os valores fornecidos aqui são para a época atual. A variação do tempo é discutida mais detalhadamente no artigo sobre inclinação axial.
+A figura mostra a geometria de uma secção transversal do plano perpendicular à eclíptica e através dos centros da Terra e do Sol no solstício de dezembro, quando o Sol está diretamente sobre algum ponto do Trópico de Capricórnio. As latitudes polares sul abaixo do Círculo Polar Antártico estão sob luz do dia, enquanto as latitudes polares norte acima do Círculo Polar Ártico estão na noite. A situação é invertida no solstício de junho, quando o Sol está diretamente sobre o Trópico de Câncer. Apenas nas latitudes entre os dois trópicos é possível que o Sol esteja diretamente acima (no zênite).
+Em projeções de mapas não há uma regra universal sobre como os meridianos e paralelos devem aparecer. Os exemplos abaixo mostram os paralelos nomeados (como linhas vermelhas) na projeção de Mercator comumente usada e na projeção de Mercator Transversa. Na primeira, os paralelos são horizontais e os meridianos são verticais, enquanto na última não há relação exata entre paralelos e meridianos com horizontais e verticais: ambos são curvas complicadas.
+
+
+== Latitude no elipsoide ==
+
+
+=== Elipsoides ===
+
+Em 1687, Isaac Newton publicou o Philosophiæ Naturalis Principia Mathematica, no qual ele provou que um corpo fluido auto-gravitante em rotação em equilíbrio assume a forma de um elipsoide oblato. (Este artigo usa o termo elipsoide em preferência ao termo mais antigo esferoide.) O resultado de Newton foi confirmado por medições geodésicas no século XVIII. (Veja Arco de meridiano.) Um elipsoide oblato é a superfície tridimensional gerada pela rotação de uma elipse em torno de seu eixo mais curto (eixo menor). "Elipsoide oblato de revolução" é abreviado para 'elipsoide' no restante deste artigo. (Elipsoides que não possuem um eixo de simetria são denominados triaxiais.)
+Muitos elipsoides de referência diferentes foram usados na história da geodesia. Antes dos satélites, eles foram desenvolvidos para fornecer um bom ajuste ao geoide sobre a área limitada de um levantamento, mas, com o advento do GPS, tornou-se natural usar elipsoides de referência (como o WGS84) com o centro no centro de massa da Terra e eixo menor alinhado com o eixo de rotação da Terra. Esses elipsoides geocêntricos geralmente estão dentro de 100 m (330 ft) do geoide. Como a latitude é definida em relação a um elipsoide, a posição de um determinado ponto é diferente em cada elipsoide: não se pode especificar exatamente a latitude e longitude de uma característica geográfica sem especificar o elipsoide usado. Muitos mapas mantidos por agências nacionais são baseados em elipsoides mais antigos, então é necessário saber como os valores de latitude e longitude são transformados de um elipsoide para outro. Dispositivos GPS incluem software para realizar transformações de datum que ligam o WGS84 ao elipsoide de referência local com sua grade associada.
+
+
+=== A geometria do elipsoide ===
+
+A forma de um elipsoide de revolução é determinada pela forma da elipse que é rotacionada ao redor de seu eixo menor (mais curto). São necessários dois parâmetros. Um é invariavelmente o raio equatorial, que é o semi-eixo maior, a. O outro parâmetro é geralmente (1) o raio polar ou semi-eixo menor, b; ou (2) o achatamento (primeiro), f; ou (3) a excentricidade, e. Esses parâmetros não são independentes: eles estão relacionados por
+
+  
+    
+      
+        f
+        =
+        
+          
+            
+              a
+              −
+              b
+            
+            a
+          
+        
+        ,
+        
+        
+          e
+          
+            2
+          
+        
+        =
+        2
+        f
+        −
+        
+          f
+          
+            2
+          
+        
+        ,
+        
+        b
+        =
+        a
+        (
+        1
+        −
+        f
+        )
+        =
+        a
+        
+          
+            1
+            −
+            
+              e
+              
+                2
+              
+            
+          
+        
+        
+        .
+      
+    
+    {\displaystyle f={\frac {a-b}{a}},\qquad e^{2}=2f-f^{2},\qquad b=a(1-f)=a{\sqrt {1-e^{2}}}\,.}
+  
+
+Muitos outros parâmetros (veja elipse, elipsoide) aparecem no estudo da geodesia, geofísica e projeções de mapas, mas todos podem ser expressos em termos de um ou dois membros do conjunto a, b, f e e. Tanto f quanto e são pequenos e frequentemente aparecem em expansões em série em cálculos; eles são da ordem de ⁠1/298⁠ e 0,0818, respectivamente. Valores para vários elipsoides são fornecidos em Forma da Terra. Os elipsoides de referência são geralmente definidos pelo semi-eixo maior e pelo achatamento inverso, ⁠1/f⁠. Por exemplo, os valores de definição para o elipsoide WGS84, usado por todos os dispositivos GPS, são
+
+a (raio equatorial): 63 78 137,0 m exatamente
+⁠1/f⁠ (achatamento inverso): 298,257223563 exatamente
+dos quais são derivados
+
+b (raio polar): 6356752,31425 m
+e2 (excentricidade ao quadrado): 0,006 694 379 990 14
+A diferença entre os semi-eixos maior e menor é cerca de 21 km e como fração do semi-eixo maior, é igual ao achatamento; em um monitor de computador, o elipsoide poderia ser dimensionado como 300 por 299 pixels. Isso mal seria distinguível de uma esfera de 300 por 300 pixels, então as ilustrações geralmente exageram o achatamento.
+
+
+=== Latitudes geodésica e geocêntrica ===
+
+A grade no elipsoide é construída exatamente da mesma forma que na esfera. A normal em um ponto na superfície de um elipsoide não passa pelo centro, exceto para pontos no equador ou nos polos, mas a definição de latitude permanece inalterada como o ângulo entre a normal e o plano equatorial. A terminologia para latitude deve ser tornada mais precisa distinguindo:
+
+Latitude geodésica: o ângulo entre a normal e o plano equatorial. A notação padrão em publicações em inglês é ϕ. Esta é a definição assumida quando a palavra latitude é usada sem qualificação. A definição deve ser acompanhada por uma especificação do elipsoide.
+Latitude geocêntrica (também conhecida como latitude esférica, após o Ângulo polar 3D): o ângulo entre o raio (do centro ao ponto na superfície) e o plano equatorial. (Figura abaixo). Não há notação padrão: exemplos de vários textos incluem θ, ψ, q, ϕ′, ϕc, ϕg. Este artigo usa θ.
+Latitude geográfica deve ser usada com cuidado, pois alguns autores a usam como sinônimo de latitude geodésica, enquanto outros a usam como alternativa à latitude astronômica. "Latitude" (não qualificada) deve normalmente se referir à latitude geodésica.
+A importância de especificar o datum de referência pode ser ilustrada por um exemplo simples. No elipsoide de referência para WGS84, o centro da Torre Eiffel tem uma latitude geodésica de 48° 51′ 29″ N, ou 48.8583° N e longitude de 2° 17′ 40″ E ou 2.2944°E. As mesmas coordenadas no datum ED50 definem um ponto no solo que está 140 metros (460 pés) distante da torre.[carece de fontes]? Uma busca na web pode produzir vários valores diferentes para a latitude da torre; o elipsoide de referência raramente é especificado.
+
+
+== Distância do meridiano ==
+
+O comprimento de um grau de latitude depende da forma da Terra assumida.
+
+
+=== Distância do meridiano na esfera ===
+Na esfera, a normal passa pelo centro e a latitude (ϕ) é portanto igual ao ângulo subtendido no centro pelo arco do meridiano do equador até o ponto em questão. Se a distância do meridiano for denotada por m(ϕ) então
+
+  
+    
+      
+        m
+        (
+        ϕ
+        )
+        =
+        
+          
+            π
+            
+              180
+              
+                ∘
+              
+            
+          
+        
+        R
+        
+          ϕ
+          
+            
+              g
+              r
+              a
+              u
+              s
+            
+          
+        
+        =
+        R
+        
+          ϕ
+          
+            
+              r
+              a
+              d
+              i
+              a
+              n
+              o
+              s
+            
+          
+        
+      
+    
+    {\displaystyle m(\phi )={\frac {\pi }{180^{\circ }}}R\phi _{\mathrm {graus} }=R\phi _{\mathrm {radianos} }}
+  
+
+onde R denota o raio médio da Terra. R é igual a 6 371 km ou 3 959 milhas. Nenhuma precisão mais alta é apropriada para R, pois resultados de maior precisão exigem um modelo elipsoide. Com este valor para R, o comprimento do meridiano de 1 grau de latitude na esfera é de 111,2 km (69,1 milhas estatutárias) (60,0 milhas náuticas). O comprimento de 1 minuto de latitude é de 1 853 km (1 151 milhas estatutárias) (1,00 milhas náuticas), enquanto o comprimento de 1 segundo de latitude é de 30,8 m ou 101 pés (veja milha náutica).
+
+
+=== Distância do meridiano no elipsoide ===
+Em Arco de meridiano e textos padrão é mostrado que a distância ao longo de um meridiano da latitude ϕ até o equador é dada por (ϕ em radianos)
+
+  
+    
+      
+        m
+        (
+        ϕ
+        )
+        =
+        
+          ∫
+          
+            0
+          
+          
+            ϕ
+          
+        
+        M
+        (
+        
+          ϕ
+          ′
+        
+        )
+        
+        d
+        
+          ϕ
+          ′
+        
+        =
+        a
+        
+          (
+          
+            1
+            −
+            
+              e
+              
+                2
+              
+            
+          
+          )
+        
+        
+          ∫
+          
+            0
+          
+          
+            ϕ
+          
+        
+        
+          
+            (
+            
+              1
+              −
+              
+                e
+                
+                  2
+                
+              
+              
+                sin
+                
+                  2
+                
+              
+              ⁡
+              
+                ϕ
+                ′
+              
+            
+            )
+          
+          
+            −
+            
+              
+                3
+                2
+              
+            
+          
+        
+        
+        d
+        
+          ϕ
+          ′
+        
+      
+    
+    {\displaystyle m(\phi )=\int _{0}^{\phi }M(\phi ')\,d\phi '=a\left(1-e^{2}\right)\int _{0}^{\phi }\left(1-e^{2}\sin ^{2}\phi '\right)^{-{\frac {3}{2}}}\,d\phi '}
+  
+
+onde M(ϕ) é o raio de curvatura meridional.
+A distância do meridiano de um quarto do equador até o polo é
+
+  
+    
+      
+        
+          m
+          
+            
+              p
+            
+          
+        
+        =
+        m
+        
+          (
+          
+            
+              π
+              2
+            
+          
+          )
+        
+        
+      
+    
+    {\displaystyle m_{\mathrm {p} }=m\left({\frac {\pi }{2}}\right)\,}
+  
+
+Para WGS84 esta distância é 10 001,965 729 km.
+A avaliação da integral da distância do meridiano é central para muitos estudos em geodesia e projeção de mapas. Ela pode ser avaliada expandindo a integral pela série binomial e integrando termo por termo: veja Arco de meridiano para detalhes. O comprimento do arco do meridiano entre duas latitudes dadas é obtido substituindo os limites da integral pelas latitudes em questão. O comprimento de um pequeno arco de meridiano é dado por
+
+  
+    
+      
+        δ
+        m
+        (
+        ϕ
+        )
+        =
+        M
+        (
+        ϕ
+        )
+        
+        δ
+        ϕ
+        =
+        a
+        
+          (
+          
+            1
+            −
+            
+              e
+              
+                2
+              
+            
+          
+          )
+        
+        
+          
+            (
+            
+              1
+              −
+              
+                e
+                
+                  2
+                
+              
+              
+                sin
+                
+                  2
+                
+              
+              ⁡
+              ϕ
+            
+            )
+          
+          
+            −
+            
+              
+                3
+                2
+              
+            
+          
+        
+        
+        δ
+        ϕ
+      
+    
+    {\displaystyle \delta m(\phi )=M(\phi )\,\delta \phi =a\left(1-e^{2}\right)\left(1-e^{2}\sin ^{2}\phi \right)^{-{\frac {3}{2}}}\,\delta \phi }
+  
+
+Quando a diferença de latitude é de 1 grau, correspondente a ⁠π/180⁠ radianos, a distância do arco é de aproximadamente
+
+  
+    
+      
+        
+          Δ
+          
+            lat
+          
+          
+            1
+          
+        
+        =
+        
+          
+            
+              π
+              a
+              
+                (
+                
+                  1
+                  −
+                  
+                    e
+                    
+                      2
+                    
+                  
+                
+                )
+              
+            
+            
+              
+                180
+                
+                  ∘
+                
+              
+              
+                
+                  (
+                  
+                    1
+                    −
+                    
+                      e
+                      
+                        2
+                      
+                    
+                    
+                      sin
+                      
+                        2
+                      
+                    
+                    ⁡
+                    ϕ
+                  
+                  )
+                
+                
+                  
+                    3
+                    2
+                  
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle \Delta _{\text{lat}}^{1}={\frac {\pi a\left(1-e^{2}\right)}{180^{\circ }\left(1-e^{2}\sin ^{2}\phi \right)^{\frac {3}{2}}}}}
+  
+
+A distância em metros (correta até 0,01 metro) entre as latitudes 
+  
+    
+      
+        ϕ
+      
+    
+    {\displaystyle \phi }
+  
+ − 0,5 graus e 
+  
+    
+      
+        ϕ
+      
+    
+    {\displaystyle \phi }
+  
+ + 0,5 graus no elipsoide WGS84 é
+
+  
+    
+      
+        
+          Δ
+          
+            lat
+          
+          
+            1
+          
+        
+        =
+        111
+         
+        132
+        ,
+        954
+        −
+        559
+        ,
+        822
+        cos
+        ⁡
+        2
+        ϕ
+        +
+        1
+        ,
+        175
+        cos
+        ⁡
+        4
+        ϕ
+      
+    
+    {\displaystyle \Delta _{\text{lat}}^{1}=111\ 132,954-559,822\cos 2\phi +1,175\cos 4\phi }
+  
+
+A variação dessa distância com a latitude (no WGS84) é mostrada na tabela juntamente com o comprimento de um grau de longitude (distância leste-oeste):
+
+  
+    
+      
+        
+          Δ
+          
+            long
+          
+          
+            1
+          
+        
+        =
+        
+          
+            
+              π
+              a
+              cos
+              ⁡
+              ϕ
+            
+            
+              
+                180
+                
+                  ∘
+                
+              
+              
+                
+                  1
+                  −
+                  
+                    e
+                    
+                      2
+                    
+                  
+                  
+                    sin
+                    
+                      2
+                    
+                  
+                  ⁡
+                  ϕ
+                
+              
+            
+          
+        
+        
+      
+    
+    {\displaystyle \Delta _{\text{long}}^{1}={\frac {\pi a\cos \phi }{180^{\circ }{\sqrt {1-e^{2}\sin ^{2}\phi }}}}\,}
+  
+
+Uma calculadora para qualquer latitude é fornecida pela Agência Nacional de Inteligência Geoespacial (NGA) do governo dos EUA.
+O gráfico a seguir ilustra a variação de um grau de latitude e de um grau de longitude com a latitude.
+
+
+== Latitudes auxiliares ==
+Existem seis latitudes auxiliares que têm aplicações para problemas especiais em geodesia, geofísica e teoria de projeções de mapas:
+
+Latitude geocêntrica
+Latitude paramétrica (ou latitude reduzida)
+Latitude retificadora
+Latitude autálica
+Latitude conforme
+Latitude isométrica
+As definições dadas nesta seção relacionam-se a locais na superfície de referência elipsoidal, mas as duas primeiras latitudes auxiliares, como a latitude geodésica, podem ser estendidas para definir um sistema de coordenadas geográficas tridimensional, como discutido abaixo. As demais latitudes não são usadas dessa forma; são usadas apenas como construções intermediárias em projeções de mapas do elipsoide de referência para o plano ou em cálculos de geodésicas no elipsoide. Seus valores numéricos não são de interesse. Por exemplo, ninguém precisaria calcular a latitude autálica da Torre Eiffel.
+As expressões abaixo fornecem as latitudes auxiliares em termos da latitude geodésica, do semi-eixo maior, a, e da excentricidade, e. (Para inversos, veja abaixo.) As formas fornecidas são, exceto variantes notacionais, aquelas na referência padrão para projeções de mapas, a saber "Map projections: a working manual" de J. P. Snyder. Derivações dessas expressões podem ser encontradas em Adams e publicações online de Osborne e Rapp.
+
+
+=== Latitude geocêntrica ===
+
+A latitude geocêntrica é o ângulo entre o plano equatorial e o raio do centro para um ponto de interesse.
+Quando o ponto está na superfície do elipsoide, a relação entre a latitude geocêntrica (θ) e a latitude geodésica (ϕ) é:
+
+  
+    
+      
+        θ
+        (
+        ϕ
+        )
+        =
+        
+          tan
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            
+              (
+              
+                1
+                −
+                
+                  e
+                  
+                    2
+                  
+                
+              
+              )
+            
+            tan
+            ⁡
+            ϕ
+          
+          )
+        
+        =
+        
+          tan
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            (
+            1
+            −
+            f
+            
+              )
+              
+                2
+              
+            
+            tan
+            ⁡
+            ϕ
+          
+          )
+        
+        
+        .
+      
+    
+    {\displaystyle \theta (\phi )=\tan ^{-1}\left(\left(1-e^{2}\right)\tan \phi \right)=\tan ^{-1}\left((1-f)^{2}\tan \phi \right)\,.}
+  
+
+Para pontos que não estão na superfície do elipsoide, o relacionamento envolve adicionalmente a altura elipsoidal h:
+
+  
+    
+      
+        θ
+        (
+        ϕ
+        ,
+        h
+        )
+        =
+        
+          tan
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            
+              
+                
+                  N
+                  (
+                  1
+                  −
+                  f
+                  
+                    )
+                    
+                      2
+                    
+                  
+                  +
+                  h
+                
+                
+                  N
+                  +
+                  h
+                
+              
+            
+            tan
+            ⁡
+            ϕ
+          
+          )
+        
+      
+    
+    {\displaystyle \theta (\phi ,h)=\tan ^{-1}\left({\frac {N(1-f)^{2}+h}{N+h}}\tan \phi \right)}
+  
+
+onde N é o raio de curvatura do primeiro vertical. As latitudes geodésica e geocêntrica são iguais no equador e nos polos, mas em outras latitudes elas diferem por alguns minutos de arco. Tomando o valor da excentricidade ao quadrado como 0,0067 (depende da escolha do elipsoide), pode-se mostrar que a diferença máxima de 
+  
+    
+      
+        ϕ
+        
+          −
+        
+        θ
+      
+    
+    {\displaystyle \phi {-}\theta }
+  
+ é de cerca de 11,5 minutos de arco a uma latitude geodésica de aproximadamente 45° 6′.
+
+
+=== Latitude paramétrica (ou reduzida) ===
+
+A latitude paramétrica ou latitude reduzida, β, é definida pelo raio desenhado do centro do elipsoide até aquele ponto Q na esfera circundante (de raio a) que é a projeção paralela ao eixo da Terra de um ponto P no elipsoide na latitude ϕ. Foi introduzida por Legendre e Bessel que resolveram problemas para geodésicas no elipsoide transformando-os em um problema equivalente para geodésicas esféricas usando esta latitude menor. A notação de Bessel, u(ϕ), também é usada na literatura atual. A latitude paramétrica está relacionada à latitude geodésica por:
+
+  
+    
+      
+        β
+        (
+        ϕ
+        )
+        =
+        
+          tan
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            
+              
+                1
+                −
+                
+                  e
+                  
+                    2
+                  
+                
+              
+            
+            tan
+            ⁡
+            ϕ
+          
+          )
+        
+        =
+        
+          tan
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            (
+            1
+            −
+            f
+            )
+            tan
+            ⁡
+            ϕ
+          
+          )
+        
+      
+    
+    {\displaystyle \beta (\phi )=\tan ^{-1}\left({\sqrt {1-e^{2}}}\tan \phi \right)=\tan ^{-1}\left((1-f)\tan \phi \right)}
+  
+
+O nome alternativo surge da parametrização da equação da elipse descrevendo uma seção meridiana. Em termos de coordenadas cartesianas p, a distância do eixo menor, e z, a distância acima do plano equatorial, a equação da elipse é:
+
+  
+    
+      
+        
+          
+            
+              p
+              
+                2
+              
+            
+            
+              a
+              
+                2
+              
+            
+          
+        
+        +
+        
+          
+            
+              z
+              
+                2
+              
+            
+            
+              b
+              
+                2
+              
+            
+          
+        
+        =
+        1
+        
+        .
+      
+    
+    {\displaystyle {\frac {p^{2}}{a^{2}}}+{\frac {z^{2}}{b^{2}}}=1\,.}
+  
+
+As coordenadas cartesianas do ponto são parametrizadas por
+
+  
+    
+      
+        p
+        =
+        a
+        cos
+        ⁡
+        β
+        
+        ,
+        
+        z
+        =
+        b
+        sin
+        ⁡
+        β
+        
+        ;
+      
+    
+    {\displaystyle p=a\cos \beta \,,\qquad z=b\sin \beta \,;}
+  
+
+Cayley sugeriu o termo latitude paramétrica por causa da forma dessas equações.
+A latitude paramétrica não é usada na teoria das projeções de mapas. Sua aplicação mais importante é na teoria das geodésicas elipsoidais, (Vincenty, Karney).
+
+
+=== Latitude retificadora ===
+A latitude retificadora, μ, é a distância do meridiano escalonada de modo que seu valor nos polos seja igual a 90 graus ou ⁠π/2⁠ radianos:
+
+  
+    
+      
+        μ
+        (
+        ϕ
+        )
+        =
+        
+          
+            π
+            2
+          
+        
+        
+          
+            
+              m
+              (
+              ϕ
+              )
+            
+            
+              m
+              
+                
+                  p
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle \mu (\phi )={\frac {\pi }{2}}{\frac {m(\phi )}{m_{\mathrm {p} }}}}
+  
+
+onde a distância do meridiano do equador até uma latitude ϕ é (veja Arco de meridiano)
+
+  
+    
+      
+        m
+        (
+        ϕ
+        )
+        =
+        a
+        
+          (
+          
+            1
+            −
+            
+              e
+              
+                2
+              
+            
+          
+          )
+        
+        
+          ∫
+          
+            0
+          
+          
+            ϕ
+          
+        
+        
+          
+            (
+            
+              1
+              −
+              
+                e
+                
+                  2
+                
+              
+              
+                sin
+                
+                  2
+                
+              
+              ⁡
+              
+                ϕ
+                ′
+              
+            
+            )
+          
+          
+            −
+            
+              
+                3
+                2
+              
+            
+          
+        
+        
+        d
+        
+          ϕ
+          ′
+        
+        
+        ,
+      
+    
+    {\displaystyle m(\phi )=a\left(1-e^{2}\right)\int _{0}^{\phi }\left(1-e^{2}\sin ^{2}\phi '\right)^{-{\frac {3}{2}}}\,d\phi '\,,}
+  
+
+e o comprimento do quadrante do meridiano do equador ao polo (a distância polar) é
+
+  
+    
+      
+        
+          m
+          
+            
+              p
+            
+          
+        
+        =
+        m
+        
+          (
+          
+            
+              π
+              2
+            
+          
+          )
+        
+        
+        .
+      
+    
+    {\displaystyle m_{\mathrm {p} }=m\left({\frac {\pi }{2}}\right)\,.}
+  
+
+Usar a latitude retificadora para definir uma latitude em uma esfera de raio
+
+  
+    
+      
+        R
+        =
+        
+          
+            
+              2
+              
+                m
+                
+                  
+                    p
+                  
+                
+              
+            
+            π
+          
+        
+      
+    
+    {\displaystyle R={\frac {2m_{\mathrm {p} }}{\pi }}}
+  
+
+define uma projeção do elipsoide para a esfera de modo que todos os meridianos tenham comprimento verdadeiro e escala uniforme. A esfera pode então ser projetada para o plano com uma projeção equirretangular para dar uma projeção dupla do elipsoide para o plano, de modo que todos os meridianos tenham comprimento verdadeiro e escala meridiana uniforme. Um exemplo do uso da latitude retificadora é a projeção cônica equidistante. (Snyder, Seção 16). A latitude retificadora também é de grande importância na construção da Projeção de Mercator Transversa.
+
+
+=== Latitude autálica ===
+
+A latitude autálica (do grego para "mesma área"), ξ, fornece uma projeção de área igual para uma esfera.
+
+  
+    
+      
+        ξ
+        (
+        ϕ
+        )
+        =
+        
+          sin
+          
+            −
+            1
+          
+        
+        ⁡
+        
+          (
+          
+            
+              
+                q
+                (
+                ϕ
+                )
+              
+              
+                q
+                
+                  
+                    p
+                  
+                
+              
+            
+          
+          )
+        
+      
+    
+    {\displaystyle \xi (\phi )=\sin ^{-1}\left({\frac {q(\phi )}{q_{\mathrm {p} }}}\right)}
+  
+
+onde
+
+  
+    
+      
+        
+          
+            
+              
+                q
+                (
+                ϕ
+                )
+              
+              
+                
+                =
+                
+                  
+                    
+                      
+                        (
+                        
+                          1
+                          −
+                          
+                            e
+                            
+                              2
+                            
+                          
+                        
+                        )
+                      
+                      sin
+                      ⁡
+                      ϕ
+                    
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                      
+                        sin
+                        
+                          2
+                        
+                      
+                      ⁡
+                      ϕ
+                    
+                  
+                
+                −
+                
+                  
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                    
+                    
+                      2
+                      e
+                    
+                  
+                
+                ln
+                ⁡
+                
+                  (
+                  
+                    
+                      
+                        1
+                        −
+                        e
+                        sin
+                        ⁡
+                        ϕ
+                      
+                      
+                        1
+                        +
+                        e
+                        sin
+                        ⁡
+                        ϕ
+                      
+                    
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  
+                    
+                      
+                        (
+                        
+                          1
+                          −
+                          
+                            e
+                            
+                              2
+                            
+                          
+                        
+                        )
+                      
+                      sin
+                      ⁡
+                      ϕ
+                    
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                      
+                        sin
+                        
+                          2
+                        
+                      
+                      ⁡
+                      ϕ
+                    
+                  
+                
+                +
+                
+                  
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                    
+                    e
+                  
+                
+                
+                  tanh
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                (
+                e
+                sin
+                ⁡
+                ϕ
+                )
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}q(\phi )&={\frac {\left(1-e^{2}\right)\sin \phi }{1-e^{2}\sin ^{2}\phi }}-{\frac {1-e^{2}}{2e}}\ln \left({\frac {1-e\sin \phi }{1+e\sin \phi }}\right)\\[2pt]&={\frac {\left(1-e^{2}\right)\sin \phi }{1-e^{2}\sin ^{2}\phi }}+{\frac {1-e^{2}}{e}}\tanh ^{-1}(e\sin \phi )\end{aligned}}}
+  
+
+e
+
+  
+    
+      
+        
+          
+            
+              
+                
+                  q
+                  
+                    
+                      p
+                    
+                  
+                
+                =
+                q
+                
+                  (
+                  
+                    
+                      π
+                      2
+                    
+                  
+                  )
+                
+              
+              
+                
+                =
+                1
+                −
+                
+                  
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                    
+                    
+                      2
+                      e
+                    
+                  
+                
+                ln
+                ⁡
+                
+                  (
+                  
+                    
+                      
+                        1
+                        −
+                        e
+                      
+                      
+                        1
+                        +
+                        e
+                      
+                    
+                  
+                  )
+                
+              
+            
+            
+              
+              
+                
+                =
+                1
+                +
+                
+                  
+                    
+                      1
+                      −
+                      
+                        e
+                        
+                          2
+                        
+                      
+                    
+                    e
+                  
+                
+                
+                  tanh
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                e
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}q_{\mathrm {p} }=q\left({\frac {\pi }{2}}\right)&=1-{\frac {1-e^{2}}{2e}}\ln \left({\frac {1-e}{1+e}}\right)\\&=1+{\frac {1-e^{2}}{e}}\tanh ^{-1}e\end{aligned}}}
+  
+
+e o raio da esfera é tomado como
+
+  
+    
+      
+        
+          R
+          
+            q
+          
+        
+        =
+        a
+        
+          
+            
+              
+                q
+                
+                  
+                    p
+                  
+                
+              
+              2
+            
+          
+        
+        
+        .
+      
+    
+    {\displaystyle R_{q}=a{\sqrt {\frac {q_{\mathrm {p} }}{2}}}\,.}
+  
+
+Um exemplo do uso da latitude autálica é a projeção cônica de Albers de área igual.
+
+
+=== Latitude conforme ===
+A latitude conforme, χ, fornece uma transformação que preserva o ângulo (conforme) para a esfera.
+
+  
+    
+      
+        
+          
+            
+              
+                χ
+                (
+                ϕ
+                )
+              
+              
+                
+                =
+                2
+                
+                  tan
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                
+                  
+                    [
+                    
+                      
+                        (
+                        
+                          
+                            
+                              1
+                              +
+                              sin
+                              ⁡
+                              ϕ
+                            
+                            
+                              1
+                              −
+                              sin
+                              ⁡
+                              ϕ
+                            
+                          
+                        
+                        )
+                      
+                      
+                        
+                          (
+                          
+                            
+                              
+                                1
+                                −
+                                e
+                                sin
+                                ⁡
+                                ϕ
+                              
+                              
+                                1
+                                +
+                                e
+                                sin
+                                ⁡
+                                ϕ
+                              
+                            
+                          
+                          )
+                        
+                        
+                          e
+                        
+                      
+                    
+                    ]
+                  
+                  
+                    
+                      1
+                      2
+                    
+                  
+                
+                −
+                
+                  
+                    π
+                    2
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                2
+                
+                  tan
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                
+                  [
+                  
+                    tan
+                    ⁡
+                    
+                      (
+                      
+                        
+                          
+                            ϕ
+                            2
+                          
+                        
+                        +
+                        
+                          
+                            π
+                            4
+                          
+                        
+                      
+                      )
+                    
+                    
+                      
+                        (
+                        
+                          
+                            
+                              1
+                              −
+                              e
+                              sin
+                              ⁡
+                              ϕ
+                            
+                            
+                              1
+                              +
+                              e
+                              sin
+                              ⁡
+                              ϕ
+                            
+                          
+                        
+                        )
+                      
+                      
+                        
+                          e
+                          2
+                        
+                      
+                    
+                  
+                  ]
+                
+                −
+                
+                  
+                    π
+                    2
+                  
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  tan
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                
+                  [
+                  
+                    sinh
+                    ⁡
+                    
+                      (
+                      
+                        
+                          sinh
+                          
+                            −
+                            1
+                          
+                        
+                        ⁡
+                        (
+                        tan
+                        ⁡
+                        ϕ
+                        )
+                        −
+                        e
+                        
+                          tanh
+                          
+                            −
+                            1
+                          
+                        
+                        ⁡
+                        (
+                        e
+                        sin
+                        ⁡
+                        ϕ
+                        )
+                      
+                      )
+                    
+                  
+                  ]
+                
+              
+            
+            
+              
+              
+                
+                =
+                gd
+                ⁡
+                
+                  [
+                  
+                    
+                      gd
+                      
+                        −
+                        1
+                      
+                    
+                    ⁡
+                    (
+                    ϕ
+                    )
+                    −
+                    e
+                    
+                      tanh
+                      
+                        −
+                        1
+                      
+                    
+                    ⁡
+                    (
+                    e
+                    sin
+                    ⁡
+                    ϕ
+                    )
+                  
+                  ]
+                
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}\chi (\phi )&=2\tan ^{-1}\left[\left({\frac {1+\sin \phi }{1-\sin \phi }}\right)\left({\frac {1-e\sin \phi }{1+e\sin \phi }}\right)^{e}\right]^{\frac {1}{2}}-{\frac {\pi }{2}}\\[2pt]&=2\tan ^{-1}\left[\tan \left({\frac {\phi }{2}}+{\frac {\pi }{4}}\right)\left({\frac {1-e\sin \phi }{1+e\sin \phi }}\right)^{\frac {e}{2}}\right]-{\frac {\pi }{2}}\\[2pt]&=\tan ^{-1}\left[\sinh \left(\sinh ^{-1}(\tan \phi )-e\tanh ^{-1}(e\sin \phi )\right)\right]\\&=\operatorname {gd} \left[\operatorname {gd} ^{-1}(\phi )-e\tanh ^{-1}(e\sin \phi )\right]\end{aligned}}}
+  
+
+onde gd(x) é a Função Gudermanniana. (Veja também Projeção de Mercator.)
+A latitude conforme define uma transformação do elipsoide para uma esfera de raio arbitrário de modo que o ângulo de interseção entre quaisquer duas linhas no elipsoide seja o mesmo que o ângulo correspondente na esfera (de modo que a forma de pequenos elementos seja bem preservada). Uma nova transformação conforme da esfera para o plano dá uma projeção conforme dupla do elipsoide para o plano. Esta não é a única forma de gerar tal projeção conforme. Por exemplo, a versão 'exata' da Projeção de Mercator Transversa no elipsoide não é uma projeção dupla. (Ela envolve, no entanto, uma generalização da latitude conforme para o plano complexo).
+
+
+=== Latitude isométrica ===
+A latitude isométrica, ψ, é usada no desenvolvimento das versões elipsoidais da Projeção de Mercator normal e da Projeção de Mercator Transversa. O nome "isométrica" surge do fato de que em qualquer ponto do elipsoide, incrementos iguais de ψ e longitude λ dão origem a deslocamentos de distância iguais ao longo dos meridianos e paralelos, respectivamente. A grade definida pelas linhas de constante ψ e constante λ, divide a superfície do elipsoide em uma malha de quadrados (de tamanho variável). A latitude isométrica é zero no equador, mas diverge rapidamente da latitude geodésica, tendendo ao infinito nos polos. A notação convencional é dada em Snyder (página 15):
+
+  
+    
+      
+        
+          
+            
+              
+                ψ
+                (
+                ϕ
+                )
+              
+              
+                
+                =
+                ln
+                ⁡
+                
+                  [
+                  
+                    tan
+                    ⁡
+                    
+                      (
+                      
+                        
+                          
+                            π
+                            4
+                          
+                        
+                        +
+                        
+                          
+                            ϕ
+                            2
+                          
+                        
+                      
+                      )
+                    
+                  
+                  ]
+                
+                +
+                
+                  
+                    e
+                    2
+                  
+                
+                ln
+                ⁡
+                
+                  [
+                  
+                    
+                      
+                        1
+                        −
+                        e
+                        sin
+                        ⁡
+                        ϕ
+                      
+                      
+                        1
+                        +
+                        e
+                        sin
+                        ⁡
+                        ϕ
+                      
+                    
+                  
+                  ]
+                
+              
+            
+            
+              
+              
+                
+                =
+                
+                  sinh
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                (
+                tan
+                ⁡
+                ϕ
+                )
+                −
+                e
+                
+                  tanh
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                (
+                e
+                sin
+                ⁡
+                ϕ
+                )
+              
+            
+            
+              
+              
+                
+                =
+                
+                  gd
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                (
+                ϕ
+                )
+                −
+                e
+                
+                  tanh
+                  
+                    −
+                    1
+                  
+                
+                ⁡
+                (
+                e
+                sin
+                ⁡
+                ϕ
+                )
+                .
+              
+            
+          
+        
+      
+    
+    {\displaystyle {\begin{aligned}\psi (\phi )&=\ln \left[\tan \left({\frac {\pi }{4}}+{\frac {\phi }{2}}\right)\right]+{\frac {e}{2}}\ln \left[{\frac {1-e\sin \phi }{1+e\sin \phi }}\right]\\&=\sinh ^{-1}(\tan \phi )-e\tanh ^{-1}(e\sin \phi )\\&=\operatorname {gd} ^{-1}(\phi )-e\tanh ^{-1}(e\sin \phi ).\end{aligned}}}
+  
+
+Para a normal Projeção de Mercator (no elipsoide), esta função define o espaçamento dos paralelos: se o comprimento do equador na projeção é E (unidades de comprimento ou pixels), então a distância, y, de um paralelo de latitude ϕ do equador é
+
+  
+    
+      
+        y
+        (
+        ϕ
+        )
+        =
+        
+          
+            E
+            
+              2
+              π
+            
+          
+        
+        ψ
+        (
+        ϕ
+        )
+        
+        .
+      
+    
+    {\displaystyle y(\phi )={\frac {E}{2\pi }}\psi (\phi )\,.}
+  
+
+A latitude isométrica ψ está intimamente relacionada à latitude conforme χ:
+
+  
+    
+      
+        ψ
+        (
+        ϕ
+        )
+        =
+        
+          gd
+          
+            −
+            1
+          
+        
+        ⁡
+        χ
+        (
+        ϕ
+        )
+        
+        .
+      
+    
+    {\displaystyle \psi (\phi )=\operatorname {gd} ^{-1}\chi (\phi )\,.}
+  
+
+
+=== Fórmulas inversas e séries ===
+As fórmulas nas seções anteriores fornecem a latitude auxiliar em termos da latitude geodésica. As expressões para as latitudes geocêntrica e paramétrica podem ser invertidas diretamente, mas isso é impossível nos quatro casos restantes: as latitudes retificadora, autálica, conforme e isométrica. Existem dois métodos para prosseguir.
+
+O primeiro é uma inversão numérica da equação de definição para cada valor particular da latitude auxiliar. Os métodos disponíveis são iteração de ponto fixo e Newton–Raphson para encontrar raízes.
+Ao converter de isométrica ou conforme para geodésica, duas iterações de Newton-Raphson fornecem precisão dupla precisão.
+A outra abordagem, mais útil, é expressar a latitude auxiliar como uma série em termos da latitude geodésica e, em seguida, inverter a série pelo método da Reversão de Lagrange. Tais séries são apresentadas por Adams, que usa expansões em séries de Taylor e fornece coeficientes em termos da excentricidade.  Orihuela fornece séries para as conversões entre todos os pares de latitudes auxiliares em termos do terceiro achatamento, n = (a - b)/(a + b). Karney estabelece que os erros de truncamento para tais séries são consistentemente menores que as séries equivalentes em termos da excentricidade. O método de séries não é aplicável à latitude isométrica e deve-se encontrar a latitude conforme em um passo intermediário.
+
+
+=== Comparação numérica de latitudes auxiliares ===
+
+O gráfico à direita mostra a diferença entre a latitude geodésica e as latitudes auxiliares, exceto a latitude isométrica (que diverge ao infinito nos polos), para o caso do elipsoide WGS84. As diferenças mostradas no gráfico estão em minutos de arco. No hemisfério norte (latitudes positivas), θ ≤ χ ≤ μ ≤ ξ ≤ β ≤ ϕ; no hemisfério sul (latitudes negativas), as desigualdades são invertidas, com igualdade no equador e nos polos. Embora o gráfico pareça simétrico em torno de 45°, os mínimos das curvas na verdade se situam entre 45° 2′ e 45° 6′. Alguns pontos de dados representativos são fornecidos na tabela abaixo. As latitudes conforme e geocêntrica são praticamente indistinguíveis, fato que foi explorado nos dias dos cálculos manuais para agilizar a construção de projeções de mapas.
+Na primeira ordem no achatamento f, as latitudes auxiliares podem ser expressas como ζ = ϕ − Cf sin 2ϕ onde a constante C assume os valores [1⁄2, 2⁄3, 3⁄4, 1, 1] para
+ζ = [β, ξ, μ, χ, θ].
+
+
+== Latitude e sistemas de coordenadas ==
+A latitude geodésica, ou qualquer uma das latitudes auxiliares definidas no elipsoide de referência, constitui com a longitude um sistema de coordenadas bidimensional nesse elipsoide. Para definir a posição de um ponto arbitrário é necessário estender tal sistema de coordenadas para três dimensões. Três latitudes são usadas desta forma: as latitudes geodésica, geocêntrica e paramétrica são usadas em coordenadas geodésicas, coordenadas polares esféricas e coordenadas elipsoidais, respectivamente.
+
+
+=== Coordenadas geodésicas ===
+
+Em um ponto arbitrário P, considere a linha PN que é normal ao elipsoide de referência. As coordenadas geodésicas P(ɸ,λ,h) são a latitude e longitude do ponto N no elipsoide e a distância PN. Essa altura difere da altura acima do geoide ou de uma altura de referência, como a altura acima do nível médio do mar em um local específico. A direção de PN também diferirá da direção de uma linha vertical de prumo. A relação dessas diferentes alturas requer conhecimento da forma do geoide e também do campo gravitacional da Terra.
+
+
+=== Coordenadas polares esféricas ===
+
+A latitude geocêntrica θ é o complemento do ângulo polar ou colatitude θ′ nas coordenadas polares esféricas convencionais nas quais as coordenadas de um ponto são P(r,θ′,λ) onde r é a distância de P do centro O, θ′ é o ângulo entre o vetor radial e o eixo polar e λ é a longitude. Como a normal em um ponto geral no elipsoide não passa pelo centro, é claro que os pontos P' na normal, que têm todos a mesma latitude geodésica, terão latitudes geocêntricas diferentes. Sistemas de coordenadas polares esféricas são usados na análise do campo gravitacional.
+
+
+=== Coordenadas harmônicas elipsoidais ===
+
+A latitude paramétrica também pode ser estendida para um sistema de coordenadas tridimensional. Para um ponto P que não está no elipsoide de referência (semieixos OA e OB), construa um elipsoide auxiliar que seja confocal (mesmos focos F, F′) com o elipsoide de referência: a condição necessária é que o produto ae do semieixo maior e da excentricidade seja o mesmo para ambos os elipsoides. Seja u o semi-eixo menor (OD) do elipsoide auxiliar. Além disso, seja β a latitude paramétrica de P no elipsoide auxiliar. O conjunto (u,β,λ) define as coordenadas harmônicas elipsoidais ou simplesmente coordenadas elipsoidais (embora esse termo também seja usado para se referir à coordenada geodésica). Essas coordenadas são a escolha natural em modelos do campo gravitacional para um corpo elipsoidal em rotação. O acima se aplica a um elipsoide biaxial (um esferoide, como em coordenadas esferoidais oblatas); para uma generalização, veja coordenadas elipsoidais triaxiais.
+
+
+=== Conversões de coordenadas ===
+As relações entre os sistemas de coordenadas acima e também as coordenadas cartesianas não são apresentadas aqui. A transformação entre coordenadas geodésicas e cartesianas pode ser encontrada em conversão de coordenadas geográficas. A relação entre coordenadas cartesianas e polares esféricas é dada em sistema de coordenadas esféricas. A relação entre coordenadas cartesianas e elipsoidais é discutida em Torge.
+
+
+== Latitude astronômica ==
+
+Latitude astronômica (Φ) é o ângulo entre o plano equatorial e a verdadeira direção vertical em um ponto na superfície. A verdadeira vertical, a direção de uma linha de prumo, é também a direção da gravidade (o resultado da aceleração gravitacional (baseada em massa) e da aceleração centrífuga) nessa latitude. A latitude astronômica é calculada a partir de ângulos medidos entre o zênite e estrelas cuja declinação é conhecida com precisão.
+Em geral, a verdadeira vertical em um ponto na superfície não coincide exatamente com a normal ao elipsoide de referência ou com a normal ao geoide. O geoide é uma forma idealizada e teórica "ao nível médio do mar". Pontos em terra não estão exatamente no geoide, e a vertical em um ponto em um momento específico é influenciada por forças de maré que o geoide teórico média. O ângulo entre as normais astronômica e geodésica é chamado de desvio vertical e geralmente é de alguns segundos de arco, mas é importante na geodesia.
+A latitude astronômica não deve ser confundida com declinação, a coordenada que os astrônomos usam de maneira semelhante para especificar a posição angular das estrelas ao norte-sul do equador celestial (veja coordenadas equatoriais), nem com latitude da eclíptica, a coordenada que os astrônomos usam para especificar a posição angular das estrelas ao norte-sul da eclíptica (veja coordenadas eclípticas).
+
+
+== Ver também ==
+
+
+== Referências ==
+
+
+=== Notas de rodapé ===
+
+
+=== Citações ===
+
+
+== Ligações externas ==
+Servidor de Nomes GEONets. Arquivado em 2008-03-09 no Wayback Machine. acesso ao banco de dados de nomes de características geográficas estrangeiras da National Geospatial-Intelligence Agency (NGA).
+Recursos para determinar sua latitude e longitude Arquivado em 2008-05-19 no Wayback Machine
+Converter graus decimais em graus, minutos, segundos
+Cálculo de distância com base em latitude e longitude – versão em JavaScript
+Levantamento de Latitude do Século XVI
+Determinação de Latitude por Francis Drake na Costa da Califórnia em 1579

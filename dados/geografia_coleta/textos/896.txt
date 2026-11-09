@@ -1,0 +1,175 @@
+Geografia (do grego antigo γεωγραφία geōgraphía; combinação de gê 'Terra' e gráphō 'escrever') é o estudo das terras, características, habitantes e fenômenos da Terra. É uma disciplina abrangente que busca compreender a Terra e suas complexidades humanas e naturais — não apenas onde os objetos estão, mas também como eles mudaram e surgiram. Embora a geografia seja específica da Terra, muitos conceitos podem ser aplicados de forma mais ampla a outros corpos celestes no campo da ciência planetária. Tem sido chamada de "uma ponte entre as ciências naturais e as disciplinas das ciências sociais".
+As origens de muitos dos conceitos da geografia podem ser rastreadas até o grego Eratóstenes de Cirene, que pode ter cunhado o termo "geographia" em (ca.  276–195/4 a.C.). O primeiro uso registrado da palavra γεωγραφία foi como título de um livro do estudioso grego Ptolemeu (100–170 d.C.). Este trabalho criou a chamada "tradição ptolomaica" da geografia, que incluía a "teoria cartográfica ptolomaica".
+No entanto, os conceitos geográficos (como a cartografia) remontam às primeiras tentativas de compreender o mundo espacialmente, com o primeiro exemplo de uma tentativa de mapa-múndi datando do século IX a.C. na antiga Babilônia. A história da geografia como disciplina abrange culturas e milênios, sendo desenvolvida independentemente por vários grupos e influenciada pelo comércio entre esses grupos. Os conceitos centrais da geografia consistentes entre todas as abordagens são o foco no espaço, lugar, tempo e escala.
+Atualmente, a geografia é uma disciplina extremamente ampla, com múltiplas abordagens e modalidades. Houve várias tentativas de organizar a disciplina, incluindo as quatro tradições e em ramos. As técnicas empregadas podem geralmente ser divididas em abordagens quantitativas e qualitativas, com muitos estudos adotando abordagens de métodos mistos. Técnicas comuns incluem cartografia, sensoriamento remoto e levantamentos.
+
+
+== Fundamentos ==
+
+A geografia é um estudo sistemático da Terra (outros corpos celestes são especificados, como "geografia de Marte", ou recebem outro nome, como areografia no caso de Marte), suas características e fenômenos que ocorrem nela. Para que algo se enquadre no domínio da geografia, geralmente é necessário algum tipo de componente espacial que possa ser colocado em um mapa, como coordenadas, nomes de lugares ou endereços. Isso levou à associação da geografia à cartografia e aos nomes de lugares. Embora muitos geógrafos sejam treinados em toponímia e cartologia, essa não é sua principal preocupação. Os geógrafos estudam a distribuição espacial e temporal dos fenômenos, processos e características da Terra, bem como a interação dos humanos com seu ambiente. Como o espaço e o lugar afetam uma variedade de tópicos, como economia, saúde, clima, plantas e animais, a geografia é altamente interdisciplinar. A natureza interdisciplinar da abordagem geográfica depende de uma atenção à relação entre os fenômenos físicos e humanos e os seus padrões espaciais.
+
+Nomes de lugares... não são geografia... Saber de cor um dicionário geográfico inteiro cheio deles não constituiria, por si só, alguém um geógrafo. A geografia tem objetivos mais elevados do que isso: ela busca classificar fenômenos (tanto do mundo natural quanto do mundo político, na medida em que trata do último), comparar, generalizar, ascender dos efeitos às causas e, ao fazê-lo, traçar as leis da natureza e marcar suas influências sobre o homem. Esta é 'uma descrição do mundo' — isto é geografia. Em uma palavra, geografia é uma ciência — uma coisa não de meros nomes, mas de argumento e razão, de causa e efeito.
+
+A geografia como disciplina pode ser dividida amplamente em três ramos principais: humana, física e técnica. A geografia humana concentra-se principalmente no ambiente construído e na forma como os humanos criam, visualizam, gerem e influenciam o espaço. A geografia física examina o ambiente natural e como os organismos, o clima, o solo, a água e as formas de relevo produzem e interagem. A diferença entre essas abordagens levou ao desenvolvimento da geografia integrada, que combina a geografia física e humana e diz respeito às interações entre o meio ambiente e os humanos. A geografia técnica envolve o estudo e o desenvolvimento de ferramentas e técnicas utilizadas pelos geógrafos, como o sensoriamento remoto, a cartografia e o sistema de informação geográfica.
+
+
+=== Conceitos-chave ===
+Reduzir a geografia a alguns conceitos-chave é extremamente desafiador e sujeito a um enorme debate dentro da disciplina. Numa tentativa, a 1ª edição do livro Conceitos-chave em Geografia dividiu-o em capítulos com foco em "espaço", "lugar", "tempo", "escala" e "paisagem". A 2ª edição do livro expandiu estes conceitos-chave adicionando "sistemas ambientais", "sistemas sociais", "natureza", "globalização", "desenvolvimento" e "risco", demonstrando o quão desafiador pode ser estreitar o campo.
+Outra abordagem amplamente utilizada no ensino de geografia são os cinco temas de geografia estabelecidos pelas "Diretrizes para Educação Geográfica: Escolas Elementares e Secundárias", publicadas conjuntamente pelo Conselho Nacional de Educação Geográfica dos Estados Unidos e pela Associação de Geógrafos Americanos em 1984. Esses temas são localização, lugar, relacionamentos dentro de lugares (frequentemente resumidos como interação homem-ambiente), movimento e regiões. Os cinco temas da geografia moldaram a forma como a educação estadunidense abordaria o tópico nos anos seguintes.
+
+
+==== Espaço ====
+
+Assim como todos os fenômenos existem no tempo e, portanto, têm uma história, eles também existem no espaço e têm uma geografia.
+
+Para que algo exista no domínio da geografia, ele deve poder ser descrito espacialmente. Assim, o espaço é o conceito mais fundamental na base da geografia. O conceito é tão básico que os geógrafos muitas vezes têm dificuldade em definir exatamente o que é. O espaço absoluto é o local exato, ou coordenadas espaciais, de objetos, pessoas, lugares ou fenômenos sob pesquisa. Nós existimos no espaço. O espaço absoluto leva à visão do mundo como uma fotografia, com tudo congelado no lugar quando as coordenadas foram registradas. Atualmente, os geógrafos são treinados para reconhecer o mundo como um espaço dinâmico onde todos os processos interagem e ocorrem, em vez de uma imagem estática num mapa.
+
+
+==== Lugar ====
+
+Lugar é um dos termos mais complexos e importantes da geografia. Na geografia humana, o lugar é a síntese das coordenadas na superfície da Terra, da atividade e do uso que ocorre, ocorreu e ocorrerá nas coordenadas, e do significado atribuído ao espaço por indivíduos e grupos humanos. Isso pode ser extraordinariamente complexo, pois espaços diferentes podem ter usos diferentes em momentos diferentes e significar coisas diferentes para pessoas diferentes. Na geografia física, um lugar inclui todos os fenômenos físicos que ocorrem no espaço, incluindo a litosfera, a atmosfera, a hidrosfera e a biosfera. Os lugares não existem no vácuo e, em vez disso, têm relações espaciais complexas entre si, e o lugar diz respeito à forma como um local está situado em relação a todos os outros locais. Como disciplina, então, o termo lugar na geografia inclui todos os fenômenos espaciais que ocorrem em um local, os diversos usos e significados que os humanos atribuem a esse local e como esse local impacta e é impactado por todos os outros locais na Terra. Em um dos artigos de Yi-Fu Tuan, ele explica que, em sua opinião, a geografia é o estudo da Terra como um lar para a humanidade e, portanto, o lugar e o significado complexo por trás do termo são centrais para essa disciplina.
+
+
+==== Tempo ====
+
+O tempo é geralmente considerado como pertencente ao domínio da história, no entanto, é uma preocupação significativa na disciplina da geografia. Na física, espaço e tempo não são separados e são combinados no conceito de espaço-tempo. A geografia está sujeita às leis da física e, ao estudar coisas que ocorrem no espaço, o tempo deve ser considerado. O tempo na geografia é mais do que apenas o registro histórico de eventos que ocorreram em várias coordenadas discretas; mas também inclui a modelagem do movimento dinâmico de pessoas, organismos e coisas através do espaço. O tempo facilita o movimento através do espaço, permitindo, em última análise, que as coisas fluam através de um sistema. A quantidade de tempo que um indivíduo, ou grupo de pessoas, passa num lugar irá muitas vezes moldar o seu apego e a sua perspectiva em relação a esse lugar. O tempo restringe os caminhos possíveis que podem ser tomados através do espaço, dado um ponto de partida, rotas possíveis e velocidade de viagem. A visualização do tempo no espaço é desafiadora em termos de cartografia, como geovisualizações 3D avançadas e mapas animados.
+
+
+==== Escala ====
+
+A escala no contexto de um mapa é a relação entre uma distância medida no mapa e a distância correspondente medida no solo. Este conceito é fundamental para a disciplina da geografia, não apenas da cartografia, na medida em que os fenômenos investigados parecem diferentes dependendo da escala utilizada. A escala é o quadro que os geógrafos usam para medir o espaço e, em última análise, para tentar compreender um lugar.
+
+
+=== Leis da geografia ===
+Durante a revolução quantitativa, a geografia mudou para uma abordagem empírica de elaboração de leis (nomotética). Várias leis da geografia foram propostas desde então, principalmente por Waldo Tobler, e podem ser vistas como um produto da revolução quantitativa. Em geral, alguns contestam todo o conceito de leis na geografia e nas ciências sociais. Estas críticas foram abordadas por Tobler e outros, como Michael Frank Goodchild. No entanto, esta é uma fonte constante de debate na geografia e é improvável que seja resolvida tão cedo. Várias leis foram propostas e a primeira lei geográfica de Tobler é a mais geralmente aceita. Alguns argumentam que as leis geográficas não precisam ser numeradas. A existência de uma convida a uma segunda, e muitos se propuseram como tal. Também foi proposto que a primeira lei da geografia de Tobler fosse movida para segunda e substituída por outra. Algumas das leis propostas da geografia estão abaixo:
+
+Primeira lei da geografia de Tobler: "Tudo está relacionado com tudo o mais, mas as coisas próximas estão mais relacionadas do que as distantes."
+Segunda lei da geografia de Tobler: "O fenômeno externo a uma área geográfica de interesse afeta o que acontece dentro dela."
+Lei da geografia de Arbia: "Tudo está relacionado com tudo o mais, mas as coisas observadas numa resolução espacial grosseira estão mais relacionadas do que as coisas observadas numa resolução mais fina."
+Heterogeneidade espacial: Variáveis geográficas apresentam variância descontrolada.
+Princípio da incerteza: "Que o mundo geográfico é infinitamente complexo e que qualquer representação deve, portanto, conter elementos de incerteza, que muitas definições usadas na aquisição de dados geográficos contêm elementos de imprecisão e que é impossível medir a localização na superfície da Terra com exatidão."
+Além disso, existem diversas variações ou emendas a essas leis na literatura, embora não tão bem fundamentadas. Por exemplo, um artigo propôs uma versão alterada da primeira lei da geografia de Tobler, referida no texto como a lei de Tobler-von Thünen, que afirma: "Tudo está relacionado com tudo o resto, mas as coisas próximas estão mais relacionadas do que as coisas distantes, como consequência da acessibilidade."
+
+
+== História ==
+
+O conceito de geografia está presente em todas as culturas e, portanto, a história da disciplina é uma série de narrativas concorrentes, com conceitos emergindo em vários pontos do espaço e do tempo. Os mapas mundiais mais antigos conhecidos datam da antiga Babilônia, do século IX a.C. O mapa-múndi babilônico mais conhecido, no entanto, é o Imago Mundi de 600 a.C., que foi reconstruído por Eckhard Unger e mostra a Babilônia no Eufrates, cercada por uma massa de terra circular mostrando a Assíria, Urartu e várias cidades, por sua vez cercadas por um "rio amargo" (Oceanus), com sete ilhas dispostas ao redor dele de modo a formar uma estrela de sete pontas. O texto que acompanha menciona sete regiões externas além do oceano circundante. As descrições de cinco delas sobreviveram. Um mapa-múndi babilônico anterior ao Imago Mundi que remonta ao século IX a.C. retratava a Babilônia mais ao norte do centro do mundo, embora não haja certeza do que esse centro deveria representar.
+As ideias de Anaximandro (c. 610–545 a.C.): considerado pelos escritores gregos posteriores como o verdadeiro fundador da geografia, chegam até nós através de fragmentos citados pelos seus sucessores. Anaximandro é creditado com a invenção do gnômon, o instrumento grego simples, mas eficiente, que permitiu a medição inicial da latitude. Tales de Mileto também é creditado pela previsão de eclipses. Os fundamentos da geografia podem ser rastreados até culturas antigas, como a chinesa antiga, medieval e moderna. Os gregos, que foram os primeiros a explorar a geografia como arte e ciência, conseguiram isso por meio de cartografia, filosofia, literatura e matemática. Há algum debate sobre quem foi a primeira pessoa a afirmar que a Terra tem formato esférico, com o crédito indo para Parmênides ou Pitágoras. Anaxágoras conseguiu demonstrar que o perfil da Terra era circular explicando os eclipses. No entanto, ele ainda acreditava que a Terra era um disco plano, assim como muitos de seus contemporâneos. Uma das primeiras estimativas do raio da Terra foi feita por Eratóstenes.
+O primeiro sistema rigoroso de linhas de latitude e longitude é creditado a Hiparco, que empregou um sistema sexagesimal derivado da matemática babilônica. Os meridianos foram subdivididos em 360°, com cada grau subdividido em 60 (minutos). Para medir a longitude em diferentes locais da Terra, ele sugeriu o uso de eclipses para determinar a diferença relativa no tempo. O extenso mapeamento feito pelos romanos enquanto exploravam novas terras forneceria mais tarde um alto nível de informação para Ptolomeu construir atlas detalhados. Ele estendeu o trabalho de Hiparco, usando um sistema de grade em seus mapas e adotando um comprimento de 56,5 milhas para um grau.
+
+A partir do século III, os métodos chineses de estudo geográfico e de escrita de literatura geográfica tornaram-se muito mais abrangentes do que os encontrados na Europa na época (até ao século XIII). Geógrafos chineses, como Pei Xiu, Shen Kuo e Zhou Daguan, escreveram tratados importantes, mas no século XVII ideias e métodos avançados de geografia de estilo ocidental foram adotados na China.
+
+Durante a Idade Média, a queda do Império Romano do Ocidente levou a uma mudança na evolução da geografia da Europa para o mundo islâmico. Geógrafos muçulmanos como Dreses produziram mapas-múndi detalhados (como Tabula Rogeriana), enquanto outros geógrafos como Iacute Alhamaui, Albiruni, Ibne Batuta e Ibne Caldune forneceram relatos detalhados de suas viagens e da geografia das regiões que visitaram. O geógrafo turco Mamude Alcasgari desenhou um mapa-múndi com base linguística, e mais tarde o mesmo fez Piri Reis (mapa de Piri Reis). Além disso, os estudiosos islâmicos traduziram e interpretaram as obras anteriores dos romanos e dos gregos e estabeleceram a Casa da Sabedoria em Bagdá para esse propósito. Abu Zaíde de Bactro, originário de Bactro, fundou a "escola de Bactro" de mapeamento terrestre em Bagdá. Suhrāb, um geógrafo muçulmano do final do século X, acompanhou um livro de coordenadas geográficas, com instruções para fazer um mapa-múndi retangular com projeção equirretangular ou projeção cilíndrica equidistante.
+Albiruni (976–1048) descreveu pela primeira vez uma projeção equidistante equidistante polar e azimutal da esfera celeste. Ele era considerado o mais habilidoso quando se tratava de mapear cidades e medir as distâncias entre elas, o que fez em muitas cidades do Oriente Médio e do subcontinente indiano. Albiruni era frequentemente combinava leituras astronômicas e equações matemáticas para desenvolver métodos de localização precisa registrando graus de latitude e longitude. Ele também desenvolveu técnicas semelhantes quando se tratava de medir a altura das montanhas, a profundidade dos vales e a extensão do horizonte, além de discutir a geografia humana e a habitabilidade planetária da Terra. Também calculou a latitude da cidade de Cate, na Corásmia, usando a altitude máxima do Sol, e resolveu uma equação geodésica complexa para calcular com precisão a circunferência da Terra, que estava próxima dos valores modernos. Sua estimativa de 6.339,9 quilômetros para o raio da Terra foi apenas 16,8 km menor que o valor moderno de 6.356,7 quilômetros. Em contraste com os seus antecessores, que mediam a circunferência da Terra observando o Sol simultaneamente a partir de dois locais diferentes, Albiruni desenvolveu um novo método de utilização de cálculos trigonométricos com base no ângulo entre uma planície e o topo de uma montanha, o que produziu medições mais precisas da circunferência da Terra e tornou possível que fosse medida por uma única pessoa a partir de um único local.
+
+A Era dos Descobrimentos europeus durante os séculos XVI e XVII, quando muitas novas terras foram descobertas e relatos de exploradores europeus como Cristóvão Colombo, Marco Polo e James Cook reavivaram o desejo por detalhes geográficos precisos e fundamentos teóricos mais sólidos na Europa. Em 1650, a primeira edição da Geographia Generalis foi publicada por Bernhardus Varenius, que mais tarde foi editada e republicada por outros, incluindo Isaac Newton. Este livro didático procurou integrar novas descobertas e princípios científicos na geografia clássica e abordar a disciplina como as outras ciências emergentes, sendo visto por alguns como a divisão entre a geografia antiga e a moderna no Ocidente.
+A Geographia Generalis continha tanto informações teóricas quanto aplicações práticas relacionadas à navegação de navios. O problema restante enfrentado por exploradores e geógrafos era encontrar a latitude e a longitude de uma localização geográfica. Embora o problema da latitude tenha sido resolvido há muito tempo, o da longitude permaneceu; concordar sobre quais deveriam ser os meridianos zero era apenas parte do problema. Coube a John Harrison resolver a questão ao inventar o cronômetro H-4 em 1760 e, mais tarde, em 1884, a Conferência Internacional do Meridiano adotou por convenção o meridiano de Greenwich como meridiano zero.
+Os séculos XVIII e XIX foram os períodos em que a geografia passou a ser reconhecida como uma disciplina acadêmica distinta e passou a fazer parte do currículo universitário típico na Europa (especialmente em Paris e Berlim). O desenvolvimento de muitas sociedades geográficas também ocorreu durante o século XIX, com as fundações da Sociedade de Geografia de Paris na França em 1821, da Real Sociedade Geográfica no Reino Unido em 1830, da Sociedade Geográfica Russa em 1845, da Sociedade Geográfica Americana em 1851 e da National Geographic Society em 1888, ambas nos Estados Unidos. A influência de Immanuel Kant, Alexander von Humboldt, Carl Ritter e Paul Vidal de la Blache pode ser vista como um importante ponto de virada na geografia, da filosofia para uma disciplina acadêmica.
+
+Nos últimos dois séculos, os avanços na tecnologia com computadores levaram ao desenvolvimento da geomática e novas práticas, como observação participante e geoestatística, sendo incorporadas ao portfólio de ferramentas da geografia. No Ocidente, durante o século XX, a disciplina da geografia passou por quatro fases principais: determinismo ambiental, geografia regional, revolução quantitativa e geografia crítica. Os fortes vínculos interdisciplinares entre a geografia e as ciências da geologia e botânica, bem como a economia, a sociologia e a demografia, também cresceram muito, especialmente como resultado da ciência do sistema terrestre, que busca entender o mundo em uma visão holística. Novos conceitos e filosofias surgiram do rápido avanço dos computadores, métodos quantitativos e abordagens interdisciplinares. Em 1970, Waldo R. Tobler propôs a primeira lei da geografia: "tudo está relacionado com tudo o mais, mas as coisas próximas estão mais relacionadas do que as coisas distantes".
+
+
+== Subdisciplinas ==
+Geografia é um tópico extremamente amplo e pode ser dividido de várias maneiras. Houve várias abordagens para fazer isso abrangendo pelo menos vários séculos, incluindo "quatro tradições de geografia" e em ramos distintos, que são frequentemente usadas para dividir as diferentes teorias de abordagem histórica que os geógrafos adotaram para a disciplina. Em contraste, os ramos da geografia descrevem abordagens geográficas aplicadas contemporâneas.
+
+
+=== Quatro tradições ===
+Geografia é um campo extremamente amplo. Por isso, muitos consideram as diversas definições de geografia propostas ao longo das décadas como inadequadas. Para abordar esta questão, William D. Pattison propôs o conceito das “quatro tradições da geografia” em 1964. Essas tradições são a espacial ou locacional; interacional (às vezes chamada de geografia ambiental); regional e geociência. Esses conceitos são conjuntos amplos de filosofias geográficas reunidas dentro da disciplina. Elas são uma das muitas maneiras pelas quais os geógrafos organizam os principais conjuntos de pensamentos e filosofias dentro da disciplina.
+
+
+=== Ramos ===
+
+Numa outra abordagem às quatro tradições acima mencionadas, a geografia é organizada em ramos aplicados. A Enciclopédia de Sistemas de Suporte à Vida da UNESCO organiza a geografia em três categorias: humana, física e técnica. Algumas publicações limitam o número de filiais ao físico e ao humano, descrevendo-os como filiais principais. Os geógrafos raramente se concentram em apenas um desses tópicos, muitas vezes usando um como foco principal e então incorporando dados e métodos de outros ramos. Muitas vezes, os geógrafos são solicitados por pessoas de fora da disciplina a descrever o que fazem e é provável que se identifiquem intimamente com um ramo ou sub-ramo. A geografia humana estuda as pessoas e suas comunidades, culturas, economias e interações ambientais, estudando suas relações com e através do espaço e do lugar. A geografia física se preocupa com o estudo de processos e padrões no ambiente natural, como a atmosfera, a hidrosfera, a biosfera e a geosfera. A geografia técnica se interessa em estudar e aplicar técnicas e métodos para armazenar, processar, analisar, visualizar e usar dados espaciais.
+
+
+==== Física ====
+
+A geografia física (ou fisiografia) concentra-se na geografia como uma ciência da Terra. Tem como objetivo compreender os problemas físicos e as questões da litosfera, hidrosfera, atmosfera, pedosfera e padrões globais de flora e fauna (biosfera). É o estudo das estações do ano, clima, atmosfera, solo, rios, relevos e oceanos da Terra. Geógrafos físicos geralmente trabalham na identificação e monitoramento do uso de recursos naturais.
+
+
+==== Humana ====
+
+A geografia humana (ou antropogeografia) é um ramo da geografia que se concentra no estudo de padrões e processos que moldam a sociedade humana. Abrange os aspectos humanos, políticos, culturais, sociais e econômicos. Na indústria, geógrafos humanos geralmente trabalham em planejamento urbano, saúde pública ou análise de negócios. Várias abordagens para o estudo da geografia humana também surgiram ao longo do tempo, como geografia comportamental, teoria da cultura, geografia feminista e geosofia.
+
+
+==== Técnica ====
+A geografia técnica diz respeito ao estudo e desenvolvimento de ferramentas, técnicas e métodos estatísticos empregados para coletar, analisar, usar e compreender dados espaciais. É o ramo mais recentemente reconhecido e controverso. Seu uso remonta a 1749, quando um livro publicado por Edward Cave organizou a disciplina em uma seção contendo conteúdos como técnicas cartográficas e globos. Existem vários outros termos, frequentemente usados de forma intercambiável com geografia técnica para subdividir a disciplina, como "técnicas de análise geográfica", "tecnologia da informação geográfica", "métodos e técnicas de geografia", "ciência da informação geográfica", "geoinformática", "geomática" e "geografia da informação". Existem diferenças sutis em cada conceito e termo; no entanto, a geografia técnica é uma das mais amplas, é consistente com a convenção de nomenclatura dos outros dois ramos, está em uso desde 1700 e tem sido usada pela Enciclopédia de Sistemas de Suporte à Vida da UNESCO para dividir a geografia em temas. A geografia técnica surgiu como um ramo da geografia especializado em métodos e pensamentos geográficos. Seu surgimento trouxe nova relevância à ampla disciplina da geografia, servindo como um conjunto de métodos exclusivos para gerenciar a natureza interdisciplinar dos fenômenos sob pesquisa. Enquanto os geógrafos humanos e físicos usam as técnicas empregadas pelos geógrafos técnicos, a geografia técnica está mais preocupada com os conceitos e tecnologias espaciais fundamentais do que com a natureza dos dados. Portanto, está intimamente associada à tradição espacial da geografia, ao mesmo tempo em que é aplicada aos outros dois ramos principais. Um geógrafo técnico pode trabalhar como analista de sistema de informação geográfica (SIS), desenvolvedor de SIG trabalhando para criar novas ferramentas de software ou criar mapas de referência geral incorporando características humanas e naturais.
+
+
+=== Campos relacionados ===
+
+
+==== Geologia ====
+
+A geografia e a geologia têm sobreposição significativa, especialmente com a geografia física. No passado, ambas frequentemente partilharam departamentos acadêmicos nas universidades, um ponto que levou a conflitos sobre recursos. As duas disciplinas buscam entender as rochas na superfície da Terra e os processos que as alteram ao longo do tempo. A geologia emprega muitas das ferramentas e técnicas dos geógrafos técnicos, como o sistema de informação geográfica (SIG) e o sensoriamento remoto para auxiliar no mapeamento geológico. No entanto, a geologia inclui pesquisas que vão além da componente espacial, como a análise química das rochas e a biogeoquímica.
+
+
+==== História ====
+
+A disciplina de história tem sobreposição significativa com a geografia, especialmente a geografia humana. Assim como a geologia, a história e a geografia compartilham departamentos universitários. A geografia fornece o contexto espacial dentro do qual os eventos históricos se desenrolam. As características geográficas físicas de uma região, como as suas formas de relevo, clima e recursos, moldam os assentamentos humanos, as rotas comerciais e as atividades econômicas, que por sua vez influenciam o curso dos acontecimentos históricos. Assim, um historiador deve ter uma sólida formação em geografia.
+
+
+== Métodos ==
+
+Toda a pesquisa e análise geográfica começa com a pergunta "onde", seguida de "por que lá". Os geógrafos começam com a suposição fundamental estabelecida na primeira lei da geografia de Tobler, de que "tudo está relacionado com tudo o mais, mas as coisas próximas estão mais relacionadas do que as coisas distantes". Como as inter-relações espaciais são essenciais para esta ciência sinótica, os mapas são uma ferramenta fundamental. A cartografia clássica foi acompanhada por uma abordagem mais moderna de análise geográfica: sistemas de informação geográfica (GIS) baseados em computador.
+
+
+=== Quantitativos ===
+
+Os métodos quantitativos em geografia tornaram-se particularmente influentes na disciplina durante a revolução quantitativa das décadas de 1950 e 1960. Esses métodos revitalizaram a disciplina de muitas maneiras, permitindo testes científicos de hipóteses e propondo teorias e leis geográficas científicas. A revolução quantitativa influenciou e revitalizou fortemente a geografia técnica e levou ao desenvolvimento do subcampo da geografia quantitativa.
+
+
+==== Cartografia quantitativa ====
+
+A cartografia é a arte, ciência e tecnologia de fazer mapas. Os cartógrafos estudam a representação da superfície da Terra com símbolos abstratos. Embora outras subdisciplinas da geografia se baseiem em mapas para apresentar as suas análises, a elaboração propriamente dita dos mapas é suficientemente abstrata para ser considerada separadamente.
+
+
+==== Sistemas de informação geográfica ====
+
+Os sistemas de informação geográfica (SIGs) tratam do armazenamento de informações sobre a Terra para recuperação automática por um computador de forma precisa e apropriada ao propósito da informação. Além de todas as outras subdisciplinas da geografia, os especialistas em SIG devem entender de ciência da computação e sistemas de banco de dados. O SIG revolucionou o campo da cartografia: quase toda a cartografia agora é feita com a ajuda de algum tipo de software SIG. A ciência de usar software e técnicas SIG para representar, analisar e prever as relações espaciais é chamada de ciência da informação geográfica.
+
+
+==== Sensoriamento remoto ====
+
+O sensoriamento remoto é a arte, ciência e tecnologia de obter informações sobre as características da Terra a partir de medições feitas à distância. Os dados sensoriados remotamente podem ser passivos, como a fotografia tradicional, ou ativos, como o LiDAR. Uma variedade de plataformas pode ser usada para sensoriamento remoto, como imagens de satélite, fotografia aérea (incluindo drones) e dados obtidos por sensores portáteis. Produtos de sensoriamento remoto incluem modelos digitais de elevação e mapas de base cartográfica. Os geógrafos usam cada vez mais dados de sensoriamento remoto para obter informações sobre a superfície terrestre, o oceano e a atmosfera da Terra, porque eles: (a) fornecem informações objetivas em uma variedade de escalas espaciais (local a global), (b) fornecem uma visão sinótica da área de interesse, (c) permitem o acesso a locais distantes e inacessíveis, (d) fornecem informações espectrais fora da porção visível do espectro eletromagnético e (e) facilitam estudos de como as características/áreas mudam ao longo do tempo. Dados detectados remotamente podem ser analisados independentemente ou em conjunto com outras camadas de dados digitais (por exemplo, em um sistema de informações geográficas). O sensoriamento remoto auxilia no mapeamento do uso e cobertura do solo (LULC), ajudando a determinar o que ocorre naturalmente em um pedaço de terra e quais atividades humanas estão ocorrendo nele.
+
+
+==== Geoestatística ====
+
+A geoestatística trata da análise quantitativa de dados, especificamente da aplicação de uma metodologia estatística à exploração de fenômenos geográficos. A geoestatística é amplamente utilizada em diversos campos, incluindo hidrologia, geologia, exploração de petróleo, análise climática, planejamento urbano, logística e epidemiologia. A base matemática da geoestatística deriva da análise de cluster, da análise discriminante linear e testes estatísticos não paramétricos, além de uma variedade de outros assuntos. As aplicações da geoestatística dependem fortemente de sistemas de informação geográfica (SIG), particularmente para a interpolação (estimativa) de pontos não medidos.
+
+
+=== Qualitativos ===
+Os métodos qualitativos em geografia são descritivos e não numéricos ou estatísticos por natureza. Eles acrescentam contexto aos conceitos e exploram conceitos humanos como crenças e perspectivas que são difíceis ou impossíveis de quantificar. A geografia humana tem muito mais probabilidade de empregar métodos qualitativos do que a geografia física. Cada vez mais, os geógrafos técnicos estão tentando empregar métodos SIG em conjuntos de dados qualitativos.
+
+
+==== Cartografia qualitativa ====
+
+A cartografia qualitativa emprega muitos dos mesmos softwares e técnicas da cartografia quantitativa. Pode ser empregada para informar sobre práticas de mapas ou para visualizar perspectivas e ideias que não sejam estritamente quantitativas por natureza. Um exemplo de uma forma de cartografia qualitativa é um mapa corocromático de dados nominais, como cobertura de terra ou grupo linguístico dominante em uma área. Outro exemplo são mapas que combinam geografia e narrativa para produzir um produto com mais informação do que uma imagem bidimensional de lugares, nomes e topografia. Esta abordagem oferece estratégias mais inclusivas do que as abordagens cartográficas mais tradicionais para conectar as camadas complexas que compõem os lugares.
+
+
+==== Etnografia ====
+
+Técnicas de pesquisa etnográfica são utilizadas por geógrafos humanos. Na geografia cultural, há uma tradição de emprego de técnicas de pesquisa qualitativa, também usadas em antropologia e sociologia. A observação participante e entrevistas em profundidade fornecem aos geógrafos humanos dados qualitativos.
+
+
+==== Geopoética ====
+A geopoética é uma abordagem interdisciplinar que combina geografia e poesia para explorar a interconexão entre humanos, espaço, lugar e meio ambiente. É empregada como uma ferramenta de métodos mistos para explicar as implicações da pesquisa geográfica. É frequentemente utilizada para abordar e comunicar as implicações de tópicos complexos, como o antropoceno.
+
+
+==== Entrevistas ====
+Os geógrafos utilizam entrevistas para recolher dados e adquirir conhecimentos valiosos de indivíduos ou grupos relativamente aos seus encontros, perspetivas e opiniões sobre fenômenos espaciais. As entrevistas podem ser realizadas através de vários meios, incluindo interações presenciais, conversas telefônicas, plataformas online ou trocas escritas. Os geógrafos geralmente adotam uma abordagem estruturada ou semiestruturada durante entrevistas que envolvem questões específicas ou pontos de discussão quando utilizados para fins de pesquisa. Essas perguntas são elaboradas para extrair informações focadas sobre o tópico da pesquisa, sendo ao mesmo tempo flexíveis o suficiente para permitir que os participantes expressem suas experiências e pontos de vista, como por meio de perguntas abertas.
+
+
+== Ver também ==
+Geopolítica
+
+
+== Referências ==
+
+ 
+
+
+== Ligações externas ==
+
+Geografia na Encyclopaedia Britannica (em inglês)
