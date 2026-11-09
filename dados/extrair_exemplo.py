@@ -4,11 +4,11 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 # Substitua pelo seu contato antes de executar.
-contato = "pedrorafaelfaria7@gmail.com"
+contato = "seu-email@exemplo.com"
 
 parametros = {
     "action": "query",
-    "prop": "extracts",;
+    "prop": "extracts",
     "explaintext": 1,
     "titles": "Geografia",
     "redirects": 1,
