@@ -1,0 +1,5 @@
+numpy
+scikit-learn
+gensim
+sentence-transformers
+usearch
