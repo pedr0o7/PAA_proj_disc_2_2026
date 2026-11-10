@@ -3,3 +3,10 @@ scikit-learn
 gensim
 sentence-transformers
 usearch
+transformers
+torch
+pyarrow
+ragas==0.3.9
+langchain-huggingface
+langchain-community<0.4
+datasets

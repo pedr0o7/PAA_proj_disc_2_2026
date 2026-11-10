@@ -1,69 +1,56 @@
-"""Busca semântica interativa (sentence embeddings + HNSW) sobre passagens de textos.txt.
+"""RAG interativo: busca semântica em passagens da Wikipédia + resposta de um LLM local com citação das fontes.
 
-Na primeira execução amostra N passagens, gera os embeddings e salva em busca/cache_indice;
-nas seguintes, carrega do cache. Uso: consultar.py [--n 5000] [-p "pergunta"]
+Uso: consultar.py [--n 5000] [--k 3] [--llm HF_ID] [--sem-llm] [-p "pergunta"]
 """
 import argparse
-import json
+import sys
 import textwrap
-from pathlib import Path
 
-import numpy as np
-from sentence_transformers import SentenceTransformer
-from usearch.index import Index
+from rag import LLM, SistemaRAG
 
-from benchmark import TEXTOS, amostrar_passagens
-
-CACHE = Path(__file__).parent / "cache_indice"
-MODELO = "sentence-transformers/all-MiniLM-L6-v2"
+sys.stdout.reconfigure(encoding="utf-8")
 
 
-def carregar(n, semente, modelo):
-    CACHE.mkdir(exist_ok=True)
-    pass_arq = CACHE / f"passagens_{n}_{semente}.json"
-    emb_arq = CACHE / f"emb_{n}_{semente}.npy"
-    if pass_arq.exists() and emb_arq.exists():
-        passagens = json.loads(pass_arq.read_text(encoding="utf-8"))
-        return passagens, np.load(emb_arq)
-    print(f"Primeira execução: codificando {n} passagens (~{n // 43 // 60 + 1} min em CPU)...")
-    passagens = amostrar_passagens(TEXTOS, n, semente)
-    modelo.max_seq_length = 128
-    emb = modelo.encode(passagens, batch_size=64, normalize_embeddings=True, show_progress_bar=True).astype(np.float32)
-    pass_arq.write_text(json.dumps(passagens), encoding="utf-8")
-    np.save(emb_arq, emb)
-    return passagens, emb
+def imprimir(r, mostrar_trechos):
+    def bloco(texto):
+        return textwrap.fill(texto, 100, initial_indent="    ", subsequent_indent="    ")
 
-
-def responder(pergunta, modelo, indice, passagens, k):
-    q = modelo.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
-    achados = indice.search(q, k)
-    for pos, (chave, dist) in enumerate(zip(achados.keys, achados.distances), 1):
-        print(f"\n[{pos}] similaridade {1 - dist:.3f}")
-        print(textwrap.fill(passagens[int(chave)], 100, initial_indent="    ", subsequent_indent="    "))
+    if r["resposta"]:
+        print("\nResposta:")
+        print(bloco(r["resposta"]))
+    print("\nFontes:")
+    for i, t in enumerate(r["trechos"], 1):
+        marca = "*" if i in r["citados"] else " "
+        print(f" {marca}[{i}] {t['titulo']} - {t['url']} (similaridade {t['similaridade']:.3f})")
+        if mostrar_trechos or not r["resposta"]:
+            print(bloco(t["texto"]))
+    print(f"\nTempo: recuperação {r['tempo_recuperacao']:.2f}s | geração {r['tempo_geracao']:.1f}s"
+          f" | total {r['tempo_total']:.1f}s   (* = citada na resposta)")
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=5000, help="passagens indexadas")
     ap.add_argument("--semente", type=int, default=42)
-    ap.add_argument("--k", type=int, default=3, help="resultados por pergunta")
+    ap.add_argument("--shards", type=int, default=1, help="parquets da Wikipédia usados como fonte")
+    ap.add_argument("--k", type=int, default=3, help="trechos recuperados por pergunta")
     ap.add_argument("-p", "--pergunta", help="pergunta única (sem modo interativo)")
+    ap.add_argument("--llm", default=LLM, help="modelo local de geração (HF id)")
+    ap.add_argument("--sem-llm", action="store_true", help="só recupera trechos, sem gerar resposta")
+    ap.add_argument("--max-tokens", type=int, default=200)
+    ap.add_argument("--trechos", action="store_true", help="mostra o texto dos trechos recuperados")
     a = ap.parse_args()
 
-    modelo = SentenceTransformer(MODELO, device="cpu")
-    passagens, emb = carregar(a.n, a.semente, modelo)
-    indice = Index(ndim=emb.shape[1], metric="cos", connectivity=16, expansion_add=128, expansion_search=64)
-    indice.add(np.arange(len(emb)), emb)
-
+    sistema = SistemaRAG(a.n, a.semente, a.shards, None if a.sem_llm else a.llm, a.k, a.max_tokens)
     if a.pergunta:
-        responder(a.pergunta, modelo, indice, passagens, a.k)
+        imprimir(sistema.perguntar(a.pergunta), a.trechos)
         return
-    print(f"{len(passagens)} passagens indexadas. Pergunte em inglês; linha vazia ou 'sair' encerra.")
+    print(f"{len(sistema.passagens)} passagens indexadas. Pergunte em inglês; linha vazia ou 'sair' encerra.")
     while True:
         pergunta = input("\nPergunta> ").strip()
         if pergunta.lower() in ("", "sair", "exit"):
             break
-        responder(pergunta, modelo, indice, passagens, a.k)
+        imprimir(sistema.perguntar(pergunta), a.trechos)
 
 
 if __name__ == "__main__":
