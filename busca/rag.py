@@ -19,9 +19,18 @@ LLM = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
 PROMPT_SISTEMA = (
     "You answer questions using ONLY the numbered context passages. Reply in a short, fluent paragraph "
     "of plain prose (no lists, no markdown). After each claim, cite the passage number(s) in square "
-    "brackets, e.g. [1] or [2]. If the context does not contain the answer, say that the context is "
-    "insufficient."
+    "brackets, e.g. [1] or [2]. "
+    "⚠️ IMPORTANT: If the context does NOT contain relevant information to answer the question, "
+    "MUST say exactly: 'The provided context is insufficient to answer this question.' "
+    "Do NOT make up or infer answers from the context. Do NOT answer from your training data."
 )
+
+# Tentar importar BM25 para hybrid search; usar fallback se não disponível
+try:
+    from rank_bm25 import BM25Okapi
+    HAS_BM25 = True
+except ImportError:
+    HAS_BM25 = False
 
 
 class SistemaRAG:
@@ -33,6 +42,13 @@ class SistemaRAG:
         emb = self._embeddings(n, semente, n_shards)
         self.indice = Index(ndim=emb.shape[1], metric="cos", connectivity=16, expansion_add=128, expansion_search=64)
         self.indice.add(np.arange(len(emb)), emb)
+        
+        # Inicializar BM25 para hybrid search
+        self.bm25 = None
+        if HAS_BM25:
+            textos_tokenizados = [p["texto"].lower().split() for p in self.passagens]
+            self.bm25 = BM25Okapi(textos_tokenizados)
+        
         self.tok = AutoTokenizer.from_pretrained(llm) if llm else None
         self.lm = AutoModelForCausalLM.from_pretrained(llm, dtype=torch.float32).eval() if llm else None
 
@@ -48,9 +64,43 @@ class SistemaRAG:
         return emb
 
     def recuperar(self, pergunta):
+        """Recupera passagens usando hybrid search (BM25 + semântico) ou apenas semântico."""
+        if self.bm25 is not None:
+            return self._recuperar_hibrido(pergunta)
+        else:
+            return self._recuperar_semantico(pergunta)
+    
+    def _recuperar_semantico(self, pergunta):
+        """Busca apenas por similaridade semântica."""
         q = self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
         achados = self.indice.search(q, self.k)
         return [{**self.passagens[int(c)], "similaridade": float(1 - d)} for c, d in zip(achados.keys, achados.distances)]
+    
+    def _recuperar_hibrido(self, pergunta):
+        """Busca híbrida: combina BM25 (keyword) com semântico."""
+        # BM25: busca por palavras-chave
+        tokens = pergunta.lower().split()
+        scores_bm25 = self.bm25.get_scores(tokens)
+        indices_bm25 = np.argsort(scores_bm25)[::-1][:self.k * 2]  # Top 2*k
+        
+        # Semântico: busca por similaridade
+        q = self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
+        achados = self.indice.search(q, self.k * 2)
+        indices_semantico = np.array(achados.keys, dtype=int)
+        
+        # Combinar: documentos que aparecem em ambas as buscas têm prioridade
+        # Union de índices com pesos: semântico=0.6, BM25=0.4
+        scores_finais = {}
+        for idx in indices_semantico:
+            scores_finais[idx] = scores_finais.get(idx, 0) + 0.6
+        for idx in indices_bm25:
+            scores_finais[idx] = scores_finais.get(idx, 0) + 0.4
+        
+        # Ordenar por score final e pegar top k
+        indices_ordenados = sorted(scores_finais.keys(), key=lambda x: scores_finais[x], reverse=True)[:self.k]
+        
+        # Recalcular similaridade semântica para os documentos selecionados
+        return [{**self.passagens[int(idx)], "similaridade": float(scores_finais[idx])} for idx in indices_ordenados]
 
     def completar(self, msgs, max_tokens):
         ids = self.tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True)
