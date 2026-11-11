@@ -1,0 +1,313 @@
+{
+ "llm": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+ "k": 3,
+ "perguntas": 20,
+ "proprias": {
+  "hit_at_k": 1.0,
+  "mrr": 1.0,
+  "respostas_com_citacao": 0.45,
+  "citacao_da_fonte_correta": 0.45
+ },
+ "tempo_s": {
+  "tempo_recuperacao": {
+   "media": 0.04199568000040017,
+   "mediana": 0.021897499995247927,
+   "p95": 0.15612110000074608
+  },
+  "tempo_geracao": {
+   "media": 52.66335641000042,
+   "mediana": 32.582294900003035,
+   "p95": 189.31788270000106
+  },
+  "tempo_total": {
+   "media": 52.705352090000815,
+   "mediana": 32.63357334999819,
+   "p95": 189.35705099999905
+  }
+ },
+ "detalhe": [
+  {
+   "pergunta": "What is the name of the Surrey town center with the highest population density?",
+   "referencia": "Whalley",
+   "resposta": "The name of the Surrey town center with the highest population density is Whalley. This information can be found in contexts [1], [2], and [3].",
+   "fonte_esperada": "Whalley, Surrey",
+   "fontes": [
+    "Whalley, Surrey",
+    "Whalley, Surrey",
+    "Woollard"
+   ],
+   "citados": [
+    1,
+    2,
+    3
+   ],
+   "tempo_total": 20.989862900001754
+  },
+  {
+   "pergunta": "What is the name of the UK-based online poker room that provided a virtual reality poker experience with customizable 3D graphics and animated players?",
+   "referencia": "PKR.com",
+   "resposta": "The name of the UK-based online poker room that provided a virtual reality poker experience with customizable 3D graphics and animated players is PKR.com. This information is derived from the given context passages, specifically [1], which states \"PKR.com (also PKR) was an Alderney, UK-based online poker room...\" and [2], which explains the gameplay features of the site.",
+   "fonte_esperada": "PKR.com",
+   "fontes": [
+    "PKR.com",
+    "Hoyle Card Games",
+    "Yūsuke Numata"
+   ],
+   "citados": [
+    1,
+    2
+   ],
+   "tempo_total": 34.75094949999766
+  },
+  {
+   "pergunta": "What is the full title of the first solo album released by Maggie Bell?",
+   "referencia": "Queen of the Night",
+   "resposta": "The full title of the first solo album released by Maggie Bell is \"Queen of the Night\". This album was recorded in New York City with record producer Jerry Wexler.",
+   "fonte_esperada": "Maggie Bell",
+   "fontes": [
+    "Maggie Bell",
+    "Maggie Bell",
+    "Maggie Bell"
+   ],
+   "citados": [],
+   "tempo_total": 21.62173530000291
+  },
+  {
+   "pergunta": "What is the name of the mountain range where the Orange River originates?",
+   "referencia": "The Orange River originates from the Maloti Mountains.",
+   "resposta": "The name of the mountain range where the Orange River originates is the Maloti Mountains. This information can be found in passage [1], which states, \"The sources of two of the principal rivers in South Africa, the Orange River, known as Senqu in Lesotho, and the Tugela River, are in these mountains.\"",
+   "fonte_esperada": "Maloti Mountains",
+   "fontes": [
+    "Maloti Mountains",
+    "Anadyr (river)",
+    "Pine Nut Mountains"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 29.686285099996894
+  },
+  {
+   "pergunta": "What is the name of the Serie C club where Cristian Brocchi has been appointed as the new head coach?",
+   "referencia": "Monza",
+   "resposta": "The name of the Serie C club where Cristian Brocchi has been appointed as the new head coach is Monza. This information can be found in Context [2], which states \"In October 2018, Brocchi was named the new head coach of Serie C club Monza, under the ownership of the former Milan duo of Silvio Berlusconi and Adriano Galliani.\"",
+   "fonte_esperada": "Cristian Brocchi",
+   "fontes": [
+    "Cristian Brocchi",
+    "Cristian Brocchi",
+    "Altona East Phoenix SC"
+   ],
+   "citados": [
+    2
+   ],
+   "tempo_total": 38.69049680000171
+  },
+  {
+   "pergunta": "What is the frequency of Haplogroup F1b in Mongolians, Kazakhs, Uyghurs, and Japanese?",
+   "referencia": "F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, with percentages ranging from 20% to 45%.",
+   "resposta": "According to the provided context, Haplogroup F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, such as Mongols, Kazakhs, Uyghurs, and Japanese. Therefore, the frequency of Haplogroup F1b in Mongolians, Kazakhs, Uyghurs, and Japanese is approximately 31%.",
+   "fonte_esperada": "Haplogroup F (mtDNA)",
+   "fontes": [
+    "Haplogroup F (mtDNA)",
+    "Haplogroup F (mtDNA)",
+    "Haplogroup O-M175"
+   ],
+   "citados": [],
+   "tempo_total": 37.812953200002084
+  },
+  {
+   "pergunta": "Who is Billy Hinsche?",
+   "referencia": "Billy Hinsche was an American musician of Filipino descent who played guitar in The Beach Boys' backing band and was also a composer for television.",
+   "resposta": "Billy Hinsche is a Filipino-American musician who gained recognition through his association with The Beach Boys. Born in Manila, Philippines, Hinsche grew up in Beverly Hills, USA, and attended Loyola High School. He initially worked as a session musician for The Beach Boys before joining them as a vocalist and multi-instrumentalist from 1971 to 1977 and 1982 to 1996. Hinsche pursued higher education at the University of California, Los Angeles, School of Theater, Film and Television, earning a B.F.A. in 1974. Known for his contributions to various bands, including Uriah Heep and Savoy Brown, Hinsche is perhaps most famous for his time with The Beach Boys and his collaborations with Ozzy Osbourne's band.",
+   "fonte_esperada": "Billy Hinsche",
+   "fontes": [
+    "Billy Hinsche",
+    "Billy Hinsche",
+    "John Sinclair (musician)"
+   ],
+   "citados": [],
+   "tempo_total": 129.07025389999762
+  },
+  {
+   "pergunta": "What role do viral glycoproteins play in immune response and how do they contribute to the maturation process of enveloped viruses?",
+   "referencia": "Viral glycoproteins play significant roles in immunity and infection by interacting with host cell receptors and facilitating entry into host cells. During the maturation process of enveloped viruses, viral glycoproteins integrate into membrane vesicles containing viral core components, allowing for discharge",
+   "resposta": "Viral glycoproteins play a crucial role in both the immune response and the maturation process of enveloped viruses. They act as antigens, triggering an immune response against the virus upon interaction with antibodies or T lymphocytes. Additionally, viral glycoproteins facilitate the attachment of the virus to its target host cell through specific receptors, allowing the virus to gain entry into the host cell. Furthermore, certain viral glycoproteins, like those found in HIV, are involved in the activation of dendritic cells, which then present viral antigens to T cells, contributing to the initiation of an antiviral immune response. In the case of enveloped viruses, viral glycoproteins help maintain the integrity of the envelope during budding, ensuring proper transmission of the virus from one host cell to another. Overall, viral glycoproteins are essential components of both the immune response and the maturation process of enveloped viruses, enabling them to effectively interact with their hosts and propagate.",
+   "fonte_esperada": "Viral envelope",
+   "fontes": [
+    "Viral envelope",
+    "Viral envelope",
+    "Viral envelope"
+   ],
+   "citados": [],
+   "tempo_total": 189.35705099999905
+  },
+  {
+   "pergunta": "What are the main economic activities in Mundo Novo, Goiás?",
+   "referencia": "The main economic activities in Mundo Novo, Goiás include cattle raising, agriculture, services, government employment, wood extraction, and modest transformation industries.",
+   "resposta": "The main economic activities in Mundo Novo, Goiás, can be inferred from the given contexts. Firstly, it is mentioned that Mundo Novo is located in the São Miguel do Araguaia Microregion in the extreme north-west of the state. This suggests that the area might have some agricultural or mining industries due to its geographical location near rivers like the Rio Palmital and the Araguaia River. Secondly, the fact that Mundo Novo is ranked low on various development indices indicates that the region faces significant challenges in terms of poverty and economic growth. Lastly, the comparison with other parts of the state highlights the stark contrast between the prosperous areas like Luanda and the less developed ones such as Mundo Novo. Therefore, the main economic activities in Mundo Novo, Goiás, seem to revolve around agriculture, mining, and possibly small-scale manufacturing, but these sectors may face significant obstacles due to the region's underdeveloped infrastructure and lack of resources",
+   "fonte_esperada": "Mundo Novo, Goiás",
+   "fontes": [
+    "Mundo Novo, Goiás",
+    "Mundo Novo, Goiás",
+    "Angola"
+   ],
+   "citados": [],
+   "tempo_total": 210.32444260000193
+  },
+  {
+   "pergunta": "What is the stated mission of the Dublin Docklands Development Authority?",
+   "referencia": "To develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration, ensuring high standards of access to education, employment, housing, and social amenities while contributing significantly to the social and economic prosperity of Dublin and Ireland.",
+   "resposta": "The stated mission of the Dublin Docklands Development Authority is to develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration, ensuring the highest standards of access to education, employment, housing, and social amenities while making a significant contribution to the social and economic prosperity of Dublin and the whole of Ireland.",
+   "fonte_esperada": "Dublin Docklands Development Authority",
+   "fontes": [
+    "Dublin Docklands Development Authority",
+    "Dublin Docklands Development Authority",
+    "Dublin Docklands Development Authority"
+   ],
+   "citados": [],
+   "tempo_total": 74.42544510000153
+  },
+  {
+   "pergunta": "Who does Philip encounter at the gas station after waking up with no memory of Peaceful Valley?",
+   "referencia": "Philip encounters Ellen at the gas station after waking up with no memory of Peaceful Valley.",
+   "resposta": "[1] Philip encounters Ellen, the proprietor of the gas station, after waking up with no memory of Peaceful Valley.",
+   "fonte_esperada": "Valley of the Shadow",
+   "fontes": [
+    "Valley of the Shadow",
+    "Valley of the Shadow",
+    "Valley of the Shadow"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 37.6639811999994
+  },
+  {
+   "pergunta": "What was the name of the society founded by the descendants of the passengers of the Winthrop Fleet?",
+   "referencia": "The Winthrop Society",
+   "resposta": "The name of the society founded by the descendants of the passengers of the Winthrop Fleet is the Winthrop Society. This society is mentioned in contexts [1] and [2], where it is described as a hereditary organization made up of the descendants of those who arrived on the Winthrop Fleet or other Great Migration ships before 1634.",
+   "fonte_esperada": "Robert Seeley",
+   "fontes": [
+    "Robert Seeley",
+    "Robert Seeley",
+    "Lockeport"
+   ],
+   "citados": [
+    1,
+    2
+   ],
+   "tempo_total": 30.516197199998714
+  },
+  {
+   "pergunta": "Who are the Serbian twin brothers who played as defenders for FK Čukarički?",
+   "referencia": "The Serbian twin brothers who played as defenders for FK Čukarički were Milan Dudić and Milivoje Dudić.",
+   "resposta": "The Serbian twin brothers who played as defenders for FK Čukarički were Stojan Stole Aranđelović and Stole Dimitrievski.",
+   "fonte_esperada": "Milan Dudić",
+   "fontes": [
+    "Milan Dudić",
+    "Stole",
+    "Milko Djurovski"
+   ],
+   "citados": [],
+   "tempo_total": 20.434709799999837
+  },
+  {
+   "pergunta": "What is the function of the P2Y12 receptor in platelet aggregation?",
+   "referencia": "The P2Y12 receptor plays a role in platelet aggregation, making it a potential therapeutic target for treating thromboembolic disorders such as heart attacks and strokes.",
+   "resposta": "The P2Y12 receptor plays a crucial role in platelet aggregation through its involvement in the activation of platelets. It is primarily expressed on the surface of blood platelets and acts as a chemoreceptor for adenosine diphosphate (ADP), leading to platelet aggregation and thrombosis. Additionally, the P2Y12 receptor is also implicated in the regulation of microglial functions in the central nervous system, particularly in monitoring neuronal functions and promoting microglial neuroprotection.",
+   "fonte_esperada": "P2Y12",
+   "fontes": [
+    "P2Y12",
+    "P2Y12",
+    "Pleckstrin homology domain"
+   ],
+   "citados": [],
+   "tempo_total": 40.681597599999805
+  },
+  {
+   "pergunta": "What is the full name of the company that operates under the name S. P. Richards Company?",
+   "referencia": "S. P. Richards Company",
+   "resposta": "S. P. Richards Company operates under the full name of Genuine Parts Company.",
+   "fonte_esperada": "Genuine Parts Company",
+   "fontes": [
+    "Genuine Parts Company",
+    "List of largest United Kingdom–based law firms by revenue",
+    "Clif Bar"
+   ],
+   "citados": [],
+   "tempo_total": 14.409006900001259
+  },
+  {
+   "pergunta": "What is the seating capacity of the Škoda 1000 MB?",
+   "referencia": "The Škoda 1000 MB had a seating capacity of five passengers.",
+   "resposta": "The seating capacity of the Škoda 1000 MB is 4 people. This information can be found in [1], where it states \"By the late 1960s, Škoda decided it was time for an update of the 'MB series...\".",
+   "fonte_esperada": "Škoda 1000 MB",
+   "fontes": [
+    "Škoda 1000 MB",
+    "Škoda 1000 MB",
+    "Škoda 1000 MB"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 28.220651000003272
+  },
+  {
+   "pergunta": "What alternative lyrics were used in modern performances of the song to replace the word \"nigger\"?",
+   "referencia": "In modern performances, the line \"He's been roasting peanuts\" has been used instead of the original word \"nigger\".",
+   "resposta": "In modern performances of the song, alternative lyrics were used to replace the word \"nigger,\" including \"He's been tanning Negroes\" (Jonathan King version), \"He's been roasting peanuts\" (Stephen Fry version), and \"Fuck That\" (hard rock blues song category). These changes reflect contemporary attitudes towards racial sensitivity and social acceptability.",
+   "fonte_esperada": "The Sun Has Got His Hat On",
+   "fontes": [
+    "The Sun Has Got His Hat On",
+    "The Sun Has Got His Hat On",
+    "The History of Rock"
+   ],
+   "citados": [],
+   "tempo_total": 29.068099700001767
+  },
+  {
+   "pergunta": "Who is the director of the 1997 film Paradise Road?",
+   "referencia": "The director of the 1997 film Paradise Road is Richard Attenborough.",
+   "resposta": "The director of the 1997 film Paradise Road is Martin Meader. The relevant passage numbers are [1] and [2].",
+   "fonte_esperada": "Paradise Road (1997 film)",
+   "fontes": [
+    "Paradise Road (1997 film)",
+    "Paradise (video game)",
+    "A Great and Terrible Beauty"
+   ],
+   "citados": [
+    1,
+    2
+   ],
+   "tempo_total": 17.46993470000598
+  },
+  {
+   "pergunta": "What branch of service did Richard A. Anderson enlist in?",
+   "referencia": "Anderson enlisted in the Marine Corps.",
+   "resposta": "Anderson enlisted in the Marine Corps on 8 April 1968.",
+   "fonte_esperada": "Richard A. Anderson",
+   "fontes": [
+    "Richard A. Anderson",
+    "James Anderson Jr.",
+    "Richard A. Anderson"
+   ],
+   "citados": [],
+   "tempo_total": 12.8402688999995
+  },
+  {
+   "pergunta": "What year did Horace Mann School begin operating on Kearsarge Avenue?",
+   "referencia": "1929",
+   "resposta": "[1] By 1890, the school was relocated from 63 Warrenton Street to 178 Newbury Street. From 1929 onwards, Horace Mann School operated on Kearsarge Avenue for the next forty-five years. Therefore, the year Horace Mann School began operating on Kearsarge Avenue is 1929.",
+   "fonte_esperada": "Horace Mann School for the Deaf and Hard of Hearing",
+   "fontes": [
+    "Horace Mann School for the Deaf and Hard of Hearing",
+    "Horace Mann School for the Deaf and Hard of Hearing",
+    "Wausau School District"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 36.073119400003634
+  }
+ ]
+}
