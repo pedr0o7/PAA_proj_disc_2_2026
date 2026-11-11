@@ -17,12 +17,12 @@ MODELO_EMB = "sentence-transformers/all-MiniLM-L6-v2"
 LLM = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
 
 PROMPT_SISTEMA = (
-    "You answer questions using ONLY the numbered context passages. Reply in a short, fluent paragraph "
-    "of plain prose (no lists, no markdown). After each claim, cite the passage number(s) in square "
-    "brackets, e.g. [1] or [2]. "
-    "⚠️ IMPORTANT: If the context does NOT contain relevant information to answer the question, "
-    "MUST say exactly: 'The provided context is insufficient to answer this question.' "
-    "Do NOT make up or infer answers from the context. Do NOT answer from your training data."
+    "You are a helpful assistant that answers questions ONLY using the provided numbered context passages. "
+    "You MUST cite which passage supports each claim using square brackets, e.g. [1] or [2]. "
+    "Reply in a short, fluent paragraph of plain prose (no lists, no markdown). "
+    "⚠️ CRITICAL: If the context does NOT contain relevant information to answer the question, "
+    "you MUST respond EXACTLY: 'The provided context is insufficient to answer this question.' "
+    "Do NOT make up or infer answers. Do NOT use your training data. Only use the context provided."
 )
 
 # Tentar importar BM25 para hybrid search; usar fallback se não disponível
@@ -81,25 +81,38 @@ class SistemaRAG:
         # BM25: busca por palavras-chave
         tokens = pergunta.lower().split()
         scores_bm25 = self.bm25.get_scores(tokens)
-        indices_bm25 = np.argsort(scores_bm25)[::-1][:self.k * 2]  # Top 2*k
+        
+        # Normalizar scores BM25 para [0, 1]
+        max_bm25 = max(scores_bm25) if max(scores_bm25) > 0 else 1
+        scores_bm25_norm = scores_bm25 / max_bm25
         
         # Semântico: busca por similaridade
         q = self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
-        achados = self.indice.search(q, self.k * 2)
+        achados = self.indice.search(q, self.k * 3)  # Buscar 3*k para melhor combinação
         indices_semantico = np.array(achados.keys, dtype=int)
+        distances_semantico = np.array(achados.distances, dtype=np.float32)
+        scores_semantico = 1 - distances_semantico  # Converter distância em similaridade
         
-        # Combinar: documentos que aparecem em ambas as buscas têm prioridade
-        # Union de índices com pesos: semântico=0.6, BM25=0.4
+        # Combinar: score final = média ponderada (semântico=0.7, BM25=0.3)
         scores_finais = {}
-        for idx in indices_semantico:
-            scores_finais[idx] = scores_finais.get(idx, 0) + 0.6
-        for idx in indices_bm25:
-            scores_finais[idx] = scores_finais.get(idx, 0) + 0.4
+        
+        # Adicionar scores semânticos
+        for idx, score in zip(indices_semantico, scores_semantico):
+            idx = int(idx)
+            scores_finais[idx] = 0.7 * score
+        
+        # Adicionar/combinar com scores BM25
+        for idx, score_bm25 in enumerate(scores_bm25_norm):
+            if score_bm25 > 0:
+                if idx in scores_finais:
+                    scores_finais[idx] = 0.7 * scores_finais[idx] / 0.7 + 0.3 * score_bm25  # Normalizar
+                else:
+                    scores_finais[idx] = 0.3 * score_bm25
         
         # Ordenar por score final e pegar top k
         indices_ordenados = sorted(scores_finais.keys(), key=lambda x: scores_finais[x], reverse=True)[:self.k]
         
-        # Recalcular similaridade semântica para os documentos selecionados
+        # Retornar com score final normalizado
         return [{**self.passagens[int(idx)], "similaridade": float(scores_finais[idx])} for idx in indices_ordenados]
 
     def completar(self, msgs, max_tokens):
