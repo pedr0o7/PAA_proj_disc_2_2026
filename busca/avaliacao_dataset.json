@@ -1,0 +1,142 @@
+[
+ {
+  "pergunta": "What is the name of the Surrey town center with the highest population density?",
+  "referencia": "Whalley",
+  "titulo_esperado": "Whalley, Surrey",
+  "url_esperada": "https://en.wikipedia.org/wiki/Whalley%2C%20Surrey",
+  "contexto_referencia": "Whalley is the most densely populated and urban of the six town centres in Surrey, British Columbia, Canada.  It encompasses City Centre, the city's central business district, and is home to the Surrey City Hall, the main branch of Surrey Libraries, Central City, SFU Surrey and the site of Kwantlen Polytechnic University's (KPU) Civic Plaza campus. It is the only town centre in Surrey served by Metro Vancouver's SkyTrain rapid transit system. Expo Line stations serving Whalley include Scott Road, Gateway, Surrey Central and King George."
+ },
+ {
+  "pergunta": "What is the name of the UK-based online poker room that provided a virtual reality poker experience with customizable 3D graphics and animated players?",
+  "referencia": "PKR.com",
+  "titulo_esperado": "PKR.com",
+  "url_esperada": "https://en.wikipedia.org/wiki/PKR.com",
+  "contexto_referencia": "PKR.com (also PKR) was an Alderney, UK-based online poker room that allowed users to play poker in a virtual reality setting.  The site customized 3D graphics and player character animation during poker play.  The characters incorporated body language, expressions, chip tricks and poker tells to make the game more realistic."
+ },
+ {
+  "pergunta": "What is the full title of the first solo album released by Maggie Bell?",
+  "referencia": "Queen of the Night",
+  "titulo_esperado": "Maggie Bell",
+  "url_esperada": "https://en.wikipedia.org/wiki/Maggie%20Bell",
+  "contexto_referencia": "First solo album\nStone the Crows split up in 1973, after Leslie Harvey's accidental death from electrocution on 3 May 1972. Harvey had been an integral part of the band and its music. Peter Grant remained as Bell's manager after the split, and along with Mark London offered to help Bell record a solo album. She subsequently recorded two further albums for Atlantic Records, one produced by Felix Pappalardi and the other produced by Felix Cavaliere. Neither has yet been released. Grant then oversaw her first solo album release Queen of the Night (1974), which was recorded in New York City with record producer Jerry Wexler."
+ },
+ {
+  "pergunta": "What is the name of the mountain range where the Orange River originates?",
+  "referencia": "The Orange River originates from the Maloti Mountains.",
+  "titulo_esperado": "Maloti Mountains",
+  "url_esperada": "https://en.wikipedia.org/wiki/Maloti%20Mountains",
+  "contexto_referencia": "The sources of two of the principal rivers in South Africa, the Orange River, known as Senqu in Lesotho, and the Tugela River, are in these mountains. Tributaries of the Caledon River, known as Mohokare in Lesotho, which forms the country's western border, also rise here, and the Makhaleng River rises on the flanks of Machache ()."
+ },
+ {
+  "pergunta": "What is the name of the Serie C club where Cristian Brocchi has been appointed as the new head coach?",
+  "referencia": "Monza",
+  "titulo_esperado": "Cristian Brocchi",
+  "url_esperada": "https://en.wikipedia.org/wiki/Cristian%20Brocchi",
+  "contexto_referencia": "Monza \nIn October 2018, Brocchi was named the new head coach of Serie C club Monza, under the ownership of the former Milan duo of Silvio Berlusconi and Adriano Galliani. After failing promotion to the play-offs in his first season in charge, he successfully guided Monza to win the 2019–20 Serie C title. He was, therefore, confirmed for a third season at the helm of the club, with the explicit goal to bring the Brianzoli to Serie A for the first time in their history."
+ },
+ {
+  "pergunta": "What is the frequency of Haplogroup F1b in Mongolians, Kazakhs, Uyghurs, and Japanese?",
+  "referencia": "F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, with percentages ranging from 20% to 45%.",
+  "titulo_esperado": "Haplogroup F (mtDNA)",
+  "url_esperada": "https://en.wikipedia.org/wiki/Haplogroup%20F%20%28mtDNA%29",
+  "contexto_referencia": "F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, such as Mongols, Kazakhs, Uyghurs, and Japanese. It also has been found among the Yi people. There are odd exclaves of F1b in Gaininsk Bashkirs of Perm Oblast and Croats of Hvar Island."
+ },
+ {
+  "pergunta": "Who is Billy Hinsche?",
+  "referencia": "Billy Hinsche was an American musician of Filipino descent who played guitar in The Beach Boys' backing band and was also a composer for television.",
+  "titulo_esperado": "Billy Hinsche",
+  "url_esperada": "https://en.wikipedia.org/wiki/Billy%20Hinsche",
+  "contexto_referencia": "1951 births\n2021 deaths\nAmerican musicians of Filipino descent\nAmerican pop guitarists\nAmerican pop rock musicians\nAmerican pop rock singers\nAmerican television composers\nBurials at Westwood Village Memorial Park Cemetery\nFilipino emigrants to the United States\nUCLA Film School alumni\nMusicians from Manila\nThe Beach Boys backing band members\nAmerican male guitarists\n20th-century American guitarists\n20th-century American male singers\n20th-century American singers"
+ },
+ {
+  "pergunta": "What role do viral glycoproteins play in immune response and how do they contribute to the maturation process of enveloped viruses?",
+  "referencia": "Viral glycoproteins play significant roles in immunity and infection by interacting with host cell receptors and facilitating entry into host cells. During the maturation process of enveloped viruses, viral glycoproteins integrate into membrane vesicles containing viral core components, allowing for discharge",
+  "titulo_esperado": "Viral envelope",
+  "url_esperada": "https://en.wikipedia.org/wiki/Viral%20envelope",
+  "contexto_referencia": "The envelopes are typically derived from portions of the host cell membranes (phospholipids and proteins), but include some viral glycoproteins. One of the main parts of human pathogenic viruses is glycoprotein. They have been shown to play significant roles in immunity and infection. Viral glycoproteins, a new class of cellular inhibitory proteins has been discovered. These include the E3 ubiquitin ligases of the membrane-associated RING-CH (MARCH) family, which among other things, inhibits the expression of cell surface proteins implicated in adaptive immunity. Being made up mostly of host membrane, the viral envelope can also have the proteins associated with the host cell within their membrane after budding. Many enveloped viruses mature by budding at the plasma membrane, which allows them to be discharged from infected cells. During this procedure, viral transmembrane proteins, also known as spike proteins, are integrated into membrane vesicles containing components of the viral core (capsid)."
+ },
+ {
+  "pergunta": "What are the main economic activities in Mundo Novo, Goiás?",
+  "referencia": "The main economic activities in Mundo Novo, Goiás include cattle raising, agriculture, services, government employment, wood extraction, and modest transformation industries.",
+  "titulo_esperado": "Mundo Novo, Goiás",
+  "url_esperada": "https://en.wikipedia.org/wiki/Mundo%20Novo%2C%20Goi%C3%A1s",
+  "contexto_referencia": "The economy is based on cattle raising, agriculture, services, government employment, wood extraction, and modest transformation industries.  In 2007 there were 5 industrial establishments and 59 retail establishments.  There was one financial institution: BRADESCO S.A.  The sectors employing most of the workers (2005) were: public administration with 198 salaried workers, commerce with 106 workers, and agriculture and forestry with 53 workers.  In 2007 there were 218 automobiles."
+ },
+ {
+  "pergunta": "What is the stated mission of the Dublin Docklands Development Authority?",
+  "referencia": "To develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration, ensuring high standards of access to education, employment, housing, and social amenities while contributing significantly to the social and economic prosperity of Dublin and Ireland.",
+  "titulo_esperado": "Dublin Docklands Development Authority",
+  "url_esperada": "https://en.wikipedia.org/wiki/Dublin%20Docklands%20Development%20Authority",
+  "contexto_referencia": "History\nThe stated mission of the DDDA was to 'develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration – one in which the whole community enjoys the highest standards of access to education, employment, housing and social amenity and which delivers a major contribution to the social and economic prosperity of Dublin and the whole of Ireland'."
+ },
+ {
+  "pergunta": "Who does Philip encounter at the gas station after waking up with no memory of Peaceful Valley?",
+  "referencia": "Philip encounters Ellen at the gas station after waking up with no memory of Peaceful Valley.",
+  "titulo_esperado": "Valley of the Shadow",
+  "url_esperada": "https://en.wikipedia.org/wiki/Valley%20of%20the%20Shadow",
+  "contexto_referencia": "Once Philip and Ellen are outside the town limits, she shows him that the book is blank, then uses a device to de-materialize him. Ellen was a plant, Philip's entire escape a test. The elders, revived by the technology, claim his decision to create and use a gun confirms their belief that the people of Peaceful Valley are the only ones fit to use the alien technology. Ellen confesses her involvement was not entirely a deception, implying that her feelings for him were real. The elders \"execute\" Philip by rendering him unconscious, erasing his memories of Peaceful Valley, and returning him and his car to the gas station. When he wakes up, the attendant has just finished filling his tank. He asks for directions and drives out of town, experiencing a moment of déjà vu when he sees Ellen, who has tears in her eyes."
+ },
+ {
+  "pergunta": "What was the name of the society founded by the descendants of the passengers of the Winthrop Fleet?",
+  "referencia": "The Winthrop Society",
+  "titulo_esperado": "Robert Seeley",
+  "url_esperada": "https://en.wikipedia.org/wiki/Robert%20Seeley",
+  "contexto_referencia": "External links\nThe Pequot War from The Society of Colonial Wars in the State of Connecticut\n1736 version of John Mason's account of the Pequot War\nThe Winthrop Society is a hereditary organization made up of the descendants those who arrived on the Winthrop Fleet or other Great Migration ships before 1634.\nPassenger list of the Winthrop Fleet (spelling is Seely on this list)"
+ },
+ {
+  "pergunta": "Who are the Serbian twin brothers who played as defenders for FK Čukarički?",
+  "referencia": "The Serbian twin brothers who played as defenders for FK Čukarički were Milan Dudić and Milivoje Dudić.",
+  "titulo_esperado": "Milan Dudić",
+  "url_esperada": "https://en.wikipedia.org/wiki/Milan%20Dudi%C4%87",
+  "contexto_referencia": "1979 births\nLiving people\nFootballers from Kraljevo\nSerbian men's footballers\nFK Sloga Kraljevo players\nFK Čukarički players\nRed Star Belgrade footballers\nFC Red Bull Salzburg players\nSK Sturm Graz players\nAustrian Football Bundesliga players\nExpatriate men's footballers in Austria\n2006 FIFA World Cup players\nSerbia and Montenegro men's international footballers\nSerbian expatriate men's footballers\nSerbian expatriate sportspeople in Austria\nMen's association football defenders\nSerbia and Montenegro men's footballers\nSerbian twins"
+ },
+ {
+  "pergunta": "What is the function of the P2Y12 receptor in platelet aggregation?",
+  "referencia": "The P2Y12 receptor plays a role in platelet aggregation, making it a potential therapeutic target for treating thromboembolic disorders such as heart attacks and strokes.",
+  "titulo_esperado": "P2Y12",
+  "url_esperada": "https://en.wikipedia.org/wiki/P2Y12",
+  "contexto_referencia": "P2Y12  is a chemoreceptor for adenosine diphosphate (ADP) that belongs to the Gi class of a group of G protein-coupled (GPCR) purinergic receptors. This P2Y receptor family has several receptor subtypes with different pharmacological selectivity, which overlaps in some cases, for various adenosine and uridine nucleotides. The P2Y12 receptor is involved in platelet aggregation and is thus a biological target for the treatment of thromboembolisms and other clotting disorders. Two transcript variants encoding the same isoform have been identified for this gene."
+ },
+ {
+  "pergunta": "What is the full name of the company that operates under the name S. P. Richards Company?",
+  "referencia": "S. P. Richards Company",
+  "titulo_esperado": "Genuine Parts Company",
+  "url_esperada": "https://en.wikipedia.org/wiki/Genuine%20Parts%20Company",
+  "contexto_referencia": "Office products\nThe Office Products Group, which operates under the name S. P. Richards Company, distributes more than 62,000 items to over 6,300 resellers and distributors throughout the United States and Canada from a network of 45 distribution centers. Customers include independently owned office product dealers, large contract stationers, national office supply superstores, mail order distributors, internet resellers, college bookstores, office furniture dealers, janitorial and sanitation supply distributors, safety product resellers and food service distributors."
+ },
+ {
+  "pergunta": "What is the seating capacity of the Škoda 1000 MB?",
+  "referencia": "The Škoda 1000 MB had a seating capacity of five passengers.",
+  "titulo_esperado": "Škoda 1000 MB",
+  "url_esperada": "https://en.wikipedia.org/wiki/%C5%A0koda%201000%20MB",
+  "contexto_referencia": "1000 MB was a stylish four-door saloon, measuring 13 feet 8 inches in length and 5 feet 4 inches in width, with a wheelbase of 7 feet 10 inches. It featured a steeply sloping nose flanked by rounded front wings (not unlike the Ford Anglia 105E of the time). Being a rear-engined car, the 1000 MB's radiator and (engine-driven) cooling fan were situated in the rear engine compartment, so a series of slats were cut into each rear wing and the rear panel to increase the flow of air that was needed for cooling the engine. Apart from these vents, everything else in the 1000 MB's styling was conventional, undoubtedly in an attempt to appeal the conservative-minded buyers in export countries like the UK. The car was highly successful both for the Škoda Works and the Czechoslovak economy in general."
+ },
+ {
+  "pergunta": "What alternative lyrics were used in modern performances of the song to replace the word \"nigger\"?",
+  "referencia": "In modern performances, the line \"He's been roasting peanuts\" has been used instead of the original word \"nigger\".",
+  "titulo_esperado": "The Sun Has Got His Hat On",
+  "url_esperada": "https://en.wikipedia.org/wiki/The%20Sun%20Has%20Got%20His%20Hat%20On",
+  "contexto_referencia": "Use of the word \"nigger\" was considered socially acceptable by British audiences in the 1930s, but is generally regarded as offensive today. The word is found in both the Ambrose and Henry Hall recordings of the song. In the Jonathan King version, released in 1971 under the artist name \"Nemo\", the line was changed to \"He's been tanning Negroes\". Modern performances of the song have instead included lines such as \"He's been roasting peanuts\" (written by Stephen Fry for his 1984 revival of Me and My Girl)."
+ },
+ {
+  "pergunta": "Who is the director of the 1997 film Paradise Road?",
+  "referencia": "The director of the 1997 film Paradise Road is Richard Attenborough.",
+  "titulo_esperado": "Paradise Road (1997 film)",
+  "url_esperada": "https://en.wikipedia.org/wiki/Paradise%20Road%20%281997%20film%29",
+  "contexto_referencia": "According to the media information kit for the film, Martin Meader and David Giles researched the story from 1991 and met with survivors from the camp and choir. Meader and Giles wrote the original screenplay, which was titled \"A Voice Cries Out\". Graeme Rattigan then joined Meader and Giles and together the three travelled the world, raising $8.275 million for the film. They met Beresford in London and he immediately became interested in the project. Together with Village Roadshow, Beresford took over the film, re-wrote the script and renamed the project Paradise Road."
+ },
+ {
+  "pergunta": "What branch of service did Richard A. Anderson enlist in?",
+  "referencia": "Anderson enlisted in the Marine Corps.",
+  "titulo_esperado": "Richard A. Anderson",
+  "url_esperada": "https://en.wikipedia.org/wiki/Richard%20A.%20Anderson",
+  "contexto_referencia": "Anderson enlisted in the Marine Corps in Houston on 8 April 1968. Upon completion of recruit training with the 2d Recruit Training Battalion, Marine Corps Recruit Depot, San Diego, California, he received individual combat training with the 1st Battalion, 2d Infantry Training Regiment, Marine Corps Base, Camp Pendleton, California, and returned to San Diego to attend Sea School. Anderson was promoted to Private First Class (PFC) effective 1 July 1968."
+ },
+ {
+  "pergunta": "What year did Horace Mann School begin operating on Kearsarge Avenue?",
+  "referencia": "1929",
+  "titulo_esperado": "Horace Mann School for the Deaf and Hard of Hearing",
+  "url_esperada": "https://en.wikipedia.org/wiki/Horace%20Mann%20School%20for%20the%20Deaf%20and%20Hard%20of%20Hearing",
+  "contexto_referencia": "By 1875, the number of students attending Horace Mann School had increased and a larger space was required. As a result, the school was moved to 63 Warrenton Street. In 1890, the school was relocated again.  From 1890-1929, HMS was located at 178 Newbury Street. After nearly forty years on Newbury Street, in 1929, Horace Mann School began to operate out of the Roxbury section of Boston on Kearsarge Avenue where it remained for the next forty-five years. Finally, in 1975, another building was selected to house the school. Since 1975 and for the last 42 years, Horace Mann School has been and is currently located at 40 Armington Street, Allston, MA."
+ }
+]
