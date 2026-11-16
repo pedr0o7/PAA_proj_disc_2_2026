@@ -1,0 +1,13 @@
+# Arquivos e diretórios a serem ignorados pelo Git
+
+# Ambiente virtual
+.venv/
+# Arquivo de variáveis de ambiente
+.env
+# Cache do Python
+__pycache__/
+*.pyc
+*.py[cod]
+# Cache específico do projeto
+busca/__pycache__/
+busca/cache_indice/

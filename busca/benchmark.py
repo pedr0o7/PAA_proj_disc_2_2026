@@ -12,6 +12,10 @@ import re
 import time
 from pathlib import Path
 
+from configuracao_hf import configurar_huggingface
+
+configurar_huggingface()
+
 import numpy as np
 
 RAIZ = Path(__file__).resolve().parent.parent
@@ -143,10 +147,15 @@ def metodo_word2vec(passagens, consultas, k, dim=100, epocas=5):
 
 
 def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64):
+    from acesso_hf import carregar_modelo, preparar_acesso_hub
     from sentence_transformers import SentenceTransformer
     from usearch.index import Index
 
-    modelo = SentenceTransformer(modelo_nome, device="cpu")
+    offline = preparar_acesso_hub()
+    modelo = carregar_modelo(
+        f"o modelo de embeddings {modelo_nome}", SentenceTransformer, modelo_nome,
+        device="cpu", local_files_only=offline,
+    )
     modelo.max_seq_length = 128
     t = time.perf_counter()
     mat = modelo.encode(passagens, batch_size=tamanho_lote, normalize_embeddings=True, show_progress_bar=False)

@@ -102,12 +102,17 @@ de espaço adicional para os índices SQLite e textos extraídos. A indexação 
 feita em disco para reduzir o consumo de memória. Pode demorar bastante.
 
 ```powershell
+& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m pip install -r dados\requirements.txt
 & "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" dados\coletar_ingles.py --contato "seu-email@exemplo.com" --profundidade 2
 ```
 
-O cache fica em `dados\cache_ingles`. O programa verifica o tamanho e o checksum
-dos arquivos; se um download for interrompido, pode ser retomado com o mesmo
-comando, desde que o servidor aceite requisições parciais. Se a construção do
+O manifesto e os arquivos antigos ficam em `dados\cache_ingles`; novos shards
+usam o cache do Hugging Face, compartilhado com a busca. Configure o acesso
+conforme o README principal. O programa verifica tamanho e checksum: parciais
+antigos `.part` são retomados pelo coletor usando HTTP público, quando o
+servidor aceita requisições parciais; novos downloads seguem as regras do Hub.
+No modo offline são necessários o manifesto, os shards e os dumps completos;
+parciais não são retomados. Se a construção do
 índice for interrompida, o arquivo `.sqlite.part` permanece no cache; remova
 apenas esse índice incompleto antes de tentar novamente.
 

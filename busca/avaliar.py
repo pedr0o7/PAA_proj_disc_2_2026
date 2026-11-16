@@ -10,8 +10,13 @@ import statistics
 import sys
 from pathlib import Path
 
+from configuracao_hf import configurar_huggingface
+
+configurar_huggingface()
+
 import numpy as np
 import torch
+from acesso_hf import carregar_modelo
 from rag import LLM, SistemaRAG
 
 sys.stdout.reconfigure(encoding="utf-8")
@@ -57,12 +62,21 @@ def avaliar_ragas(sistema, itens, resultados, juiz):
     if juiz == LLM:
         tok, lm = sistema.tok, sistema.lm
     else:
-        tok = AutoTokenizer.from_pretrained(juiz)
-        lm = AutoModelForCausalLM.from_pretrained(juiz, dtype=torch.float32).eval()
+        tok = carregar_modelo(
+            f"o tokenizer do juiz {juiz}", AutoTokenizer.from_pretrained, juiz,
+            local_files_only=sistema.offline,
+        )
+        lm = carregar_modelo(
+            f"o modelo juiz {juiz}", AutoModelForCausalLM.from_pretrained, juiz,
+            dtype=torch.float32, local_files_only=sistema.offline,
+        ).eval()
     pipe = pipeline("text-generation", model=lm, tokenizer=tok, max_new_tokens=350, do_sample=False,
                     return_full_text=False)
     llm = LangchainLLMWrapper(HuggingFacePipeline(pipeline=pipe))
-    emb = LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2"))
+    emb = LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2",
+        model_kwargs={"local_files_only": sistema.offline},
+    ))
 
     amostras = [SingleTurnSample(user_input=it["pergunta"], response=r["resposta"], reference=it["referencia"],
                                  retrieved_contexts=[t["texto"] for t in r["trechos"]])
@@ -86,10 +100,11 @@ def main():
     ap.add_argument("--llm", default=LLM)
     ap.add_argument("--juiz", default=None, help="LLM juiz do RAGAS (padrão: o mesmo --llm)")
     ap.add_argument("--sem-ragas", action="store_true")
+    ap.add_argument("--regenerar-cache", action="store_true", help="recria caches antigos sem metadados")
     a = ap.parse_args()
 
     itens = json.loads(DATASET.read_text(encoding="utf-8"))[: a.q]
-    sistema = SistemaRAG(n=a.n, llm=a.llm, k=a.k)
+    sistema = SistemaRAG(n=a.n, llm=a.llm, k=a.k, regenerar_cache=a.regenerar_cache)
     sistema.perguntar(itens[0]["pergunta"])  # aquecimento, fora das medições
     resultados = []
     for i, it in enumerate(itens, 1):

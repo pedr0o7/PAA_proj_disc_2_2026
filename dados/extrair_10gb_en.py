@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pyarrow.parquet as pq
 
-from coletar_ingles import BASE_HF, baixar_continuavel, manifesto
+from coletar_ingles import obter_shard_coleta
+from infraestrutura import wikipedia
+from infraestrutura.huggingface import preparar_acesso_hub
 
 META = 10_000_000_000
 CACHE = Path(__file__).parent / "cache_ingles"
@@ -15,15 +17,13 @@ SAIDA = Path(__file__).parent / "wikipedia_en_10gb"
 def extrair(contato, cache=CACHE, saida=SAIDA, meta=META):
     saida.mkdir(exist_ok=True)
     cache.mkdir(exist_ok=True)
-    disponiveis = manifesto(contato)
+    disponiveis, offline = wikipedia.obter_manifesto(preparar_acesso_hub(), contato=contato)
     nomes = sorted(disponiveis)
     total = artigos = 0
     ids = set()
     with open(saida / "textos.txt", "wb") as out:
         for nome in nomes:
-            caminho, sha256, tamanho = disponiveis[nome]
-            arq = cache / nome
-            baixar_continuavel(BASE_HF + caminho, arq, "sha256", sha256, tamanho, contato)
+            arq, offline = obter_shard_coleta(nome, disponiveis[nome], cache, contato, offline)
             for lote in pq.ParquetFile(arq).iter_batches(batch_size=2000, columns=["id", "text"]):
                 for id_, texto in zip(lote.column("id").to_pylist(), lote.column("text").to_pylist()):
                     if id_ in ids or not texto:
