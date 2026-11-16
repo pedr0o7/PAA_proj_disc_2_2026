@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RAG Wikipédia</title>
+<style>
+  :root {
+    --fundo: #faf9f5; --superficie: #ffffff; --superficie-2: #f0eee6; --borda: #e3e0d6;
+    --texto: #1f1e1d; --texto-2: #6b6a65; --destaque: #c96442; --destaque-texto: #ffffff;
+    --sombra: 0 1px 2px rgba(0,0,0,.04), 0 4px 16px rgba(0,0,0,.04);
+    --serif: ui-serif, Georgia, Cambria, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #262624; --superficie: #30302e; --superficie-2: #383835; --borda: #46453f;
+      --texto: #ececea; --texto-2: #a6a49c; --destaque: #d97757; --destaque-texto: #1f1e1d;
+      --sombra: 0 1px 2px rgba(0,0,0,.2), 0 4px 16px rgba(0,0,0,.2);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--fundo); color: var(--texto); font: 16px/1.55 var(--sans); display: flex; flex-direction: column; }
+  button { font: inherit; color: inherit; cursor: pointer; }
+  button:disabled { cursor: default; opacity: .45; }
+  :focus-visible { outline: 2px solid var(--destaque); outline-offset: 2px; }
+
+  header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; }
+  header h1 { font: 600 15px var(--sans); margin: 0; color: var(--texto-2); }
+  .botao-leve { background: none; border: 1px solid var(--borda); border-radius: 8px; padding: 5px 12px; font-size: 14px; }
+  .botao-leve:hover:not(:disabled) { background: var(--superficie-2); }
+
+  main { flex: 1; overflow-y: auto; }
+  .coluna { max-width: 740px; margin: 0 auto; padding: 0 16px; }
+  #conversa { padding-bottom: 24px; }
+
+  .vazio { min-height: 55vh; display: flex; flex-direction: column; justify-content: center; text-align: center; }
+  .vazio h2 { font: 400 clamp(26px, 5vw, 36px)/1.2 var(--serif); margin: 0 0 10px; }
+  .vazio p { color: var(--texto-2); margin: 0 0 22px; }
+  .sugestoes { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
+  .sugestoes button { background: var(--superficie); border: 1px solid var(--borda); border-radius: 999px; padding: 7px 14px; font-size: 14px; }
+  .sugestoes button:hover { background: var(--superficie-2); }
+
+  .msg { margin: 22px 0; }
+  .usuario { display: flex; justify-content: flex-end; }
+  .usuario .balao { background: var(--superficie-2); border-radius: 16px; padding: 10px 16px; max-width: 85%; white-space: pre-wrap; overflow-wrap: anywhere; }
+  .assistente .texto { font: 17px/1.65 var(--serif); white-space: pre-wrap; overflow-wrap: anywhere; }
+  .assistente .texto:empty { display: none; }
+  .cursor::after { content: ""; display: inline-block; width: .5em; height: 1em; margin-left: 2px; vertical-align: -2px; background: var(--destaque); border-radius: 2px; animation: piscar 1s steps(1) infinite; }
+  @keyframes piscar { 50% { opacity: 0; } }
+
+  .status { display: flex; align-items: center; gap: 8px; color: var(--texto-2); font-size: 14px; margin-bottom: 8px; }
+  .status:empty { display: none; }
+  .girando { width: 14px; height: 14px; border: 2px solid var(--borda); border-top-color: var(--destaque); border-radius: 50%; animation: girar .8s linear infinite; }
+  @keyframes girar { to { transform: rotate(360deg); } }
+  @media (prefers-reduced-motion: reduce) { .girando, .cursor::after { animation: none; } }
+
+  .cit { display: inline-flex; align-items: center; justify-content: center; min-width: 1.35em; height: 1.35em; padding: 0 4px; margin: 0 1px;
+         font: 600 11px var(--sans); vertical-align: 2px; border-radius: 6px; background: var(--superficie-2); color: var(--destaque); text-decoration: none; }
+  .cit:hover { background: var(--destaque); color: var(--destaque-texto); }
+
+  .fontes-titulo { font-size: 13px; color: var(--texto-2); margin: 14px 0 6px; }
+  .fontes { display: grid; gap: 6px; }
+  .fonte { background: var(--superficie); border: 1px solid var(--borda); border-radius: 10px; box-shadow: var(--sombra); transition: border-color .2s; }
+  .fonte.citada { border-color: var(--destaque); }
+  .fonte.piscando { border-color: var(--destaque); box-shadow: 0 0 0 3px color-mix(in srgb, var(--destaque) 25%, transparent); }
+  .fonte summary { display: flex; align-items: center; gap: 10px; padding: 8px 12px; cursor: pointer; list-style: none; font-size: 14px; }
+  .fonte summary::-webkit-details-marker { display: none; }
+  .fonte .num { flex: none; font: 600 12px var(--sans); width: 22px; height: 22px; display: grid; place-items: center; border-radius: 6px; background: var(--superficie-2); }
+  .fonte.citada .num { background: var(--destaque); color: var(--destaque-texto); }
+  .fonte .tit { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .fonte .sim { flex: none; font-size: 12px; color: var(--texto-2); font-variant-numeric: tabular-nums; }
+  .fonte .corpo { padding: 0 12px 12px 44px; font-size: 14px; color: var(--texto-2); }
+  .fonte .corpo p { margin: 0 0 8px; }
+  .fonte .corpo a { color: var(--destaque); }
+  .meta { font-size: 12px; color: var(--texto-2); margin-top: 8px; }
+  .erro { color: #b3261e; background: color-mix(in srgb, #b3261e 10%, transparent); border-radius: 8px; padding: 8px 12px; font-size: 14px; }
+
+  footer { padding: 0 0 14px; }
+  form { display: flex; align-items: flex-end; gap: 8px; background: var(--superficie); border: 1px solid var(--borda); border-radius: 20px; padding: 10px 10px 10px 16px; box-shadow: var(--sombra); }
+  form:focus-within { border-color: var(--texto-2); }
+  textarea { flex: 1; border: 0; outline: 0; resize: none; background: none; color: var(--texto); font: 16px/1.5 var(--sans); max-height: 200px; padding: 4px 0; }
+  textarea:focus-visible { outline: none; } /* o foco aparece na borda do form */
+  textarea::placeholder { color: var(--texto-2); }
+  #enviar { flex: none; width: 34px; height: 34px; border: 0; border-radius: 10px; background: var(--destaque); color: var(--destaque-texto); display: grid; place-items: center; }
+  .aviso { text-align: center; font-size: 12px; color: var(--texto-2); margin-top: 8px; }
+  .visivel-leitor { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+</style>
+</head>
+<body>
+<header>
+  <h1>RAG Wikipédia</h1>
+  <button id="nova" class="botao-leve" type="button">Nova conversa</button>
+</header>
+
+<main id="rolagem">
+  <div id="conversa" class="coluna">
+    <div class="vazio" id="vazio">
+      <h2>O que você quer saber?</h2>
+      <p id="descricao">Respostas com base em passagens da Wikipédia, sempre com as fontes.</p>
+      <div class="sugestoes">
+        <button type="button">Quem escreveu Dom Casmurro?</button>
+        <button type="button">Sobre o que é Moby Dick?</button>
+        <button type="button">Quem é Stephen King?</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="coluna">
+    <form id="form">
+      <label for="entrada" class="visivel-leitor">Pergunta</label>
+      <textarea id="entrada" rows="1" placeholder="Faça uma pergunta…" autofocus></textarea>
+      <button id="enviar" type="submit" aria-label="Enviar pergunta">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
+      </button>
+    </form>
+    <div class="aviso" id="aviso">As respostas são geradas por um modelo local e podem conter erros. Confira as fontes.</div>
+  </div>
+</footer>
+
+<script>
+const $ = (s, el = document) => el.querySelector(s);
+const conversa = $("#conversa"), rolagem = $("#rolagem"), form = $("#form"), entrada = $("#entrada");
+const vazioHTML = $("#vazio").outerHTML;
+let ocupado = false, contador = 0, comLLM = true;
+
+const escapar = s => s.replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const segundos = s => s.toLocaleString("pt-BR", { maximumFractionDigits: s < 1 ? 2 : 1 }) + " s";
+
+function el(tag, classe, html = "") {
+  const e = document.createElement(tag);
+  if (classe) e.className = classe;
+  e.innerHTML = html;
+  return e;
+}
+
+function perto_do_fim() { return rolagem.scrollHeight - rolagem.scrollTop - rolagem.clientHeight < 120; }
+function rolar(forcar) { if (forcar || perto_do_fim()) rolagem.scrollTop = rolagem.scrollHeight; }
+
+// [n] no texto vira um link para o cartão da fonte n desta resposta.
+function formatar(texto, id, total) {
+  return escapar(texto).replace(/\[(\d+)\]/g, (m, n) =>
+    +n >= 1 && +n <= total ? `<a class="cit" href="#${id}-f${n}" data-fonte="${id}-f${n}" title="Fonte ${n}">${n}</a>` : m);
+}
+
+function cartaoFonte(t, i, id) {
+  const d = el("details", "fonte");
+  d.id = `${id}-f${i}`;
+  d.innerHTML = `<summary><span class="num">${i}</span><span class="tit"></span><span class="sim" title="Similaridade"></span></summary>
+    <div class="corpo"><p></p><a target="_blank" rel="noopener noreferrer">Abrir na Wikipédia ↗</a></div>`;
+  $(".tit", d).textContent = t.titulo;
+  $(".sim", d).textContent = t.similaridade.toFixed(3);
+  $(".corpo p", d).textContent = t.texto;
+  $(".corpo a", d).href = t.url;
+  return d;
+}
+
+function setOcupado(v) {
+  ocupado = v;
+  $("#enviar").disabled = v || !entrada.value.trim();
+  $("#nova").disabled = v;
+}
+
+async function perguntar(pergunta) {
+  if (ocupado || !pergunta.trim()) return;
+  $("#vazio")?.remove();
+  setOcupado(true);
+  const id = "r" + (++contador);
+
+  const usuario = el("div", "msg usuario");
+  usuario.append(el("div", "balao"));
+  usuario.firstChild.textContent = pergunta;
+
+  const resp = el("div", "msg assistente");
+  const status = el("div", "status"), texto = el("div", "texto"), area = el("div");
+  status.setAttribute("role", "status");
+  resp.append(status, texto, area);
+  conversa.append(usuario, resp);
+  rolar(true);
+
+  const inicio = performance.now();
+  let fase = "Buscando nas fontes…", total = 0, bruto = "";
+  const tick = () => status.innerHTML = `<span class="girando" aria-hidden="true"></span>${fase} ${Math.round((performance.now() - inicio) / 1000)} s`;
+  tick();
+  const relogio = setInterval(tick, 1000);
+
+  try {
+    const r = await fetch("/perguntar", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ pergunta }) });
+    if (!r.ok) throw new Error(`O servidor respondeu ${r.status}.`);
+    const leitor = r.body.pipeThrough(new TextDecoderStream()).getReader();
+    let buffer = "";
+    for (;;) {
+      const { value, done } = await leitor.read();
+      if (done) break;
+      buffer += value;
+      let i;
+      while ((i = buffer.indexOf("\n")) >= 0) {
+        const linha = buffer.slice(0, i); buffer = buffer.slice(i + 1);
+        if (!linha) continue;
+        const ev = JSON.parse(linha);
+        if (ev.tipo === "fontes") {
+          total = ev.trechos.length;
+          area.append(el("div", "fontes-titulo", comLLM ? "Fontes" : "Trechos encontrados (modo sem LLM)"));
+          const lista = el("div", "fontes");
+          ev.trechos.forEach((t, k) => lista.append(cartaoFonte(t, k + 1, id)));
+          area.append(lista);
+          if (comLLM) { fase = "Gerando resposta…"; texto.classList.add("cursor"); tick(); }
+        } else if (ev.tipo === "texto") {
+          bruto += ev.delta;
+          texto.innerHTML = formatar(bruto, id, total);
+        } else if (ev.tipo === "fim") {
+          ev.citados.forEach(n => $(`#${id}-f${n}`)?.classList.add("citada"));
+          if (comLLM && !bruto.trim()) texto.textContent = "(o modelo não gerou resposta)";
+          area.append(el("div", "meta", `busca ${segundos(ev.tempo_recuperacao)}` +
+            (comLLM ? ` · geração ${segundos(ev.tempo_geracao)}` : "") +
+            (ev.citados.length ? "" : comLLM ? " · nenhuma fonte citada" : "")));
+        } else if (ev.tipo === "erro") {
+          throw new Error(ev.mensagem);
+        }
+        rolar();
+      }
+    }
+  } catch (e) {
+    resp.append(el("div", "erro", "Erro: " + escapar(e.message || String(e))));
+  } finally {
+    clearInterval(relogio);
+    status.innerHTML = "";
+    texto.classList.remove("cursor");
+    setOcupado(false);
+    entrada.focus();
+    rolar();
+  }
+}
+
+form.addEventListener("submit", e => {
+  e.preventDefault();
+  const p = entrada.value;
+  if (ocupado || !p.trim()) return;
+  entrada.value = ""; ajustar();
+  perguntar(p.trim());
+});
+
+entrada.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); form.requestSubmit(); }
+});
+
+function ajustar() {
+  entrada.style.height = "auto";
+  entrada.style.height = entrada.scrollHeight + "px";
+  $("#enviar").disabled = ocupado || !entrada.value.trim();
+}
+entrada.addEventListener("input", ajustar);
+
+conversa.addEventListener("click", e => {
+  const sug = e.target.closest(".sugestoes button");
+  if (sug) return perguntar(sug.textContent);
+  const cit = e.target.closest(".cit");
+  if (cit) {
+    e.preventDefault();
+    const f = document.getElementById(cit.dataset.fonte);
+    f.open = true;
+    f.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    f.classList.add("piscando");
+    setTimeout(() => f.classList.remove("piscando"), 1200);
+  }
+});
+
+$("#nova").addEventListener("click", () => {
+  conversa.innerHTML = vazioHTML;
+  descrever();
+  entrada.focus();
+});
+
+let info = null;
+function descrever() {
+  if (!info) return;
+  const d = $("#descricao");
+  if (d) d.textContent = `Respostas com base em ${info.passagens.toLocaleString("pt-BR")} passagens da Wikipédia.`;
+}
+fetch("/info").then(r => r.json()).then(i => {
+  info = i; comLLM = i.llm; descrever();
+  if (!comLLM) $("#aviso").textContent = "Modo sem LLM";
+}).catch(() => {});
+ajustar();
+</script>
+</body>
+</html>

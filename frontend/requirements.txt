@@ -1,0 +1,4 @@
+-r ../busca/requirements.txt
+fastapi
+uvicorn
+httpx
