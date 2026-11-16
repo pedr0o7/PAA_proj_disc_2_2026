@@ -19,6 +19,10 @@ def imprimir(r, mostrar_trechos):
         print("\nResposta:")
         print(bloco(r["resposta"]))
     print("\nFontes:")
+    if not r["trechos"]:
+        print("  Nenhuma passagem do corpus é relevante o bastante para esta pergunta.")
+    for t in r.get("descartados", []):
+        print(f"  (descartada) {t['titulo']} (similaridade {t['similaridade']:.3f})")
     for i, t in enumerate(r["trechos"], 1):
         marca = "*" if i in r["citados"] else " "
         print(f" {marca}[{i}] {t['titulo']} - {t['url']} (similaridade {t['similaridade']:.3f})")
@@ -39,9 +43,11 @@ def main():
     ap.add_argument("--sem-llm", action="store_true", help="só recupera trechos, sem gerar resposta")
     ap.add_argument("--max-tokens", type=int, default=200)
     ap.add_argument("--trechos", action="store_true", help="mostra o texto dos trechos recuperados")
+    ap.add_argument("--min-sim", type=float, default=0.5,
+                    help="similaridade (cosseno) mínima para uma passagem ser usada como fonte")
     a = ap.parse_args()
 
-    sistema = SistemaRAG(a.n, a.semente, a.shards, None if a.sem_llm else a.llm, a.k, a.max_tokens)
+    sistema = SistemaRAG(a.n, a.semente, a.shards, None if a.sem_llm else a.llm, a.k, a.max_tokens, a.min_sim)
     if a.pergunta:
         imprimir(sistema.perguntar(a.pergunta), a.trechos)
         return

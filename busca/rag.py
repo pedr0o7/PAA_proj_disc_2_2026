@@ -25,6 +25,8 @@ PROMPT_SISTEMA = (
     "Do NOT make up or infer answers. Do NOT use your training data. Only use the context provided."
 )
 
+SEM_CONTEXTO = "The provided context is insufficient to answer this question."
+
 # Tentar importar BM25 para hybrid search; usar fallback se não disponível
 try:
     from rank_bm25 import BM25Okapi
@@ -34,19 +36,20 @@ except ImportError:
 
 
 class SistemaRAG:
-    def __init__(self, n=5000, semente=42, n_shards=1, llm=LLM, k=3, max_tokens=200):
-        self.k, self.max_tokens = k, max_tokens
+    def __init__(self, n=5000, semente=42, n_shards=1, llm=LLM, k=3, max_tokens=200, min_sim=0.0):
+        self.k, self.max_tokens, self.min_sim = k, max_tokens, min_sim
         self.modelo_emb = SentenceTransformer(MODELO_EMB, device="cpu")
         CACHE.mkdir(exist_ok=True)
         self.passagens = carregar_passagens(CACHE, n, semente, n_shards)
-        emb = self._embeddings(n, semente, n_shards)
+        self.emb = self._embeddings(n, semente, n_shards)
+        emb = self.emb
         self.indice = Index(ndim=emb.shape[1], metric="cos", connectivity=16, expansion_add=128, expansion_search=64)
         self.indice.add(np.arange(len(emb)), emb)
         
         # Inicializar BM25 para hybrid search
         self.bm25 = None
         if HAS_BM25:
-            textos_tokenizados = [p["texto"].lower().split() for p in self.passagens]
+            textos_tokenizados = [re.findall(r"\w+", p["texto"].lower()) for p in self.passagens]
             self.bm25 = BM25Okapi(textos_tokenizados)
         
         self.tok = AutoTokenizer.from_pretrained(llm) if llm else None
@@ -79,7 +82,7 @@ class SistemaRAG:
     def _recuperar_hibrido(self, pergunta):
         """Busca híbrida: combina BM25 (keyword) com semântico."""
         # BM25: busca por palavras-chave
-        tokens = pergunta.lower().split()
+        tokens = re.findall(r"\w+", pergunta.lower())
         scores_bm25 = self.bm25.get_scores(tokens)
         
         # Normalizar scores BM25 para [0, 1]
@@ -88,32 +91,14 @@ class SistemaRAG:
         
         # Semântico: busca por similaridade
         q = self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
-        achados = self.indice.search(q, self.k * 3)  # Buscar 3*k para melhor combinação
-        indices_semantico = np.array(achados.keys, dtype=int)
-        distances_semantico = np.array(achados.distances, dtype=np.float32)
-        scores_semantico = 1 - distances_semantico  # Converter distância em similaridade
-        
-        # Combinar: score final = média ponderada (semântico=0.7, BM25=0.3)
-        scores_finais = {}
-        
-        # Adicionar scores semânticos
-        for idx, score in zip(indices_semantico, scores_semantico):
-            idx = int(idx)
-            scores_finais[idx] = 0.7 * score
-        
-        # Adicionar/combinar com scores BM25
-        for idx, score_bm25 in enumerate(scores_bm25_norm):
-            if score_bm25 > 0:
-                if idx in scores_finais:
-                    scores_finais[idx] = 0.7 * scores_finais[idx] / 0.7 + 0.3 * score_bm25  # Normalizar
-                else:
-                    scores_finais[idx] = 0.3 * score_bm25
-        
-        # Ordenar por score final e pegar top k
-        indices_ordenados = sorted(scores_finais.keys(), key=lambda x: scores_finais[x], reverse=True)[:self.k]
-        
-        # Retornar com score final normalizado
-        return [{**self.passagens[int(idx)], "similaridade": float(scores_finais[idx])} for idx in indices_ordenados]
+        achados = self.indice.search(q, self.k * 3)
+        candidatos = {int(c) for c in achados.keys}
+        candidatos.update(int(i) for i in np.argsort(scores_bm25_norm)[::-1][:self.k * 3] if scores_bm25_norm[i] > 0)
+
+        # Ranking = 0.7*cosseno + 0.3*BM25 normalizado; a similaridade exibida é sempre o cosseno real
+        cos = {i: float(self.emb[i] @ q) for i in candidatos}
+        ordenados = sorted(candidatos, key=lambda i: 0.7 * cos[i] + 0.3 * float(scores_bm25_norm[i]), reverse=True)[:self.k]
+        return [{**self.passagens[i], "similaridade": cos[i]} for i in ordenados]
 
     def completar(self, msgs, max_tokens):
         ids = self.tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True)
@@ -129,10 +114,15 @@ class SistemaRAG:
 
     def perguntar(self, pergunta):
         t0 = time.perf_counter()
-        trechos = self.recuperar(pergunta)
+        candidatos = self.recuperar(pergunta)
+        trechos = [t for t in candidatos if t["similaridade"] >= self.min_sim]
         t1 = time.perf_counter()
-        resposta = self.gerar(pergunta, trechos) if self.lm else ""
+        if self.lm and not trechos:
+            resposta = SEM_CONTEXTO  # nada relevante no corpus: evita o LLM responder de memória
+        else:
+            resposta = self.gerar(pergunta, trechos) if self.lm else ""
         t2 = time.perf_counter()
         citados = sorted({int(m) for m in re.findall(r"\[(\d+)\]", resposta) if 1 <= int(m) <= len(trechos)})
         return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
+                "descartados": [t for t in candidatos if t not in trechos],
                 "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}
