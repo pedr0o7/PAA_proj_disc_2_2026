@@ -63,7 +63,7 @@
 - **Não há banco de dados tradicional**
 - **Armazenamento em disco**:
   - Índice HNSW (binário): cache_indice/*.npy
-  - Passagens: cache_indice/passagens_titulo_*.json
+  - Passagens: cache_indice/passagens_gutenberg_*.json
   - Resultados: esultados.json, valiacao_resultados.json
 
 ### Modelos (Pré-treinados)
@@ -72,18 +72,18 @@
 - **LLM opcional para avaliação**: Mesmo LLM ou outro especificado
 
 ### Processamento de Dados
-- **Origem**: Wikipedia (Wikimedia dataset 20231101.en)
-- **Formato**: Arquivos Parquet
-- **Cache local**: dados/cache_ingles/ para downloads
+- **Origem**: Project Gutenberg (dataset `sedthh/gutenberg_english`, livros em inglês de domínio público)
+- **Formato**: Arquivos Parquet (colunas TEXT, SOURCE, METADATA)
+- **Cache local**: dados/cache_gutenberg/ para downloads; dados/gutenberg_10gb/ para o texto extraído
 
 ---
 
 ## 4. Tema e Funcionamento do Sistema
 
-### Tema: **Retrieval-Augmented Generation (RAG) com LLM Local**
+### Tema: **Literatura e livros (Project Gutenberg) com RAG e LLM Local**
 
-**Propósito**: Responder perguntas usando:
-1. Busca semântica em corpus de textos da Wikipedia
+**Propósito**: Responder perguntas sobre livros usando:
+1. Busca híbrida em um corpus de livros de domínio público (>= 10 GB de texto)
 2. Geração de respostas por LLM local
 3. Citação de fontes utilizadas
 
@@ -129,40 +129,37 @@
 ## 5. Dados de Treinamento
 
 ### Fonte Original
-- **Dataset**: Wikimedia Wikipedia \20231101.en\
-- **Tamanho total**: ~10GB+ de texto em inglês
-- **Artigos**: Categoria "Geography" e subcategorias
+- **Dataset**: `sedthh/gutenberg_english` (Hugging Face), licença MIT; livros de domínio público
+- **Tamanho total**: 48.284 livros, ~18 GB de texto (download de 10,7 GB). A coleta extrai 10 GB (10.000.000.000 bytes)
+- **Metadados por livro**: id (Text# do Gutenberg), título, autores; a URL da fonte é `https://www.gutenberg.org/ebooks/<id>`
 
 ### Download e Tamanho
 
-**Corpus Atual (usado nos testes)**:
-- **Tamanho**: 5.000 passagens (amostra com seed=42)
-- **Tamanho em disco**:
-  - Índice HNSW: ~62 MB
-  - Embeddings (.npy): ~7.3 MB
-  - Passagens JSON: ~5-10 MB
-  - **Total**: ~75 MB
+**Corpus Atual**:
+- **Coleta**: `python dados/coletar_gutenberg.py --contato SEU-EMAIL` gera `dados/gutenberg_10gb/` (`textos.txt`, `livros.jsonl`, `relatorio.json`)
+- **Índice do RAG**: 20.000 passagens por padrão (amostra com seed=42) de livros sorteados; o corpus completo de 10 GB não é embedado (inviável em CPU) e é usado no estudo de escala (`benchmark.py`, `escala.py`)
 
-**Como baixar**:
+**Como consultar**:
 \\\ash
 cd busca/
-python consultar.py --n 5000 -p "qualquer pergunta"
-# Primeira execução: ~10-15 min (download + embedding)
-# Queries subsequentes: ~30 seg cada
+python consultar.py -p "Who is Captain Ahab?"
+# Primeira execução: sorteia passagens e calcula embeddings (alguns minutos em CPU)
+# Consultas seguintes: dominadas pelo tempo de geração do LLM
 \\\
 
 ### Parâmetros de Amostragem
 \\\python
 # Arquivo: corpus.py
-def amostrar_passagens_titulo(n, semente, n_shards=1, 
-                               min_car=300, max_car=1200, por_artigo=3):
+def amostrar_passagens(n, semente, dados=DADOS,
+                       min_car=300, max_car=1000, por_livro=3):
     """
     min_car: Caracteres mínimos por parágrafo (300)
-    max_car: Caracteres máximos (1200)
-    por_artigo: Parágrafos extraídos por artigo (3)
-    n_shards: Quantos arquivos Parquet baixar (1 = ~2.4GB)
+    max_car: Caracteres máximos (1000)
+    por_livro: Parágrafos de prosa extraídos por livro (3)
     """
 \\\
+
+O título e o autor entram no texto embedado e no BM25 (`texto_indexado`), para que perguntas como "Who wrote Moby Dick?" encontrem o livro.
 
 ---
 
@@ -170,32 +167,32 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 
 ### Etapas de Pré-processamento
 
-#### **6.1 Coleta de Dados** (Arquivo: \coletar_ingles.py\)
+#### **6.1 Coleta de Dados** (Arquivo: \coletar_gutenberg.py\)
 \\\
-1. Baixa categoria "Geography" do dump Wikipedia
-2. Indexa artigos em SQLite
-3. Filtra por namespace
-4. Extrai textos dos Parquets
+1. Lista os Parquets do dataset via API do Hugging Face
+2. Baixa em ordem, com retomada e verificação de SHA-256
+3. Lê livros em lotes pequenos, deduplica por id
+4. Grava textos.txt + livros.jsonl (offsets) até 10 GB
 \\\
 
 **Complexidade**: 
-- **Tempo**: ~3-5 horas para 10GB
-- **Espaço**: ~30GB temporário
+- **Tempo**: dominado pelo download (~6 GB para 10 GB de texto)
+- **Espaço**: ~11 GB de cache + 10 GB de texto
 - **I/O**: Linear com tamanho do dataset
 
 #### **6.2 Amostragem de Passagens** (Arquivo: \corpus.py\)
 \\\
-1. Lê Parquet sequencialmente
-2. Split por duplas quebras (\n\n)
-3. Filtra por tamanho (300-1200 caracteres)
-4. Amostragem aleatória com seed
+1. Sorteia livros (seed) e lê cada um em textos.txt via offset
+2. Split por duplas quebras (\n\n) e junta linhas internas
+3. Filtra por tamanho (300-1000 caracteres) e por aparência de prosa
+4. Amostra até 3 parágrafos por livro
 5. Deduplicação por conteúdo
-6. Salva em JSON com metadados
+6. Salva em JSON com metadados (título, autores, url, id)
 \\\
 
 **Complexidade**:
-- **Tempo**: O(tamanho_parquet) ~ 5-10 min para 5000 passagens
-- **Espaço**: O(n_passagens) ~ 5-10 MB
+- **Tempo**: O(livros lidos), cada livro ~0,4 MB em média
+- **Espaço**: O(n_passagens)
 - **Operação**: Linear
 
 #### **6.3 Codificação (Embedding)** (Arquivo: \ag.py\)
@@ -334,10 +331,10 @@ the provided numbered context passages. You MUST cite sources..."
 
 INPUT:
 "Context:
-[1] (Wikipedia - Paris) Paris is a city in France...
-[2] (Wikipedia - France) France is a country...
+[1] (Moby Dick by Melville, Herman) Call me Ishmael...
+[2] (Moby Dick by Melville, Herman) Captain Ahab was...
 
-Question: What is the capital of France?"
+Question: Who is Captain Ahab?"
 \\\
 
 ### Complexidade de Inferência

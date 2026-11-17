@@ -23,12 +23,12 @@ SAIDA = Path(__file__).parent / "avaliacao_resultados.json"
 def metricas_proprias(itens, resultados):
     hits, rr, cit_ok, citou = [], [], [], []
     for it, r in zip(itens, resultados):
-        titulos = [t["titulo"] for t in r["trechos"]]
-        pos = titulos.index(it["titulo_esperado"]) + 1 if it["titulo_esperado"] in titulos else None
+        ids = [t["id"] for t in r["trechos"]]
+        pos = ids.index(it["id_esperado"]) + 1 if it["id_esperado"] in ids else None
         hits.append(pos is not None)
         rr.append(1 / pos if pos else 0.0)
         citou.append(bool(r["citados"]))
-        cit_ok.append(any(titulos[i - 1] == it["titulo_esperado"] for i in r["citados"]))
+        cit_ok.append(any(ids[i - 1] == it["id_esperado"] for i in r["citados"]))
     return {
         "hit_at_k": float(np.mean(hits)),
         "mrr": float(np.mean(rr)),
@@ -82,7 +82,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--q", type=int, default=30, help="perguntas avaliadas")
     ap.add_argument("--k", type=int, default=3)
-    ap.add_argument("--n", type=int, default=5000)
+    ap.add_argument("--n", type=int, default=20000)
     ap.add_argument("--llm", default=LLM)
     ap.add_argument("--juiz", default=None, help="LLM juiz do RAGAS (padrão: o mesmo --llm)")
     ap.add_argument("--sem-ragas", action="store_true")

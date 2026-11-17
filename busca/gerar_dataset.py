@@ -17,9 +17,10 @@ sys.stdout.reconfigure(encoding="utf-8")
 
 SAIDA = Path(__file__).parent / "avaliacao_dataset.json"
 PROMPT = (
-    "Read the passage and write ONE specific factual question that can be answered ONLY from it, and the "
-    "short answer. The question must name its subject explicitly (never use 'this', 'he', 'it' without "
-    "a name) so it makes sense without the passage. Output exactly two lines:\nQuestion: ...\nAnswer: ..."
+    "Read the passage from a book and write ONE specific question that can be answered ONLY from it, and the "
+    "short answer. The question must name the book, character or place explicitly (never use 'this', 'he', "
+    "'she', 'it' without a name) so it makes sense without the passage. Output exactly two lines:\n"
+    "Question: ...\nAnswer: ..."
 )
 
 
@@ -27,7 +28,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--q", type=int, default=30)
     ap.add_argument("--semente", type=int, default=7)
-    ap.add_argument("--n", type=int, default=5000)
+    ap.add_argument("--n", type=int, default=20000)
     a = ap.parse_args()
 
     sistema = SistemaRAG(n=a.n, k=1)
@@ -36,13 +37,14 @@ def main():
     for idx in rng.sample(range(len(sistema.passagens)), a.q * 3):
         p = sistema.passagens[idx]
         saida = sistema.completar([{"role": "system", "content": PROMPT},
-                                   {"role": "user", "content": f"Title: {p['titulo']}\nPassage: {p['texto']}"}], 80)
+                                   {"role": "user", "content": f"Book: {p['titulo']} by {p['autores']}\nPassage: {p['texto']}"}], 80)
         m = re.search(r"Question:\s*(.+?)\s*\n+\s*Answer:\s*(.+)", saida, re.S)
         pergunta = m.group(1).strip() if m else ""
         if not m or "?" not in pergunta or re.search(r"\b(passage|mentioned|the text|this|the person|current)\b", pergunta, re.I):
             continue
         itens.append({"pergunta": pergunta, "referencia": m.group(2).strip().split("\n")[0],
-                      "titulo_esperado": p["titulo"], "url_esperada": p["url"], "contexto_referencia": p["texto"]})
+                      "titulo_esperado": p["titulo"], "id_esperado": p["id"], "url_esperada": p["url"],
+                      "contexto_referencia": p["texto"]})
         print(f"{len(itens)}/{a.q} {itens[-1]['pergunta']}")
         if len(itens) >= a.q:
             break

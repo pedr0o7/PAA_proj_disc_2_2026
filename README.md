@@ -1,4 +1,4 @@
-# Sistema RAG com LLM Local para Consulta à Wikipédia
+# Sistema RAG com LLM Local para Consulta a Livros do Project Gutenberg
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/pedr0o7/PAA_proj_disc_2_2026?style=for-the-badge)
 ![GitHub language count](https://img.shields.io/github/languages/count/pedr0o7/PAA_proj_disc_2_2026?style=for-the-badge)
@@ -10,7 +10,7 @@
   <img src="assets/logo-cic-unb.png" alt="Logo do CIC/UnB" width="220">
 </p>
 
-> Projeto acadêmico que implementa um sistema de Retrieval-Augmented Generation (RAG) para responder perguntas com base em passagens da Wikipédia. O sistema combina busca híbrida — semântica e por palavras-chave — com um modelo de linguagem executado localmente, apresentando as fontes recuperadas.
+> Projeto acadêmico que implementa um sistema de Retrieval-Augmented Generation (RAG) para responder perguntas sobre literatura, com base em passagens de livros em inglês de domínio público do Project Gutenberg (corpus de pelo menos 10 GB de texto). O sistema combina busca híbrida — semântica e por palavras-chave — com um modelo de linguagem executado localmente, apresentando as fontes recuperadas (livro, autor e link).
 
 ## Ajustes e melhorias
 
@@ -20,7 +20,7 @@ O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 - [x] Geração local de respostas com o modelo SmolLM2
 - [x] Exibição das fontes recuperadas e citações
 - [x] Ferramentas de avaliação e benchmarking
-- [ ] Ampliar e melhorar a cobertura do corpus
+- [ ] Indexar uma fração maior do corpus de livros
 - [ ] Aprimorar a extração e a validação de citações
 - [ ] Expandir os testes e a avaliação das respostas
 
@@ -30,8 +30,8 @@ Antes de começar, verifique se você tem:
 
 - Python 3.12.
 - Windows 11, sistema usado nos testes do projeto. Linux e macOS podem funcionar, mas não foram validados.
-- Conexão com a internet na primeira execução, para baixar os dados e os modelos do Hugging Face.
-- Espaço em disco e memória suficientes para os dados, o índice e o modelo local. A necessidade varia conforme o tamanho do corpus.
+- Conexão com a internet para baixar os dados e os modelos do Hugging Face.
+- Cerca de 25 GB livres em disco (download de até ~11 GB, texto extraído de 10 GB e índice) e memória suficiente para o índice e o modelo local.
 - Familiaridade básica com terminal e ambientes virtuais Python.
 
 ## 🚀 Instalando
@@ -58,7 +58,15 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Na primeira execução, o programa pode baixar as passagens da Wikipédia e os modelos necessários. Esse processo pode levar alguns minutos.
+### Coletar o corpus
+
+Antes da primeira consulta, baixe os livros (a partir da raiz do projeto; veja [dados/README.md](dados/README.md)):
+
+```powershell
+python dados\coletar_gutenberg.py --contato "seu-email@exemplo.com"
+```
+
+Na primeira consulta, o programa sorteia as passagens, calcula os embeddings (alguns minutos em CPU) e baixa os modelos necessários.
 
 ## ☕ Usando
 
@@ -67,7 +75,7 @@ Execute os comandos a partir da pasta `busca`.
 ### Fazer uma pergunta
 
 ```bash
-python consultar.py -p "What is the capital of France?"
+python consultar.py -p "Who is Captain Ahab?"
 ```
 
 ### Iniciar o modo interativo
@@ -83,13 +91,13 @@ Digite as perguntas em inglês. Para encerrar, envie uma linha vazia ou digite `
 Este modo executa a recuperação e mostra as passagens encontradas, sem chamar o LLM:
 
 ```bash
-python consultar.py -p "What is the capital of France?" --sem-llm
+python consultar.py -p "Who is Captain Ahab?" --sem-llm
 ```
 
 ### Mostrar o conteúdo das passagens recuperadas
 
 ```bash
-python consultar.py -p "What is the capital of France?" --trechos
+python consultar.py -p "Who is Captain Ahab?" --trechos
 ```
 
 ### Opções principais
@@ -97,10 +105,10 @@ python consultar.py -p "What is the capital of France?" --trechos
 | Opção | Descrição | Padrão |
 |---|---|---:|
 | `-p`, `--pergunta` | Faz uma pergunta única e encerra | — |
-| `--n` | Número de passagens indexadas | `5000` |
+| `--n` | Número de passagens indexadas | `20000` |
 | `--k` | Número de trechos recuperados por pergunta | `3` |
 | `--semente` | Semente usada na amostragem do corpus | `42` |
-| `--shards` | Número de arquivos Parquet usados como fonte | `1` |
+| `--min-sim` | Similaridade (cosseno) mínima para uma passagem virar fonte; abaixo disso a resposta é "contexto insuficiente" | `0.4` |
 | `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct |
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
@@ -109,8 +117,10 @@ python consultar.py -p "What is the capital of France?" --trechos
 Exemplo com mais passagens:
 
 ```bash
-python consultar.py --n 20000 --k 5 -p "What is the capital of France?"
+python consultar.py --n 50000 --k 5 -p "Who is Captain Ahab?"
 ```
+
+O índice cobre uma amostra de livros do corpus (o embedding dos 10 GB inteiros não é viável em CPU); perguntas sobre livros fora da amostra recebem "contexto insuficiente".
 
 ## 🧪 Avaliação e testes
 
@@ -120,7 +130,7 @@ Para executar a avaliação sem as métricas do RAGAS:
 python avaliar.py --q 30 --sem-ragas
 ```
 
-Para executar os testes dos coletores de dados, a partir da raiz do projeto:
+Para executar os testes do coletor de dados, a partir da raiz do projeto:
 
 ```powershell
 py -3.12 -m unittest discover -s dados -p "test_coletar*.py" -v
