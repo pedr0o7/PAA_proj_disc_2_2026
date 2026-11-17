@@ -4,6 +4,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
+from dotenv import dotenv_values
+
 import configuracao_hf as bootstrap
 from infraestrutura import configuracao_hf
 
@@ -62,6 +64,23 @@ class TestConfiguracaoHuggingFace(unittest.TestCase):
             with self.assertWarnsRegex(RuntimeWarning, "HTTP sem aceleração"):
                 configuracao_hf.configurar_huggingface()
             importar.assert_not_called()
+
+    def test_token_vazio_no_dotenv_preserva_login_cli_e_anonimo(self):
+        for conteudo in ("HF_TOKEN=\nHF_XET_HIGH_PERFORMANCE=0\n", "HF_TOKEN=   \n"):
+            configuracao_hf.configurar_huggingface.cache_clear()
+            with tempfile.TemporaryDirectory() as diretorio:
+                raiz = Path(diretorio)
+                (raiz / ".env").write_text(conteudo, encoding="utf-8")
+                with patch.dict(os.environ, {}, clear=True), \
+                     patch.object(configuracao_hf, "__file__", str(raiz / "infraestrutura" / "configuracao_hf.py")), \
+                     patch.object(configuracao_hf, "import_module"):
+                    configuracao_hf.configurar_huggingface()
+                    self.assertNotIn("HF_TOKEN", os.environ)
+
+    def test_env_example_nao_define_token_ficticio(self):
+        exemplo = Path(__file__).resolve().parent.parent / ".env.example"
+        valores = dotenv_values(exemplo)
+        self.assertEqual(valores.get("HF_TOKEN"), "")
 
 
 if __name__ == "__main__":

@@ -11,6 +11,8 @@ from dotenv import load_dotenv
 @lru_cache(maxsize=1)
 def configurar_huggingface():
     load_dotenv(Path(__file__).resolve().parent.parent / ".env", override=False)
+    if not os.environ.get("HF_TOKEN", "").strip():
+        os.environ.pop("HF_TOKEN", None)
     os.environ.setdefault("HF_XET_HIGH_PERFORMANCE", "1")
     if os.environ.get("HF_HUB_DISABLE_XET", "").upper() in {"1", "ON", "YES", "TRUE"}:
         warnings.warn("Xet desabilitado; downloads usarão HTTP sem aceleração.", RuntimeWarning, stacklevel=2)

@@ -2,7 +2,10 @@
 import json
 import logging
 import re
+import struct
 import time
+import zipfile
+import zlib
 from importlib.metadata import version
 from pathlib import Path
 
@@ -52,15 +55,16 @@ class SistemaRAG:
         self.offline = preparar_acesso_hub()
         verificar_cache_passagens(CACHE, n, semente, n_shards, regenerar_cache)
         LOG.info("Carregando modelo de embeddings; o Hub pode usar arquivos em cache.")
-        self.modelo_emb = carregar_modelo(
+        self.modelo_emb, self.offline = carregar_modelo(
             f"o modelo de embeddings {MODELO_EMB}", SentenceTransformer, MODELO_EMB,
-            revision=REVISAO_EMB, device="cpu", local_files_only=self.offline,
+            revision=REVISAO_EMB, device="cpu", local_files_only=self.offline, retornar_offline=True,
         )
         self.modelo_emb.max_seq_length = MAX_SEQ_EMB
         LOG.info("Modelo de embeddings carregado.")
-        CACHE.mkdir(exist_ok=True)
-        self.passagens = carregar_passagens(
+        CACHE.mkdir(parents=True, exist_ok=True)
+        self.passagens, self.offline = carregar_passagens(
             CACHE, n, semente, n_shards, offline=self.offline, regenerar_cache=regenerar_cache,
+            retornar_offline=True,
         )
         emb = self._embeddings()
         self.indice = Index(ndim=emb.shape[1], metric="cos", connectivity=16, expansion_add=128, expansion_search=64)
@@ -74,13 +78,15 @@ class SistemaRAG:
         
         if llm:
             LOG.info("Carregando modelo de geração; o Hub pode usar arquivos em cache.")
-            self.tok = carregar_modelo(
-                f"o tokenizer {llm}", AutoTokenizer.from_pretrained, llm, local_files_only=self.offline,
+            self.tok, self.offline = carregar_modelo(
+                f"o tokenizer {llm}", AutoTokenizer.from_pretrained, llm,
+                local_files_only=self.offline, retornar_offline=True,
             )
-            self.lm = carregar_modelo(
+            lm, self.offline = carregar_modelo(
                 f"o modelo de geração {llm}", AutoModelForCausalLM.from_pretrained, llm,
-                dtype=torch.float32, local_files_only=self.offline,
-            ).eval()
+                dtype=torch.float32, local_files_only=self.offline, retornar_offline=True,
+            )
+            self.lm = lm.eval()
             LOG.info("Modelo de geração carregado.")
         else:
             self.tok, self.lm = None, None
@@ -96,11 +102,36 @@ class SistemaRAG:
         }
         arq = CACHE / f"embeddings_v1_{identidade(metadados)}.npz"
         if arq.exists():
-            with np.load(arq, allow_pickle=False) as registro:
-                if json.loads(str(registro["metadados"])) != metadados:
-                    raise ValueError(f"Metadados de embeddings incompatíveis: {arq}")
-                emb = registro["embeddings"]
-            if emb.ndim != 2 or len(emb) != len(self.passagens) or emb.dtype != np.float32:
+            try:
+                with arq.open("rb") as arquivo, np.load(arquivo, allow_pickle=False) as registro:
+                    bruto_meta = registro["metadados"]
+                    if not isinstance(bruto_meta, np.ndarray) or bruto_meta.ndim != 0:
+                        raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}")
+                    meta_item = bruto_meta.item()
+                    if isinstance(meta_item, bytes):
+                        meta_item = meta_item.decode("utf-8")
+                    if not isinstance(meta_item, str):
+                        raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}")
+                    meta_lida = json.loads(meta_item)
+                    emb = registro["embeddings"]
+                    if not isinstance(emb, np.ndarray):
+                        raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}")
+            except (
+                OSError,
+                KeyError,
+                ValueError,
+                TypeError,
+                EOFError,
+                zipfile.BadZipFile,
+                zlib.error,
+                struct.error,
+                NotImplementedError,
+                RuntimeError,
+            ) as exc:
+                raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}") from exc
+            if meta_lida != metadados:
+                raise ValueError(f"Metadados de embeddings incompatíveis: {arq}")
+            if emb.ndim != 2 or len(emb) != len(self.passagens) or emb.shape[1] == 0 or emb.dtype != np.float32:
                 raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}")
             LOG.info("Usando embeddings em cache.")
             return emb

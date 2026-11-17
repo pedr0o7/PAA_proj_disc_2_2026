@@ -1,7 +1,12 @@
 """Extrai texto da Wikipédia EN (parquets do cache) até somar META bytes UTF-8."""
 import argparse
 import json
+import sys
 from pathlib import Path
+
+raiz = str(Path(__file__).resolve().parent.parent)
+if raiz not in sys.path:
+    sys.path.insert(0, raiz)
 
 import pyarrow.parquet as pq
 

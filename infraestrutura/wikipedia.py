@@ -52,7 +52,7 @@ def obter_manifesto(offline=None, contato=None):
             itens_hub = list(api.list_repo_tree(
                 REPOSITORIO, path_in_repo=PASTA_SHARDS, revision=REVISAO_HF, repo_type="dataset",
             ))
-        except (hub.httpx.NetworkError, hub.httpx.TimeoutException):
+        except hub.ERROS_DE_REDE:
             LOG.warning("Rede indisponível ao consultar o manifesto; usando apenas caches locais.")
             offline = True
         else:
@@ -82,7 +82,8 @@ def obter_shard(nome, item, cache, offline):
     from infraestrutura import huggingface as hub
     from huggingface_hub.errors import LocalEntryNotFoundError
 
-    destino = cache / nome
+    offline = bool(offline) or hub.HF_HUB_OFFLINE
+    destino = Path(cache) / nome
     if not destino.exists():
         LOG.info("Procurando shard %s no cache do Hub%s.", nome, "" if offline else " ou na rede")
         try:
@@ -91,7 +92,9 @@ def obter_shard(nome, item, cache, offline):
                     repo_id=REPOSITORIO, filename=item["path"], repo_type="dataset",
                     revision=REVISAO_HF, local_files_only=offline,
                 ))
-            except (hub.httpx.NetworkError, hub.httpx.TimeoutException):
+            except hub.ERROS_DE_REDE:
+                if offline:
+                    raise
                 LOG.warning("Rede indisponível ao obter o shard %s; usando apenas cache local.", nome)
                 offline = True
                 destino = Path(hub.hf_hub_download(
@@ -109,7 +112,7 @@ def obter_shard(nome, item, cache, offline):
     return destino, offline
 
 
-def baixar_shards(n_shards, offline=None, cache=None):
+def baixar_shards(n_shards, offline=None, cache=None, retornar_offline=False):
     if not 1 <= n_shards <= 41:
         raise ValueError("O número de shards deve estar entre 1 e 41.")
     disponiveis, offline = obter_manifesto(offline)
@@ -118,4 +121,4 @@ def baixar_shards(n_shards, offline=None, cache=None):
     for nome, item in sorted(disponiveis.items())[:n_shards]:
         destino, offline = obter_shard(nome, item, cache, offline)
         arquivos.append(destino)
-    return arquivos
+    return (arquivos, offline) if retornar_offline else arquivos

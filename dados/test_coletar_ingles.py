@@ -2,6 +2,8 @@ import gzip
 import hashlib
 import io
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import closing
@@ -95,12 +97,28 @@ class TestColetaIngles(unittest.TestCase):
             destino.with_name(nome + ".part").write_bytes(dados[:8])
             item = {"path": "20231101.en/" + nome, "sha256": hashlib.sha256(dados).hexdigest(),
                     "size": len(dados)}
-            with patch("coletar_ingles.urlopen", return_value=Resposta(dados[8:], 206, "bytes 8-29/30")):
+            with patch("coletar_ingles.urlopen", return_value=Resposta(dados[8:], 206, "bytes 8-29/30")), \
+                 patch("coletar_ingles.wikipedia.obter_shard") as obter_shard:
                 resultado, offline = obter_shard_coleta(nome, item, pasta, "contato", False)
+            obter_shard.assert_not_called()
             self.assertEqual(resultado, destino)
             self.assertFalse(offline)
             self.assertEqual(destino.read_bytes(), dados)
             self.assertFalse(destino.with_name(nome + ".part").exists())
+
+    def test_shard_legado_parcial_nao_retoma_quando_hf_hub_offline(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            nome = "train-00000-of-00041.parquet"
+            (pasta / f"{nome}.part").write_bytes(b"parcial")
+            item = {"path": "20231101.en/" + nome, "sha256": "0" * 64, "size": 10}
+            with patch("infraestrutura.huggingface.HF_HUB_OFFLINE", True), \
+                 patch("coletar_ingles.urlopen") as abrir, \
+                 patch("coletar_ingles.wikipedia.obter_shard", side_effect=FileNotFoundError("ausente")) as obter_shard:
+                with self.assertRaises(FileNotFoundError):
+                    obter_shard_coleta(nome, item, pasta, "contato", False)
+            abrir.assert_not_called()
+            obter_shard.assert_called_once_with(nome, item, pasta, True)
 
     def test_dump_offline_nao_retomado_quando_incompleto(self):
         with tempfile.TemporaryDirectory() as diretorio:
@@ -155,6 +173,18 @@ class TestColetaIngles(unittest.TestCase):
                 extrair_texto("contato", cache=pasta / "cache", saida=pasta / "saida", meta=5)
             self.assertTrue(obter.call_args.args[-1])
             self.assertEqual((pasta / "saida" / "textos.txt").read_bytes(), b"texto\n\n")
+
+    def test_scripts_dados_executam_sem_depender_de_sys_path_externo(self):
+        dados_dir = Path(__file__).resolve().parent
+        for script in ("coletar_ingles.py", "extrair_10gb_en.py"):
+            res = subprocess.run(
+                [sys.executable, str(dados_dir / script), "--help"],
+                cwd=str(dados_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(res.returncode, 0, msg=f"{script} falhou: {res.stderr}")
 
 
 if __name__ == "__main__":

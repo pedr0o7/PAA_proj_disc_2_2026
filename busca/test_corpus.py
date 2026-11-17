@@ -7,6 +7,10 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from configuracao_hf import configurar_huggingface
+
+configurar_huggingface()
+
 import httpx
 from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
 
@@ -219,6 +223,53 @@ class TestDownloadCorpus(unittest.TestCase):
             registro = json.loads(arquivo.read_text(encoding="utf-8"))
             registro["passagens"][0]["texto"] = "alterado"
             arquivo.write_text(json.dumps(registro), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "Cache de passagens inválido"):
+                corpus.carregar_passagens(pasta, 1, 42)
+
+    def test_baixar_shards_propaga_offline_entre_shards_e_no_retorno(self):
+        conteudo = b"shard"
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            shard0 = pasta / "s0.parquet"
+            shard1 = pasta / "s1.parquet"
+            shard0.write_bytes(conteudo)
+            shard1.write_bytes(conteudo)
+            with patch.object(wikipedia, "CACHE_PARQUET", pasta), \
+                 patch.object(wikipedia, "CACHE_MANIFESTO", pasta / "manifesto.json"), \
+                 patch.object(hub, "HF_HUB_OFFLINE", False), \
+                 patch.object(hub, "HfApi") as api, \
+                 patch.object(hub, "hf_hub_download", side_effect=[
+                     httpx.ConnectError("sem rede"), str(shard0), str(shard1)
+                 ]) as download:
+                api.return_value.list_repo_tree.return_value = self.criar_manifesto(conteudo)
+                with self.assertLogs("busca.corpus", level="WARNING"):
+                    arquivos, offline = wikipedia.baixar_shards(2, retornar_offline=True)
+            self.assertEqual(arquivos, [shard0, shard1])
+            self.assertTrue(offline)
+            self.assertFalse(download.call_args_list[0].kwargs["local_files_only"])
+            self.assertTrue(download.call_args_list[1].kwargs["local_files_only"])
+            self.assertTrue(download.call_args_list[2].kwargs["local_files_only"])
+
+    def test_carregar_passagens_cria_pasta_inexistente_e_propaga_offline(self):
+        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio) / "sub" / "cache"
+            with patch.object(hub, "HF_HUB_OFFLINE", False), \
+                 patch.object(corpus, "amostrar_passagens_titulo", return_value=(passagens, True)) as amostrar:
+                resultado, offline = corpus.carregar_passagens(pasta, 1, 42, offline=False, retornar_offline=True)
+            self.assertEqual(resultado, passagens)
+            self.assertTrue(offline)
+            self.assertTrue(amostrar.call_args.kwargs["retornar_offline"])
+            self.assertEqual(len(list(pasta.glob("passagens_v1_*.json"))), 1)
+
+    def test_carregar_passagens_rejeita_json_corrompido(self):
+        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            with patch.object(corpus, "amostrar_passagens_titulo", return_value=passagens):
+                corpus.carregar_passagens(pasta, 1, 42)
+            arquivo = next(pasta.glob("passagens_v1_*.json"))
+            arquivo.write_text("{corrompido", encoding="utf-8")
             with self.assertRaisesRegex(ValueError, "Cache de passagens inválido"):
                 corpus.carregar_passagens(pasta, 1, 42)
 

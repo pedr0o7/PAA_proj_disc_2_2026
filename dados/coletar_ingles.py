@@ -3,9 +3,14 @@ import gzip
 import hashlib
 import json
 import sqlite3
+import sys
 from contextlib import closing
 from pathlib import Path
 from urllib.request import Request, urlopen
+
+raiz = str(Path(__file__).resolve().parent.parent)
+if raiz not in sys.path:
+    sys.path.insert(0, raiz)
 
 from coletar_lote import (
     REGISTRO_CATEGORIA,
@@ -82,11 +87,15 @@ def baixar_continuavel(url, destino, algoritmo, esperado, tamanho, contato, offl
 
 
 def obter_shard_coleta(nome, item, cache, contato, offline):
-    destino = cache / nome
+    from infraestrutura import huggingface as hub
+
+    offline = bool(offline) or hub.HF_HUB_OFFLINE
+    destino = Path(cache) / nome
     parcial = destino.with_name(destino.name + ".part")
     if not destino.exists() and parcial.exists() and not offline:
         print(f"Retomando download público anterior de {nome}.", flush=True)
         baixar_continuavel(BASE_HF + item["path"], destino, "sha256", item["sha256"], item["size"], contato)
+        return destino, offline
     return wikipedia.obter_shard(nome, item, cache, offline)
 
 

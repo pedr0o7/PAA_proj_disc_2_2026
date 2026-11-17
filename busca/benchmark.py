@@ -146,15 +146,23 @@ def metodo_word2vec(passagens, consultas, k, dim=100, epocas=5):
     return topos, {"construcao_s": construcao, "indice_mb": mat.nbytes / 2**20, **lat}
 
 
-def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64):
+def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revisao=None):
     from acesso_hf import carregar_modelo, preparar_acesso_hub
+    from rag import MODELO_EMB, REVISAO_EMB
     from sentence_transformers import SentenceTransformer
     from usearch.index import Index
 
+    if isinstance(revisao, str):
+        revisao = revisao.strip() or None
+    if revisao is None and modelo_nome == MODELO_EMB:
+        revisao = REVISAO_EMB
     offline = preparar_acesso_hub()
-    modelo = carregar_modelo(
+    kwargs_modelo = {"device": "cpu", "local_files_only": offline, "retornar_offline": True}
+    if revisao is not None:
+        kwargs_modelo["revision"] = revisao
+    modelo, offline = carregar_modelo(
         f"o modelo de embeddings {modelo_nome}", SentenceTransformer, modelo_nome,
-        device="cpu", local_files_only=offline,
+        **kwargs_modelo,
     )
     modelo.max_seq_length = 128
     t = time.perf_counter()
@@ -191,7 +199,7 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64):
     return topos_bf, res_bf, topos_h, res_h
 
 
-def executar(n, q, k, semente, modelo_nome):
+def executar(n, q, k, semente, modelo_nome, revisao=None):
     passagens = amostrar_passagens(TEXTOS, n, semente)
     consultas = criar_consultas(passagens, q, semente)
     alvos = [i for _, i in consultas]
@@ -203,7 +211,7 @@ def executar(n, q, k, semente, modelo_nome):
 
     registrar("tfidf_cosseno", *metodo_tfidf(passagens, consultas, k))
     registrar("word2vec_medio_cosseno", *metodo_word2vec(passagens, consultas, k))
-    tb, rb, th, rh = metodo_sentence(passagens, consultas, k, modelo_nome)
+    tb, rb, th, rh = metodo_sentence(passagens, consultas, k, modelo_nome, revisao=revisao)
     registrar("sentence_cosseno_bruto", tb, rb)
     registrar("sentence_hnsw", th, rh)
     return {"n_passagens": len(passagens), "n_consultas": len(consultas), "k": k, "resultados": resultados}
@@ -216,12 +224,13 @@ def main():
     ap.add_argument("--k", type=int, default=10)
     ap.add_argument("--semente", type=int, default=42)
     ap.add_argument("--modelo", default="sentence-transformers/all-MiniLM-L6-v2")
+    ap.add_argument("--revisao", default=None)
     ap.add_argument("--saida", type=Path, default=Path(__file__).parent / "resultados.json")
     a = ap.parse_args()
     todos = []
     for n in a.tamanhos:
         print(f"== N={n}", flush=True)
-        todos.append(executar(n, a.consultas, a.k, a.semente, a.modelo))
+        todos.append(executar(n, a.consultas, a.k, a.semente, a.modelo, a.revisao))
     a.saida.write_text(json.dumps(todos, indent=2), encoding="utf-8")
 
 

@@ -2,6 +2,7 @@
 import json
 import logging
 import random
+from pathlib import Path
 
 from configuracao_hf import configurar_huggingface
 
@@ -19,10 +20,14 @@ POR_ARTIGO = 3
 
 
 def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=MIN_CAR, max_car=MAX_CAR,
-                              por_artigo=POR_ARTIGO, offline=None):
+                              por_artigo=POR_ARTIGO, offline=None, retornar_offline=False):
     """Sorteia artigos e, de cada um, até `por_artigo` parágrafos de tamanho adequado."""
     artigos = []
-    for arq in baixar_shards(n_shards, offline):
+    if retornar_offline:
+        arquivos, offline = baixar_shards(n_shards, offline, retornar_offline=True)
+    else:
+        arquivos = baixar_shards(n_shards, offline)
+    for arq in arquivos:
         for lote in pq.ParquetFile(arq).iter_batches(batch_size=2000, columns=["title", "url", "text"]):
             for titulo, url, texto in zip(lote.column("title").to_pylist(), lote.column("url").to_pylist(),
                                           lote.column("text").to_pylist()):
@@ -40,10 +45,12 @@ def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=MIN_CAR, max_car=M
                 passagens.append({"texto": p, "titulo": titulo, "url": url})
         if len(passagens) >= n:
             break
-    return passagens[:n]
+    resultado = passagens[:n]
+    return (resultado, offline) if retornar_offline else resultado
 
 
 def verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache):
+    cache_dir = Path(cache_dir)
     parametros = {
         "versao": 1, "revisao": REVISAO_HF, "n": n, "semente": semente,
         "n_shards": n_shards, "min_car": MIN_CAR, "max_car": MAX_CAR, "por_artigo": POR_ARTIGO,
@@ -58,30 +65,46 @@ def verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache):
     return parametros, arq, legado
 
 
-def carregar_passagens(cache_dir, n, semente, n_shards=1, offline=None, regenerar_cache=False):
+def carregar_passagens(cache_dir, n, semente, n_shards=1, offline=None, regenerar_cache=False,
+                       retornar_offline=False):
     """Carrega ou cria passagens identificadas pela origem e pelos parâmetros."""
+    from infraestrutura import huggingface as hub
+
+    cache_dir = Path(cache_dir)
+    offline = hub.HF_HUB_OFFLINE if offline is None else bool(offline) or hub.HF_HUB_OFFLINE
     parametros, arq, legado = verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache)
     if arq.exists():
-        registro = json.loads(arq.read_text(encoding="utf-8"))
+        try:
+            registro = json.loads(arq.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}") from exc
         if (not isinstance(registro, dict) or registro.get("parametros") != parametros
                 or not isinstance(registro.get("passagens"), list)
                 or registro.get("sha256") != identidade(registro["passagens"])):
             raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}")
         validar_passagens(registro["passagens"])
         LOG.info("Usando passagens em cache; não será necessário obter shards para o corpus.")
-        return registro["passagens"]
+        return (registro["passagens"], offline) if retornar_offline else registro["passagens"]
     if legado.exists():
         LOG.warning("Cache antigo preservado, mas não reutilizado: faltam metadados de amostragem.")
     LOG.info("Cache de passagens ausente; preparando corpus a partir de %d shard(s).", n_shards)
-    passagens = amostrar_passagens_titulo(
-        n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO, offline=offline,
-    )
+    if retornar_offline:
+        passagens, offline = amostrar_passagens_titulo(
+            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
+            offline=offline, retornar_offline=True,
+        )
+    else:
+        passagens = amostrar_passagens_titulo(
+            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
+            offline=offline,
+        )
     validar_passagens(passagens)
+    cache_dir.mkdir(parents=True, exist_ok=True)
     registro = {"parametros": parametros, "sha256": identidade(passagens), "passagens": passagens}
     dados = json.dumps(registro, ensure_ascii=False).encode("utf-8")
     gravar_atomico(arq, lambda arquivo: arquivo.write(dados))
     LOG.info("Corpus preparado: %d passagens.", len(passagens))
-    return passagens
+    return (passagens, offline) if retornar_offline else passagens
 
 
 def validar_passagens(passagens):
