@@ -60,6 +60,63 @@ python -m pip install -r requirements.txt
 
 Na primeira execução, o programa pode baixar as passagens da Wikipédia e os modelos necessários. Esse processo pode levar alguns minutos.
 
+### Autenticação no Hugging Face
+
+Após instalar as dependências, autentique-se de uma das formas:
+
+- Copie `.env.example` da raiz para `.env` e preencha `HF_TOKEN` com um [Access Token](https://huggingface.co/settings/tokens) de leitura.
+- Ou execute `hf auth login` e informe o token quando solicitado. Nesse caso, não é necessário preencher `HF_TOKEN`.
+
+Variáveis já definidas no ambiente têm prioridade sobre o `.env`; um `HF_TOKEN` preenchido tem prioridade sobre o login da CLI. O `.env` é ignorado pelo Git, mas **remova-o também do ZIP de entrega**.
+
+O acesso usa a rede por padrão e, sem credencial, os recursos públicos são acessados anonimamente. Quando há credencial, o pipeline a verifica no início; uma credencial inválida causa erro explícito, sem tentativa anônima. A verificação exige uma chamada adicional ao Hub.
+
+Os downloads do Hub usam `hf_xet` em modo de alto desempenho por padrão. Para desativar esse modo, defina `HF_XET_HIGH_PERFORMANCE=0` no `.env` ou no ambiente. Se `hf_xet` não estiver disponível, ou se `HF_HUB_DISABLE_XET=1`, será exibido um aviso e os downloads usarão HTTP. Shards completos em `dados/cache_ingles` são verificados e reutilizados; novos downloads usam o cache do Hugging Face. O coletor inglês ainda retoma seus arquivos `.part` antigos por HTTP público; a busca não os retoma.
+
+Para executar **offline**, prepare previamente os modelos e o corpus com rede e defina `HF_HUB_OFFLINE=1` antes de iniciar o programa. No PowerShell, a partir de `busca`:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+python consultar.py --sem-llm -p "What is the capital of France?"
+Remove-Item Env:\HF_HUB_OFFLINE
+```
+
+Uma variável já definida no terminal tem prioridade sobre o `.env`; reinicie o processo ao alterar o modo. Offline, a credencial não é verificada e arquivos ausentes causam erro. É necessária a revisão fixa do modelo de embeddings e, se usado, o modelo de geração. O cache de passagens compatível evita a leitura dos shards; caso ele não exista, são necessários o manifesto salvo em uma execução online e todos os shards selecionados completos. Os shards são verificados pelo tamanho e SHA-256 do manifesto salvo. Embeddings ausentes podem ser calculados a partir do modelo e das passagens locais.
+
+Uma falha de conexão ou timeout durante a verificação de credencial ou consulta do manifesto permite tentar os caches locais, com aviso; as bibliotecas de modelos também podem usar seus caches quando a rede falha. Isso não garante fallback para toda falha: erros de autenticação, permissão, servidor ou transferência podem interromper a execução. Um cache incompleto também causa erro.
+
+Na consulta, mensagens `INFO` indicam o carregamento dos modelos e se o corpus
+usa cache ou precisa obter shards. A validação da credencial é informada quando
+concluída; usar um cache ou baixar um recurso público por si só não comprova
+autenticação. A validação de tamanho e SHA-256 é informada após cada shard ser
+verificado. Os logs não exibem o token e não confirmam qual transporte foi usado.
+
+### Caches anteriores
+
+Os novos caches de passagens registram a revisão do corpus e os parâmetros de
+amostragem; os embeddings registram a identidade das passagens, a revisão fixa
+do modelo e as versões das bibliotecas. Arquivos antigos não possuem esses
+metadados e **não são apagados nem reutilizados automaticamente**.
+
+Se um cache antigo corresponder aos parâmetros solicitados, o programa pede
+confirmação explícita para regenerar os arquivos novos. Na pasta `busca`:
+
+```powershell
+python consultar.py --regenerar-cache --sem-llm -p "What is the capital of France?"
+```
+
+Isso não converte os arquivos antigos: amostra as passagens novamente e calcula
+os embeddings, podendo exigir rede, espaço e tempo. Offline, o manifesto, os
+shards e a revisão do modelo precisam estar completos no cache. A opção também
+existe em `avaliar.py` e `gerar_dataset.py`. Depois da criação, não é preciso
+repeti-la para a mesma configuração.
+
+## Organização
+
+`infraestrutura/` concentra configuração do Hub, manifesto da Wikipédia e
+verificação de integridade; `dados/` coleta e extrai as fontes; `busca/`
+amostra passagens, gera embeddings e executa consultas e avaliações.
+
 ## ☕ Usando
 
 Execute os comandos a partir da pasta `busca`.
@@ -105,6 +162,7 @@ python consultar.py -p "What is the capital of France?" --trechos
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
 | `--trechos` | Exibe o texto dos trechos recuperados | — |
+| `--regenerar-cache` | Permite recriar caches antigos sem metadados | desativado |
 
 Exemplo com mais passagens:
 
@@ -126,10 +184,17 @@ Para executar os testes dos coletores de dados, a partir da raiz do projeto:
 py -3.12 -m unittest discover -s dados -p "test_coletar*.py" -v
 ```
 
+Para testar a configuração do Hugging Face e os downloads do corpus:
+
+```powershell
+py -3.12 -m unittest discover -s busca -p "test_*.py" -v
+```
+
 ## 📚 Documentação
 
 - [Documentação técnica](Documentacao.md)
 - [Coleta de dados](dados/README.md)
+- [Migração do Hugging Face e compatibilidade](busca/MIGRACAO_HUGGING_FACE.md)
 
 ## 📫 Contribuindo
 

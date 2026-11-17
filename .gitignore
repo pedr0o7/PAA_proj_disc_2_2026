@@ -1,17 +1,14 @@
-
 # Ambiente virtual e variáveis de ambiente
 .venv/
 .env
 
 # Cache de busca e arquivos temporários do Python
 __pycache__/
-*.pyc
-busca/__pycache__/
+*.py[cod]
 busca/cache_indice/
 
 # Dados geográficos e caches relacionados
 geografia_coleta/
-__pycache__/
 cache_lote/
 geografia_lote/
 geografia_lote_verificada/

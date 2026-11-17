@@ -1,1 +1,5 @@
 pyarrow>=18,<24
+huggingface_hub>=1.33,<2
+httpx>=0.23,<1
+python-dotenv>=1.2,<2
+hf-xet>=1.6,<2

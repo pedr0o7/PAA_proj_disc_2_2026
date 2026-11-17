@@ -3,6 +3,7 @@
 Uso: consultar.py [--n 5000] [--k 3] [--llm HF_ID] [--sem-llm] [-p "pergunta"]
 """
 import argparse
+import logging
 import sys
 import textwrap
 
@@ -29,6 +30,13 @@ def imprimir(r, mostrar_trechos):
 
 
 def main():
+    log = logging.getLogger("busca")
+    if not log.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=5000, help="passagens indexadas")
     ap.add_argument("--semente", type=int, default=42)
@@ -39,9 +47,11 @@ def main():
     ap.add_argument("--sem-llm", action="store_true", help="só recupera trechos, sem gerar resposta")
     ap.add_argument("--max-tokens", type=int, default=200)
     ap.add_argument("--trechos", action="store_true", help="mostra o texto dos trechos recuperados")
+    ap.add_argument("--regenerar-cache", action="store_true", help="recria caches antigos sem metadados")
     a = ap.parse_args()
 
-    sistema = SistemaRAG(a.n, a.semente, a.shards, None if a.sem_llm else a.llm, a.k, a.max_tokens)
+    sistema = SistemaRAG(a.n, a.semente, a.shards, None if a.sem_llm else a.llm, a.k, a.max_tokens,
+                         regenerar_cache=a.regenerar_cache)
     if a.pergunta:
         imprimir(sistema.perguntar(a.pergunta), a.trechos)
         return

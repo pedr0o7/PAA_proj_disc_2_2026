@@ -2,13 +2,19 @@ import gzip
 import hashlib
 import io
 import sqlite3
+import subprocess
+import sys
 import tempfile
 import unittest
 from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
-from coletar_ingles import baixar_continuavel, construir_indice
+import pyarrow as pa
+import pyarrow.parquet as pq
+
+from coletar_ingles import baixar_continuavel, baixar_fontes, coletar_ingles, construir_indice, obter_shard_coleta
+from extrair_10gb_en import extrair as extrair_texto
 
 
 def gravar_dump(caminho, linhas):
@@ -81,6 +87,104 @@ class TestColetaIngles(unittest.TestCase):
                     baixar_continuavel(
                         "https://example.com/fonte", caminho, "sha256", "0" * 64, 6, "contato"
                     )
+
+    def test_shard_legado_parcial_e_retomado_e_validado(self):
+        dados = b"primeira parte e segunda parte"
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            nome = "train-00000-of-00041.parquet"
+            destino = pasta / nome
+            destino.with_name(nome + ".part").write_bytes(dados[:8])
+            item = {"path": "20231101.en/" + nome, "sha256": hashlib.sha256(dados).hexdigest(),
+                    "size": len(dados)}
+            with patch("coletar_ingles.urlopen", return_value=Resposta(dados[8:], 206, "bytes 8-29/30")), \
+                 patch("coletar_ingles.wikipedia.obter_shard") as obter_shard:
+                resultado, offline = obter_shard_coleta(nome, item, pasta, "contato", False)
+            obter_shard.assert_not_called()
+            self.assertEqual(resultado, destino)
+            self.assertFalse(offline)
+            self.assertEqual(destino.read_bytes(), dados)
+            self.assertFalse(destino.with_name(nome + ".part").exists())
+
+    def test_shard_legado_parcial_nao_retoma_quando_hf_hub_offline(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            nome = "train-00000-of-00041.parquet"
+            (pasta / f"{nome}.part").write_bytes(b"parcial")
+            item = {"path": "20231101.en/" + nome, "sha256": "0" * 64, "size": 10}
+            with patch("infraestrutura.huggingface.HF_HUB_OFFLINE", True), \
+                 patch("coletar_ingles.urlopen") as abrir, \
+                 patch("coletar_ingles.wikipedia.obter_shard", side_effect=FileNotFoundError("ausente")) as obter_shard:
+                with self.assertRaises(FileNotFoundError):
+                    obter_shard_coleta(nome, item, pasta, "contato", False)
+            abrir.assert_not_called()
+            obter_shard.assert_called_once_with(nome, item, pasta, True)
+
+    def test_dump_offline_nao_retomado_quando_incompleto(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            destino = Path(diretorio) / "fonte.bin"
+            parcial = destino.with_name(destino.name + ".part")
+            parcial.write_bytes(b"abc")
+            with patch("coletar_ingles.urlopen") as abrir:
+                with self.assertRaisesRegex(FileNotFoundError, "Arquivo completo ausente"):
+                    baixar_continuavel("https://example.com", destino, "sha256", "0" * 64, 6, "contato", True)
+            abrir.assert_not_called()
+            self.assertEqual(parcial.read_bytes(), b"abc")
+
+    def test_coleta_usa_caminhos_de_shards_no_cache_do_hub(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            indice = pasta / "indice.sqlite"
+            with closing(sqlite3.connect(indice)) as conexao:
+                conexao.execute("CREATE TABLE selecionadas (id INTEGER)")
+                conexao.execute("INSERT INTO selecionadas VALUES (1)")
+                conexao.execute("CREATE TABLE alcancaveis (id INTEGER, profundidade INTEGER)")
+                conexao.execute("INSERT INTO alcancaveis VALUES (2, 0)")
+                conexao.commit()
+            shard_hub = pasta / "hub" / "snapshot.parquet"
+            with patch("coletar_ingles.construir_indice", return_value=indice), \
+                 patch("coletar_ingles.extrair", return_value={}) as extrair:
+                coletar_ingles(pasta, {"train-00000-of-00041.parquet": shard_hub}, pasta / "saida", 2)
+            self.assertEqual(extrair.call_args.args[0], [shard_hub])
+
+    def test_baixar_fontes_usa_acesso_e_manifesto_compartilhados(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            item = {"path": "20231101.en/shard.parquet", "sha256": "0" * 64, "size": 1}
+            shard = pasta / "hub" / "snapshot.parquet"
+            with patch("coletar_ingles.DUMPS", {}), \
+                 patch("coletar_ingles.preparar_acesso_hub", return_value=True) as preparar, \
+                 patch("coletar_ingles.wikipedia.obter_manifesto", return_value=({"shard": item}, True)) as manifesto, \
+                 patch("coletar_ingles.obter_shard_coleta", return_value=(shard, True)) as obter:
+                self.assertEqual(baixar_fontes(pasta, "contato"), {"shard": shard})
+            preparar.assert_called_once()
+            manifesto.assert_called_once_with(True, contato="contato")
+            obter.assert_called_once_with("shard", item, pasta, "contato", True)
+
+    def test_extracao_usa_shard_compartilhado_e_modo_offline(self):
+        with tempfile.TemporaryDirectory() as diretorio:
+            pasta = Path(diretorio)
+            shard = pasta / "snapshot.parquet"
+            pq.write_table(pa.Table.from_pylist([{"id": "1", "text": "texto"}]), shard)
+            item = {"path": "20231101.en/train-00000-of-00041.parquet", "sha256": "0" * 64, "size": 1}
+            with patch("extrair_10gb_en.preparar_acesso_hub", return_value=True), \
+                 patch("extrair_10gb_en.wikipedia.obter_manifesto", return_value=({"shard": item}, True)), \
+                 patch("extrair_10gb_en.obter_shard_coleta", return_value=(shard, True)) as obter:
+                extrair_texto("contato", cache=pasta / "cache", saida=pasta / "saida", meta=5)
+            self.assertTrue(obter.call_args.args[-1])
+            self.assertEqual((pasta / "saida" / "textos.txt").read_bytes(), b"texto\n\n")
+
+    def test_scripts_dados_executam_sem_depender_de_sys_path_externo(self):
+        dados_dir = Path(__file__).resolve().parent
+        for script in ("coletar_ingles.py", "extrair_10gb_en.py"):
+            res = subprocess.run(
+                [sys.executable, str(dados_dir / script), "--help"],
+                cwd=str(dados_dir),
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            self.assertEqual(res.returncode, 0, msg=f"{script} falhou: {res.stderr}")
 
 
 if __name__ == "__main__":

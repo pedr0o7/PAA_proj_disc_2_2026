@@ -28,9 +28,10 @@ def main():
     ap.add_argument("--q", type=int, default=30)
     ap.add_argument("--semente", type=int, default=7)
     ap.add_argument("--n", type=int, default=5000)
+    ap.add_argument("--regenerar-cache", action="store_true", help="recria caches antigos sem metadados")
     a = ap.parse_args()
 
-    sistema = SistemaRAG(n=a.n, k=1)
+    sistema = SistemaRAG(n=a.n, k=1, regenerar_cache=a.regenerar_cache)
     rng = random.Random(a.semente)
     itens = []
     for idx in rng.sample(range(len(sistema.passagens)), a.q * 3):
