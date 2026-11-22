@@ -1,3 +1,4 @@
+import json
 import sys
 import tempfile
 import types
@@ -280,20 +281,49 @@ class TestCacheEmbeddings(unittest.TestCase):
         self.assertNotIn("revision", chamadas[3][1])
 
     def test_benchmark_preserva_offline_entre_execucoes(self):
-        resultado = {
-            "n_passagens": 1,
-            "n_consultas": 1,
-            "k": 1,
-            "resultados": {},
-        }
-        estados_recebidos = []
+        fake_st_mod = types.ModuleType("sentence_transformers")
+        chamadas_st = []
 
-        def executar_falso(*args, **kwargs):
-            estados_recebidos.append(kwargs["offline"])
-            return resultado, True
+        class FakeST:
+            def __init__(self, *args, **kwargs):
+                chamadas_st.append(kwargs["local_files_only"])
+                if not kwargs["local_files_only"]:
+                    raise httpx.ConnectError("sem rede")
+                self.max_seq_length = 0
 
-        with patch.object(benchmark.argparse, "ArgumentParser") as parser, \
-             patch.object(benchmark, "executar", side_effect=executar_falso) as executar:
+            def encode(self, textos, **kwargs):
+                return np.ones((len(textos), 2), dtype=np.float32)
+
+        fake_st_mod.SentenceTransformer = FakeST
+        passagens = ["p1", "p2"]
+        consultas = [("c1", 0)]
+
+        with patch.dict(sys.modules, {"sentence_transformers": fake_st_mod}), \
+             patch("infraestrutura.huggingface.HF_HUB_OFFLINE", False), \
+             patch("acesso_hf.preparar_acesso_hub", return_value=False) as preparar:
+            with self.assertLogs("busca.hub", level="WARNING"):
+                *_, offline = benchmark.metodo_sentence(
+                    passagens, consultas, 1, rag.MODELO_EMB,
+                    offline=None,
+                )
+            self.assertTrue(offline)
+            *_, offline_seguinte = benchmark.metodo_sentence(
+                passagens, consultas, 1, rag.MODELO_EMB,
+                offline=offline,
+            )
+            self.assertTrue(offline_seguinte)
+            preparar.assert_called_once()
+        self.assertEqual(chamadas_st, [False, True, True])
+
+        chamadas_st.clear()
+        with patch.dict(sys.modules, {"sentence_transformers": fake_st_mod}), \
+             patch("infraestrutura.huggingface.HF_HUB_OFFLINE", False), \
+             patch("acesso_hf.preparar_acesso_hub", return_value=False) as preparar, \
+             patch.object(benchmark, "amostrar_passagens", return_value=passagens), \
+             patch.object(benchmark, "criar_consultas", return_value=consultas), \
+             patch.object(benchmark, "metodo_tfidf", return_value=([[0]], {})), \
+             patch.object(benchmark, "metodo_word2vec", return_value=([[0]], {})), \
+             patch.object(benchmark.argparse, "ArgumentParser") as parser:
             argumentos = parser.return_value.parse_args.return_value
             argumentos.tamanhos = [10, 20]
             argumentos.consultas = 1
@@ -302,10 +332,13 @@ class TestCacheEmbeddings(unittest.TestCase):
             argumentos.modelo = rag.MODELO_EMB
             argumentos.revisao = None
             argumentos.saida = Mock()
-            benchmark.main()
+            with self.assertLogs("busca.hub", level="WARNING"):
+                benchmark.main()
 
-        self.assertEqual(estados_recebidos, [None, True])
-        self.assertTrue(executar.call_args_list[1].kwargs["retornar_offline"])
+        preparar.assert_called_once()
+        self.assertEqual(chamadas_st, [False, True, True])
+        salvo = json.loads(argumentos.saida.write_text.call_args.args[0])
+        self.assertEqual(len(salvo), 2)
 
 
 if __name__ == "__main__":

@@ -271,13 +271,14 @@ derivados não precisam ser versionados.
   teste não alterou o repositório. Isso depende de funções internas do Hub 1.33
   e pode não refletir outras versões, arquivos ou redes; o fallback HTTP e a
   retomada de downloads interrompidos por rede real não foram exercitados.
-- **Suítes automatizadas após os ajustes finais:** passaram **56 testes
-  unitários** (**42 em `busca/`** e **14 em `dados/`**), cobrindo
+- **Suítes automatizadas após os ajustes finais:** passaram **58 testes
+  unitários** (**44 em `busca/`** e **14 em `dados/`**), cobrindo
   configuração do `.env` e `HF_TOKEN` vazio, ordem de importação, política de
-  autenticação, propagação do estado `offline` e `RemoteProtocolError` em
-  cadeias de exceções, fallback em `carregar_modelo`, manifesto, shards,
-  bloqueio de retomada de `.part` em `HF_HUB_OFFLINE=1`, criação de diretórios
-  em gravação atômica, rejeição de `.json`/`.npz` corrompidos e uso de
+  autenticação, propagação do estado `offline` (inclusive entre execuções do
+  benchmark) e `RemoteProtocolError` em cadeias de exceções, fallback em
+  `carregar_modelo`, manifesto, shards, bloqueio de retomada de `.part` em
+  `HF_HUB_OFFLINE=1`, criação de diretórios em gravação atômica, rejeição de
+  `.json`/`.npz` corrompidos ou com largura incompatível com o modelo e uso de
   `REVISAO_EMB` em `avaliar.py` e `benchmark.py`.
 - **Validações locais sem rede (`HF_HUB_OFFLINE=1`):** com cache temporário
   contendo apenas `snapshots/1110a243fdf4706b3f48f1d95db1a4f5529b4d41` e

@@ -17,6 +17,7 @@ from configuracao_hf import configurar_huggingface
 configurar_huggingface()
 
 import numpy as np
+from scipy.sparse import csr_matrix
 
 RAIZ = Path(__file__).resolve().parent.parent
 TEXTOS = RAIZ / "dados" / "wikipedia_en_10gb" / "textos.txt"
@@ -102,11 +103,12 @@ def metodo_tfidf(passagens, consultas, k):
 
     t = time.perf_counter()
     vec = TfidfVectorizer(sublinear_tf=True, stop_words="english", dtype=np.float32)
-    mat = vec.fit_transform(passagens)
+    mat = csr_matrix(vec.fit_transform(passagens))
     construcao = time.perf_counter() - t
 
     def buscar(c):
-        sims = (mat @ vec.transform([c]).T).toarray().ravel()
+        consulta = csr_matrix(vec.transform([c])).toarray().ravel()
+        sims = np.asarray(mat @ consulta).ravel()
         idx = np.argpartition(-sims, k)[:k]
         return idx[np.argsort(-sims[idx])]
 
@@ -147,7 +149,7 @@ def metodo_word2vec(passagens, consultas, k, dim=100, epocas=5):
 
 
 def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revisao=None,
-                    offline=None, retornar_offline=False):
+                    offline=None):
     from acesso_hf import carregar_modelo, preparar_acesso_hub
     from rag import MODELO_EMB, REVISAO_EMB
     from sentence_transformers import SentenceTransformer
@@ -198,8 +200,7 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
     exato = [topk_cosseno(mat, q, k) for q in qs]
     aprox = [indice.search(q, k).keys for q in qs]
     res_h["recall_vs_exato@10"] = float(np.mean([len(set(a) & set(e)) / k for a, e in zip(aprox, exato)]))
-    resultado = topos_bf, res_bf, topos_h, res_h
-    return (*resultado, offline) if retornar_offline else resultado
+    return topos_bf, res_bf, topos_h, res_h, offline
 
 
 def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None,
@@ -217,7 +218,7 @@ def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None,
     registrar("word2vec_medio_cosseno", *metodo_word2vec(passagens, consultas, k))
     tb, rb, th, rh, offline = metodo_sentence(
         passagens, consultas, k, modelo_nome, revisao=revisao,
-        offline=offline, retornar_offline=True,
+        offline=offline,
     )
     registrar("sentence_cosseno_bruto", tb, rb)
     registrar("sentence_hnsw", th, rh)
