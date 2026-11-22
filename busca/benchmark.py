@@ -146,7 +146,8 @@ def metodo_word2vec(passagens, consultas, k, dim=100, epocas=5):
     return topos, {"construcao_s": construcao, "indice_mb": mat.nbytes / 2**20, **lat}
 
 
-def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revisao=None):
+def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revisao=None,
+                    offline=None, retornar_offline=False):
     from acesso_hf import carregar_modelo, preparar_acesso_hub
     from rag import MODELO_EMB, REVISAO_EMB
     from sentence_transformers import SentenceTransformer
@@ -156,7 +157,8 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
         revisao = revisao.strip() or None
     if revisao is None and modelo_nome == MODELO_EMB:
         revisao = REVISAO_EMB
-    offline = preparar_acesso_hub()
+    if offline is None:
+        offline = preparar_acesso_hub()
     kwargs_modelo = {"device": "cpu", "local_files_only": offline, "retornar_offline": True}
     if revisao is not None:
         kwargs_modelo["revision"] = revisao
@@ -196,10 +198,12 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
     exato = [topk_cosseno(mat, q, k) for q in qs]
     aprox = [indice.search(q, k).keys for q in qs]
     res_h["recall_vs_exato@10"] = float(np.mean([len(set(a) & set(e)) / k for a, e in zip(aprox, exato)]))
-    return topos_bf, res_bf, topos_h, res_h
+    resultado = topos_bf, res_bf, topos_h, res_h
+    return (*resultado, offline) if retornar_offline else resultado
 
 
-def executar(n, q, k, semente, modelo_nome, revisao=None):
+def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None,
+             retornar_offline=False):
     passagens = amostrar_passagens(TEXTOS, n, semente)
     consultas = criar_consultas(passagens, q, semente)
     alvos = [i for _, i in consultas]
@@ -211,10 +215,19 @@ def executar(n, q, k, semente, modelo_nome, revisao=None):
 
     registrar("tfidf_cosseno", *metodo_tfidf(passagens, consultas, k))
     registrar("word2vec_medio_cosseno", *metodo_word2vec(passagens, consultas, k))
-    tb, rb, th, rh = metodo_sentence(passagens, consultas, k, modelo_nome, revisao=revisao)
+    tb, rb, th, rh, offline = metodo_sentence(
+        passagens, consultas, k, modelo_nome, revisao=revisao,
+        offline=offline, retornar_offline=True,
+    )
     registrar("sentence_cosseno_bruto", tb, rb)
     registrar("sentence_hnsw", th, rh)
-    return {"n_passagens": len(passagens), "n_consultas": len(consultas), "k": k, "resultados": resultados}
+    resultado = {
+        "n_passagens": len(passagens),
+        "n_consultas": len(consultas),
+        "k": k,
+        "resultados": resultados,
+    }
+    return (resultado, offline) if retornar_offline else resultado
 
 
 def main():
@@ -227,10 +240,14 @@ def main():
     ap.add_argument("--revisao", default=None)
     ap.add_argument("--saida", type=Path, default=Path(__file__).parent / "resultados.json")
     a = ap.parse_args()
-    todos = []
+    todos, offline = [], None
     for n in a.tamanhos:
         print(f"== N={n}", flush=True)
-        todos.append(executar(n, a.consultas, a.k, a.semente, a.modelo, a.revisao))
+        resultado, offline = executar(
+            n, a.consultas, a.k, a.semente, a.modelo, a.revisao,
+            offline=offline, retornar_offline=True,
+        )
+        todos.append(resultado)
     a.saida.write_text(json.dumps(todos, indent=2), encoding="utf-8")
 
 

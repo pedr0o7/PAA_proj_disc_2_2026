@@ -92,6 +92,9 @@ class SistemaRAG:
             self.tok, self.lm = None, None
 
     def _embeddings(self):
+        dimensao_modelo = self.modelo_emb.get_sentence_embedding_dimension()
+        if not isinstance(dimensao_modelo, int) or dimensao_modelo <= 0:
+            raise ValueError("O modelo de embeddings não informou uma dimensão válida.")
         metadados = {
             "versao": 1, "passagens_sha256": identidade(self.passagens),
             "modelo": MODELO_EMB, "revisao": REVISAO_EMB, "max_seq_length": MAX_SEQ_EMB,
@@ -131,14 +134,19 @@ class SistemaRAG:
                 raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}") from exc
             if meta_lida != metadados:
                 raise ValueError(f"Metadados de embeddings incompatíveis: {arq}")
-            if emb.ndim != 2 or len(emb) != len(self.passagens) or emb.shape[1] == 0 or emb.dtype != np.float32:
+            if (
+                emb.ndim != 2
+                or len(emb) != len(self.passagens)
+                or emb.shape[1] != dimensao_modelo
+                or emb.dtype != np.float32
+            ):
                 raise ValueError(f"Cache de embeddings inválido ou incompatível: {arq}")
             LOG.info("Usando embeddings em cache.")
             return emb
         print(f"Primeira execução: codificando {len(self.passagens)} passagens (alguns minutos em CPU)...")
         emb = self.modelo_emb.encode([p["texto"] for p in self.passagens], batch_size=64,
                                      normalize_embeddings=True, show_progress_bar=True).astype(np.float32)
-        if emb.ndim != 2 or len(emb) != len(self.passagens):
+        if emb.ndim != 2 or len(emb) != len(self.passagens) or emb.shape[1] != dimensao_modelo:
             raise ValueError("O modelo retornou embeddings incompatíveis com as passagens.")
         gravar_atomico(arq, lambda arquivo: np.savez(
             arquivo, metadados=json.dumps(metadados, sort_keys=True), embeddings=emb,

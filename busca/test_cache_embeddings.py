@@ -30,6 +30,7 @@ class TestCacheEmbeddings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as diretorio, patch.object(rag, "CACHE", Path(diretorio)):
             sistema = rag.SistemaRAG.__new__(rag.SistemaRAG)
             sistema.modelo_emb = Mock()
+            sistema.modelo_emb.get_sentence_embedding_dimension.return_value = 2
             sistema.modelo_emb.encode.return_value = np.array([[1.0, 2.0]], dtype=np.float32)
             sistema.passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
             primeiro = sistema._embeddings()
@@ -46,6 +47,7 @@ class TestCacheEmbeddings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as diretorio, patch.object(rag, "CACHE", Path(diretorio)):
             sistema = rag.SistemaRAG.__new__(rag.SistemaRAG)
             sistema.modelo_emb = Mock()
+            sistema.modelo_emb.get_sentence_embedding_dimension.return_value = 2
             sistema.modelo_emb.encode.return_value = np.array([[1.0, 2.0]], dtype=np.float32)
             sistema.passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
             sistema._embeddings()
@@ -56,10 +58,26 @@ class TestCacheEmbeddings(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "embeddings inválido ou incompatível"):
                 sistema._embeddings()
 
+    def test_rejeita_largura_incompativel_com_modelo(self):
+        with tempfile.TemporaryDirectory() as diretorio, patch.object(rag, "CACHE", Path(diretorio)):
+            sistema = rag.SistemaRAG.__new__(rag.SistemaRAG)
+            sistema.modelo_emb = Mock()
+            sistema.modelo_emb.get_sentence_embedding_dimension.return_value = 2
+            sistema.modelo_emb.encode.return_value = np.array([[1.0, 2.0]], dtype=np.float32)
+            sistema.passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
+            sistema._embeddings()
+            caminho = next(Path(diretorio).glob("*.npz"))
+            with np.load(caminho, allow_pickle=False) as registro:
+                metadados = registro["metadados"]
+            np.savez(caminho, metadados=metadados, embeddings=np.zeros((1, 3), dtype=np.float32))
+            with self.assertRaisesRegex(ValueError, "embeddings inválido ou incompatível"):
+                sistema._embeddings()
+
     def test_rejeita_npz_corrompido_ou_sem_chaves(self):
         with tempfile.TemporaryDirectory() as diretorio, patch.object(rag, "CACHE", Path(diretorio)):
             sistema = rag.SistemaRAG.__new__(rag.SistemaRAG)
             sistema.modelo_emb = Mock()
+            sistema.modelo_emb.get_sentence_embedding_dimension.return_value = 2
             sistema.modelo_emb.encode.return_value = np.array([[1.0, 2.0]], dtype=np.float32)
             sistema.passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
             sistema._embeddings()
@@ -125,6 +143,7 @@ class TestCacheEmbeddings(unittest.TestCase):
         passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
         emb = np.array([[1.0, 0.0]], dtype=np.float32)
         modelo_emb = Mock()
+        modelo_emb.get_sentence_embedding_dimension.return_value = 2
         modelo_emb.encode.return_value = emb
         tok = Mock()
         lm = Mock()
@@ -161,6 +180,7 @@ class TestCacheEmbeddings(unittest.TestCase):
     def test_sistema_rag_propaga_offline_do_corpus_para_llm(self):
         passagens = [{"texto": "um", "titulo": "t", "url": "u"}]
         modelo_emb = Mock()
+        modelo_emb.get_sentence_embedding_dimension.return_value = 2
         modelo_emb.encode.return_value = np.array([[1.0, 0.0]], dtype=np.float32)
         lm = Mock()
         lm.eval.return_value = lm
@@ -258,6 +278,34 @@ class TestCacheEmbeddings(unittest.TestCase):
         self.assertNotIn("revision", chamadas[1][1])
         self.assertEqual(chamadas[2][1]["revision"], rag.REVISAO_EMB)
         self.assertNotIn("revision", chamadas[3][1])
+
+    def test_benchmark_preserva_offline_entre_execucoes(self):
+        resultado = {
+            "n_passagens": 1,
+            "n_consultas": 1,
+            "k": 1,
+            "resultados": {},
+        }
+        estados_recebidos = []
+
+        def executar_falso(*args, **kwargs):
+            estados_recebidos.append(kwargs["offline"])
+            return resultado, True
+
+        with patch.object(benchmark.argparse, "ArgumentParser") as parser, \
+             patch.object(benchmark, "executar", side_effect=executar_falso) as executar:
+            argumentos = parser.return_value.parse_args.return_value
+            argumentos.tamanhos = [10, 20]
+            argumentos.consultas = 1
+            argumentos.k = 1
+            argumentos.semente = 42
+            argumentos.modelo = rag.MODELO_EMB
+            argumentos.revisao = None
+            argumentos.saida = Mock()
+            benchmark.main()
+
+        self.assertEqual(estados_recebidos, [None, True])
+        self.assertTrue(executar.call_args_list[1].kwargs["retornar_offline"])
 
 
 if __name__ == "__main__":
