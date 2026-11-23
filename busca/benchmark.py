@@ -11,6 +11,7 @@ import random
 import re
 import time
 from pathlib import Path
+from typing import cast
 
 from configuracao_hf import configurar_huggingface
 
@@ -103,12 +104,13 @@ def metodo_tfidf(passagens, consultas, k):
 
     t = time.perf_counter()
     vec = TfidfVectorizer(sublinear_tf=True, stop_words="english", dtype=np.float32)
-    mat = csr_matrix(vec.fit_transform(passagens))
+    # cast só ajusta a tipagem; o produto esparso x esparso abaixo é o caminho
+    # medido em RELATORIO.md e resultados.json (otimização em TAREFAS_FUTURAS.md).
+    mat = cast(csr_matrix, vec.fit_transform(passagens))
     construcao = time.perf_counter() - t
 
     def buscar(c):
-        consulta = csr_matrix(vec.transform([c])).toarray().ravel()
-        sims = np.asarray(mat @ consulta).ravel()
+        sims = (mat @ vec.transform([c]).T).toarray().ravel()
         idx = np.argpartition(-sims, k)[:k]
         return idx[np.argsort(-sims[idx])]
 
@@ -203,8 +205,7 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
     return topos_bf, res_bf, topos_h, res_h, offline
 
 
-def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None,
-             retornar_offline=False):
+def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None):
     passagens = amostrar_passagens(TEXTOS, n, semente)
     consultas = criar_consultas(passagens, q, semente)
     alvos = [i for _, i in consultas]
@@ -228,7 +229,7 @@ def executar(n, q, k, semente, modelo_nome, revisao=None, offline=None,
         "k": k,
         "resultados": resultados,
     }
-    return (resultado, offline) if retornar_offline else resultado
+    return resultado, offline
 
 
 def main():
@@ -246,7 +247,7 @@ def main():
         print(f"== N={n}", flush=True)
         resultado, offline = executar(
             n, a.consultas, a.k, a.semente, a.modelo, a.revisao,
-            offline=offline, retornar_offline=True,
+            offline=offline,
         )
         todos.append(resultado)
     a.saida.write_text(json.dumps(todos, indent=2), encoding="utf-8")
