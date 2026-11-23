@@ -2,11 +2,15 @@ import argparse
 import gzip
 import hashlib
 import json
-import re
 import sqlite3
+import sys
 from contextlib import closing
 from pathlib import Path
 from urllib.request import Request, urlopen
+
+raiz = str(Path(__file__).resolve().parent.parent)
+if raiz not in sys.path:
+    sys.path.insert(0, raiz)
 
 from coletar_lote import (
     REGISTRO_CATEGORIA,
@@ -15,6 +19,9 @@ from coletar_lote import (
     extrair,
     ler_relacoes,
 )
+from infraestrutura import wikipedia
+from infraestrutura.huggingface import preparar_acesso_hub
+from infraestrutura.integridade import validar_arquivo
 
 
 RAIZ = Path(__file__).resolve().parent
@@ -28,24 +35,11 @@ BASE_HF = f"https://huggingface.co/datasets/wikimedia/wikipedia/resolve/{REVISAO
 
 
 def manifesto(contato):
-    url = f"https://huggingface.co/api/datasets/wikimedia/wikipedia/tree/{REVISAO_HF}/20231101.en?limit=100"
-    requisicao = Request(url, headers={"User-Agent": f"ProjetoGeografia/1.0 ({contato})"})
-    with urlopen(requisicao, timeout=60) as resposta:
-        dados = json.load(resposta)
-    if len(dados) != 41:
-        raise ValueError(f"Esperados 41 arquivos ingleses, recebidos {len(dados)}.")
-    arquivos = {}
-    for item in dados:
-        nome = Path(item["path"]).name
-        if not re.fullmatch(r"train-\d{5}-of-00041\.parquet", nome):
-            raise ValueError(f"Arquivo inesperado no dataset: {item['path']}")
-        arquivos[nome] = (item["path"], item["lfs"]["oid"], item["size"])
-    if len(arquivos) != 41:
-        raise ValueError("O manifesto contém nomes duplicados.")
-    return arquivos
+    disponiveis, _ = wikipedia.obter_manifesto(preparar_acesso_hub(), contato=contato)
+    return {nome: (item["path"], item["sha256"], item["size"]) for nome, item in disponiveis.items()}
 
 
-def baixar_continuavel(url, destino, algoritmo, esperado, tamanho, contato):
+def baixar_continuavel(url, destino, algoritmo, esperado, tamanho, contato, offline=False):
     def calcular_hash(caminho):
         digest = hashlib.new(algoritmo)
         with caminho.open("rb") as arquivo:
@@ -54,10 +48,11 @@ def baixar_continuavel(url, destino, algoritmo, esperado, tamanho, contato):
         return digest
 
     if destino.exists():
-        if destino.stat().st_size != tamanho or calcular_hash(destino).hexdigest() != esperado:
-            raise ValueError(f"Arquivo existente inválido: {destino}")
+        validar_arquivo(destino, algoritmo, esperado, tamanho)
         print(f"Verificado: {destino.name}", flush=True)
         return
+    if offline:
+        raise FileNotFoundError(f"Arquivo completo ausente no modo offline: {destino}")
     parcial = destino.with_name(destino.name + ".part")
     existente = parcial.stat().st_size if parcial.exists() else 0
     if existente > tamanho:
@@ -91,15 +86,29 @@ def baixar_continuavel(url, destino, algoritmo, esperado, tamanho, contato):
     print(f"Download validado: {destino.name}", flush=True)
 
 
+def obter_shard_coleta(nome, item, cache, contato, offline):
+    from infraestrutura import huggingface as hub
+
+    offline = bool(offline) or hub.HF_HUB_OFFLINE
+    destino = Path(cache) / nome
+    parcial = destino.with_name(destino.name + ".part")
+    if not destino.exists() and parcial.exists() and not offline:
+        print(f"Retomando download público anterior de {nome}.", flush=True)
+        baixar_continuavel(BASE_HF + item["path"], destino, "sha256", item["sha256"], item["size"], contato)
+        return destino, offline
+    return wikipedia.obter_shard(nome, item, cache, offline)
+
+
 def baixar_fontes(cache, contato):
     cache.mkdir(parents=True, exist_ok=True)
-    arquivos = manifesto(contato)
+    disponiveis, offline = wikipedia.obter_manifesto(preparar_acesso_hub(), contato=contato)
     for nome, (sha1, tamanho) in DUMPS.items():
         arquivo = f"enwiki-{DATA_DUMP}-{nome}.sql.gz"
         url = f"https://dumps.wikimedia.org/enwiki/{DATA_DUMP}/{arquivo}"
-        baixar_continuavel(url, cache / arquivo, "sha1", sha1, tamanho, contato)
-    for nome, (caminho, sha256, tamanho) in sorted(arquivos.items()):
-        baixar_continuavel(BASE_HF + caminho, cache / nome, "sha256", sha256, tamanho, contato)
+        baixar_continuavel(url, cache / arquivo, "sha1", sha1, tamanho, contato, offline=offline)
+    arquivos = {}
+    for nome, item in sorted(disponiveis.items()):
+        arquivos[nome], offline = obter_shard_coleta(nome, item, cache, contato, offline)
     return arquivos
 
 
@@ -231,7 +240,7 @@ def coletar_ingles(cache, arquivos, saida, profundidade):
     if not selecionados:
         raise ValueError("Nenhum artigo em inglês foi encontrado nesse recorte.")
     return extrair(
-        [cache / nome for nome in sorted(arquivos)],
+        [arquivos[nome] for nome in sorted(arquivos)],
         selecionados, saida, profundidade, categorias,
         idioma="en", fonte_categorias=f"enwiki-{DATA_DUMP}",
     )

@@ -1,39 +1,33 @@
-"""Passagens da Wikipédia EN com título/URL de origem (necessários para citar as fontes).
-
-O textos.txt não guarda o título dos artigos; por isso baixamos o(s) primeiro(s) parquet(s) do mesmo
-dataset (wikimedia/wikipedia, mesma revisão) e amostramos passagens mantendo {texto, titulo, url}.
-"""
+"""Amostragem de passagens da Wikipédia EN com título e URL."""
 import json
+import logging
 import random
-import sys
 from pathlib import Path
+
+from configuracao_hf import configurar_huggingface
+
+configurar_huggingface()
 
 import pyarrow.parquet as pq
 
-RAIZ = Path(__file__).resolve().parent.parent
-sys.path.insert(0, str(RAIZ / "dados"))
-from coletar_ingles import BASE_HF, baixar_continuavel, manifesto  # noqa: E402
+from cache import gravar_atomico, identidade
+from infraestrutura.wikipedia import REVISAO_HF, baixar_shards
 
-CACHE_PARQUET = RAIZ / "dados" / "cache_ingles"
-CONTATO = "projeto-academico-paa"
-
-
-def baixar_shards(n_shards):
-    disponiveis = manifesto(CONTATO)
-    CACHE_PARQUET.mkdir(exist_ok=True)
-    arquivos = []
-    for nome in sorted(disponiveis)[:n_shards]:
-        caminho, sha256, tamanho = disponiveis[nome]
-        destino = CACHE_PARQUET / nome
-        baixar_continuavel(BASE_HF + caminho, destino, "sha256", sha256, tamanho, CONTATO)
-        arquivos.append(destino)
-    return arquivos
+LOG = logging.getLogger("busca.corpus")
+MIN_CAR = 300
+MAX_CAR = 1200
+POR_ARTIGO = 3
 
 
-def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=300, max_car=1200, por_artigo=3):
+def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=MIN_CAR, max_car=MAX_CAR,
+                              por_artigo=POR_ARTIGO, offline=None, retornar_offline=False):
     """Sorteia artigos e, de cada um, até `por_artigo` parágrafos de tamanho adequado."""
     artigos = []
-    for arq in baixar_shards(n_shards):
+    if retornar_offline:
+        arquivos, offline = baixar_shards(n_shards, offline, retornar_offline=True)
+    else:
+        arquivos = baixar_shards(n_shards, offline)
+    for arq in arquivos:
         for lote in pq.ParquetFile(arq).iter_batches(batch_size=2000, columns=["title", "url", "text"]):
             for titulo, url, texto in zip(lote.column("title").to_pylist(), lote.column("url").to_pylist(),
                                           lote.column("text").to_pylist()):
@@ -51,14 +45,72 @@ def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=300, max_car=1200,
                 passagens.append({"texto": p, "titulo": titulo, "url": url})
         if len(passagens) >= n:
             break
-    return passagens[:n]
+    resultado = passagens[:n]
+    return (resultado, offline) if retornar_offline else resultado
 
 
-def carregar_passagens(cache_dir, n, semente, n_shards=1):
-    """Retorna lista de dicts {texto, titulo, url}; usa cache em disco se existir."""
-    arq = cache_dir / f"passagens_titulo_{n}_{semente}_{n_shards}.json"
+def verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache):
+    cache_dir = Path(cache_dir)
+    parametros = {
+        "versao": 1, "revisao": REVISAO_HF, "n": n, "semente": semente,
+        "n_shards": n_shards, "min_car": MIN_CAR, "max_car": MAX_CAR, "por_artigo": POR_ARTIGO,
+    }
+    arq = cache_dir / f"passagens_v1_{identidade(parametros)}.json"
+    legado = cache_dir / f"passagens_titulo_{n}_{semente}_{n_shards}.json"
+    if not arq.exists() and legado.exists() and not regenerar_cache:
+        raise RuntimeError(
+            f"Cache antigo preservado em {legado}, mas faltam metadados de amostragem. "
+            "Use --regenerar-cache para criar um novo cache sem modificar o antigo."
+        )
+    return parametros, arq, legado
+
+
+def carregar_passagens(cache_dir, n, semente, n_shards=1, offline=None, regenerar_cache=False,
+                       retornar_offline=False):
+    """Carrega ou cria passagens identificadas pela origem e pelos parâmetros."""
+    from infraestrutura import huggingface as hub
+
+    cache_dir = Path(cache_dir)
+    offline = hub.HF_HUB_OFFLINE if offline is None else bool(offline) or hub.HF_HUB_OFFLINE
+    parametros, arq, legado = verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache)
     if arq.exists():
-        return json.loads(arq.read_text(encoding="utf-8"))
-    passagens = amostrar_passagens_titulo(n, semente, n_shards)
-    arq.write_text(json.dumps(passagens), encoding="utf-8")
-    return passagens
+        try:
+            registro = json.loads(arq.read_text(encoding="utf-8"))
+        except ValueError as exc:
+            raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}") from exc
+        if (not isinstance(registro, dict) or registro.get("parametros") != parametros
+                or not isinstance(registro.get("passagens"), list)
+                or registro.get("sha256") != identidade(registro["passagens"])):
+            raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}")
+        validar_passagens(registro["passagens"])
+        LOG.info("Usando passagens em cache; não será necessário obter shards para o corpus.")
+        return (registro["passagens"], offline) if retornar_offline else registro["passagens"]
+    if legado.exists():
+        LOG.warning("Cache antigo preservado, mas não reutilizado: faltam metadados de amostragem.")
+    LOG.info("Cache de passagens ausente; preparando corpus a partir de %d shard(s).", n_shards)
+    if retornar_offline:
+        passagens, offline = amostrar_passagens_titulo(
+            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
+            offline=offline, retornar_offline=True,
+        )
+    else:
+        passagens = amostrar_passagens_titulo(
+            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
+            offline=offline,
+        )
+    validar_passagens(passagens)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    registro = {"parametros": parametros, "sha256": identidade(passagens), "passagens": passagens}
+    dados = json.dumps(registro, ensure_ascii=False).encode("utf-8")
+    gravar_atomico(arq, lambda arquivo: arquivo.write(dados))
+    LOG.info("Corpus preparado: %d passagens.", len(passagens))
+    return (passagens, offline) if retornar_offline else passagens
+
+
+def validar_passagens(passagens):
+    if not passagens or any(
+        not isinstance(item, dict)
+        or any(not isinstance(item.get(campo), str) or not item[campo] for campo in ("texto", "titulo", "url"))
+        for item in passagens
+    ):
+        raise ValueError("As passagens estão vazias ou contêm texto, título ou URL inválidos.")

@@ -3,18 +3,25 @@ import gzip
 import hashlib
 import json
 import re
+import sys
 import time
 from collections import defaultdict, deque
 from datetime import datetime, timezone
 from pathlib import Path
 from urllib.request import Request, urlopen
 
+raiz = str(Path(__file__).resolve().parent.parent)
+if raiz not in sys.path:
+    sys.path.insert(0, raiz)
+
+from infraestrutura.integridade import hash_arquivo
+from infraestrutura.wikipedia import REVISAO_HF
+
 import pyarrow.compute as compute
 import pyarrow.parquet as parquet
 
 
 DATA_DUMP = "20261101"
-REVISAO_HF = "b04c8d1ceb2f5cd4588862100d08de323dccfbaa"
 META = 10_000_000_000
 PASTA_PADRAO = Path(__file__).resolve().parent
 ARQUIVOS_DUMP = {
@@ -33,14 +40,6 @@ ARQUIVOS_HF = [
 REGISTRO_CATEGORIA = re.compile(rb"^\((\d+),14,'((?:\\.|[^'\\])*)'")
 REGISTRO_PAGINA = re.compile(rb"^\((\d+),(-?\d+),")
 REGISTRO_RELACAO = re.compile(rb"^\((\d+),.*,'(page|subcat|file)',\d+,(\d+)\)[,;]\s*$")
-
-
-def hash_arquivo(caminho, algoritmo):
-    digest = hashlib.new(algoritmo)
-    with caminho.open("rb") as arquivo:
-        for bloco in iter(lambda: arquivo.read(1024 * 1024), b""):
-            digest.update(bloco)
-    return digest.hexdigest()
 
 
 def baixar(url, destino, algoritmo, esperado, contato):
