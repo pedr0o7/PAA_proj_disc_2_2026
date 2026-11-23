@@ -97,7 +97,8 @@ class TestColetaIngles(unittest.TestCase):
             destino.with_name(nome + ".part").write_bytes(dados[:8])
             item = {"path": "20231101.en/" + nome, "sha256": hashlib.sha256(dados).hexdigest(),
                     "size": len(dados)}
-            with patch("coletar_ingles.urlopen", return_value=Resposta(dados[8:], 206, "bytes 8-29/30")), \
+            with patch("infraestrutura.huggingface.HF_HUB_OFFLINE", False), \
+                 patch("coletar_ingles.urlopen", return_value=Resposta(dados[8:], 206, "bytes 8-29/30")), \
                  patch("coletar_ingles.wikipedia.obter_shard") as obter_shard:
                 resultado, offline = obter_shard_coleta(nome, item, pasta, "contato", False)
             obter_shard.assert_not_called()

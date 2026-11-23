@@ -164,6 +164,7 @@ class TestCacheEmbeddings(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as diretorio, \
              patch.object(rag, "CACHE", Path(diretorio) / "cache"), \
+             patch("infraestrutura.huggingface.HF_HUB_OFFLINE", False), \
              patch.object(rag, "preparar_acesso_hub", return_value=False), \
              patch.object(rag, "SentenceTransformer", side_effect=fake_st), \
              patch.object(rag, "carregar_passagens", return_value=(passagens, True)) as carregar_p, \
@@ -244,6 +245,7 @@ class TestCacheEmbeddings(unittest.TestCase):
             "ragas.metrics": fake_ragas_metrics,
             "ragas.run_config": fake_ragas_rc,
         }), patch("transformers.pipeline", return_value=Mock()), \
+             patch("infraestrutura.huggingface.HF_HUB_OFFLINE", False), \
              self.assertLogs("busca.hub", level="WARNING"):
             avaliar.avaliar_ragas(sistema, itens, resultados, rag.LLM)
 
