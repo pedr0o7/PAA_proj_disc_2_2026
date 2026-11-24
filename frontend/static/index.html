@@ -28,6 +28,7 @@
 
   header { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; }
   header h1 { font: 600 15px var(--sans); margin: 0; color: var(--texto-2); }
+  #modo { font-size: 12px; color: var(--texto-2); }
   .botao-leve { background: none; border: 1px solid var(--borda); border-radius: 8px; padding: 5px 12px; font-size: 14px; }
   .botao-leve:hover:not(:disabled) { background: var(--superficie-2); }
 
@@ -90,7 +91,7 @@
 </head>
 <body>
 <header>
-  <h1>RAG Project Gutenberg</h1>
+  <div><h1>RAG Project Gutenberg</h1><span id="modo" role="status">Identificando modo de busca…</span></div>
   <button id="nova" class="botao-leve" type="button">Nova conversa</button>
 </header>
 
@@ -100,9 +101,9 @@
       <h2>O que você quer saber?</h2>
       <p id="descricao">Respostas com base em passagens de livros do Project Gutenberg, sempre com as fontes.</p>
       <div class="sugestoes">
-        <button type="button">Quem escreveu Dom Casmurro?</button>
-        <button type="button">Sobre o que é Moby Dick?</button>
-        <button type="button">Quem é Stephen King?</button>
+        <button type="button">Who wrote Pride and Prejudice?</button>
+        <button type="button">Who is Captain Ahab in Moby Dick?</button>
+        <button type="button">Where does the phrase tranquillise the mind as a steady purpose come from?</button>
       </div>
     </div>
   </div>
@@ -117,7 +118,7 @@
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 13V3M3.5 7.5 8 3l4.5 4.5"/></svg>
       </button>
     </form>
-    <div class="aviso" id="aviso">As respostas são geradas por um modelo local e podem conter erros. Confira as fontes.</div>
+    <div class="aviso" id="aviso">As respostas podem conter erros. Confira se as fontes sustentam a resposta.</div>
   </div>
 </footer>
 
@@ -149,10 +150,13 @@ function formatar(texto, id, total) {
 function cartaoFonte(t, i, id) {
   const d = el("details", "fonte");
   d.id = `${id}-f${i}`;
-  d.innerHTML = `<summary><span class="num">${i}</span><span class="tit"></span><span class="sim" title="Similaridade"></span></summary>
+  d.innerHTML = `<summary><span class="num">${i}</span><span class="tit"></span><span class="sim"></span></summary>
     <div class="corpo"><p></p><a target="_blank" rel="noopener noreferrer">Abrir no Project Gutenberg ↗</a></div>`;
   $(".tit", d).textContent = t.titulo;
-  $(".sim", d).textContent = t.similaridade.toFixed(3);
+  const tipos = { metadados: "Metadados do catálogo", correspondencia_literal: "Correspondência textual",
+    correspondencia_aproximada: "Redação semelhante", candidato_lexical: "Candidato lexical" };
+  $(".sim", d).textContent = tipos[t.tipo_fonte] ||
+    (typeof t.similaridade === "number" ? `Similaridade ${t.similaridade.toFixed(3)}` : "");
   $(".corpo p", d).textContent = t.texto;
   $(".corpo a", d).href = t.url;
   return d;
@@ -201,16 +205,19 @@ async function perguntar(pergunta) {
         const linha = buffer.slice(0, i); buffer = buffer.slice(i + 1);
         if (!linha) continue;
         const ev = JSON.parse(linha);
-        if (ev.tipo === "fontes") {
+        if (ev.tipo === "status") {
+          fase = ev.mensagem; tick();
+        } else if (ev.tipo === "fontes") {
           total = ev.trechos.length;
-          area.append(el("div", "fontes-titulo", comLLM ? "Fontes" : "Trechos encontrados (modo sem LLM)"));
+          area.append(el("div", "fontes-titulo", comLLM ? "Fontes e candidatos" : "Trechos encontrados (modo sem LLM)"));
+          if (ev.aviso) {
+            const aviso = el("div", "meta");
+            aviso.textContent = ev.aviso;
+            area.append(aviso);
+          }
           const lista = el("div", "fontes");
           ev.trechos.forEach((t, k) => lista.append(cartaoFonte(t, k + 1, id)));
           area.append(lista);
-          if (comLLM) { fase = "Gerando resposta…"; texto.classList.add("cursor"); tick(); }
-        } else if (ev.tipo === "texto") {
-          bruto += ev.delta;
-          texto.innerHTML = formatar(bruto, id, total);
         } else if (ev.tipo === "resposta") {
           bruto = ev.texto;
           texto.innerHTML = formatar(bruto, id, total);
@@ -281,12 +288,23 @@ let info = null;
 function descrever() {
   if (!info) return;
   const d = $("#descricao");
-  if (d) d.textContent = `Respostas com base em ${info.passagens.toLocaleString("pt-BR")} passagens de livros do Project Gutenberg.`;
+  if (d) d.textContent = info.modo === "completo"
+    ? `Índice completo: ${info.livros.toLocaleString("pt-BR")} livros do Project Gutenberg.`
+    : `Amostra: ${info.passagens.toLocaleString("pt-BR")} passagens de livros do Project Gutenberg.`;
 }
-fetch("/info").then(r => r.json()).then(i => {
+fetch("/info").then(r => {
+  if (!r.ok) throw new Error(`O servidor respondeu ${r.status}.`);
+  return r.json();
+}).then(i => {
   info = i; comLLM = i.llm; descrever();
+  $("#modo").textContent = i.modo === "completo"
+    ? `Índice completo · ${i.livros.toLocaleString("pt-BR")} livros`
+    : `Amostra · ${i.passagens.toLocaleString("pt-BR")} passagens`;
   if (!comLLM) $("#aviso").textContent = "Modo sem LLM";
-}).catch(() => {});
+}).catch(e => {
+  $("#modo").textContent = "Modo de busca indisponível";
+  $("#aviso").textContent = `Não foi possível obter informações da busca: ${e.message}`;
+});
 ajustar();
 </script>
 </body>

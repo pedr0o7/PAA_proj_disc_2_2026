@@ -219,7 +219,8 @@ verifica os números das citações, mas não confirma automaticamente seu supor
 
 ## 🖥️ Interface web
 
-Interface de chat no estilo de assistentes de IA: a pessoa faz a pergunta, as fontes aparecem logo após a busca e a resposta do LLM é exibida enquanto é gerada, com as citações `[n]` clicáveis levando ao trecho de origem.
+Interface de chat com fontes e citações `[n]` clicáveis. O progresso é exibido durante a consulta;
+a resposta é apresentada após a validação das citações, sem mostrar texto provisório.
 
 ### Tecnologias
 
@@ -228,7 +229,6 @@ Interface de chat no estilo de assistentes de IA: a pessoa faz a pergunta, as fo
 | Servidor | [FastAPI](https://fastapi.tiangolo.com/) | MIT | Rotas HTTP (`/`, `/info`, `/perguntar`) e resposta em fluxo |
 | Servidor | [Uvicorn](https://www.uvicorn.org/) | BSD-3-Clause | Servidor ASGI que executa a aplicação |
 | Servidor | [Pydantic](https://docs.pydantic.dev/) | MIT | Validação da pergunta recebida (1 a 2000 caracteres) |
-| Servidor | [Transformers](https://github.com/huggingface/transformers) (`TextIteratorStreamer`) | Apache 2.0 | Entrega dos tokens do LLM à medida que são gerados |
 | Página | HTML5, CSS3 e JavaScript puro | — | Interface sem frameworks, sem Node.js e sem etapa de build |
 | Testes | `unittest` (Python) + `TestClient` do FastAPI + [HTTPX](https://www.python-httpx.org/) | PSF / MIT / BSD-3-Clause | Testes da rota com um sistema RAG falso |
 
@@ -236,12 +236,14 @@ Fontes do próprio sistema operacional (serifada para as respostas, sem serifa p
 
 ### Métodos
 
-- **Resposta em fluxo (streaming) com NDJSON:** a rota `POST /perguntar` devolve um objeto JSON por linha, na ordem `fontes` → vários `texto` → `fim` (ou `erro`). As fontes chegam em menos de 0,1 s, enquanto a geração pode levar de 30 s a 3 min na CPU. Assim a tela nunca fica parada.
-- **Geração em thread separada:** o `model.generate` roda em uma `threading.Thread`, e o `TextIteratorStreamer` repassa o texto ao servidor parte por parte.
+- **Progresso com NDJSON:** a rota `POST /perguntar` devolve eventos `status`, `fontes`,
+  `resposta` (quando há LLM) e `fim`, ou `erro`. A consulta pode levar vários segundos ou minutos em CPU;
+  os trechos e a resposta são exibidos depois que o processamento termina.
 - **Uma geração por vez:** um `threading.Lock` impede duas gerações simultâneas, que só disputariam os mesmos núcleos da CPU.
 - **Leitura do fluxo no navegador:** `fetch` + `ReadableStream` + `TextDecoderStream`, que monta as linhas NDJSON conforme chegam.
 - **Citações:** o texto é escapado (proteção contra injeção de HTML) e cada `[n]` válido vira um link para o cartão da fonte `n`; as fontes citadas ficam destacadas ao final.
-- **Fontes como cartões expansíveis:** elementos nativos `<details>`/`<summary>`, com título, similaridade, trecho e link para o Project Gutenberg.
+- **Fontes como cartões expansíveis:** título, trecho e link para o Project Gutenberg, com similaridade
+  quando disponível ou identificação de metadados, correspondência textual, redação semelhante ou candidato.
 - **Visual responsivo e acessível:** variáveis CSS (*custom properties*), modo escuro automático (`prefers-color-scheme`), animações desligadas para quem prefere menos movimento (`prefers-reduced-motion`), layout para celular e rótulos para leitores de tela.
 - **Segurança:** o servidor escuta só em `127.0.0.1` (acesso local), valida a entrada e abre links externos com `rel="noopener noreferrer"`.
 
@@ -260,6 +262,19 @@ Com o ambiente virtual ativo, a partir da pasta `busca`:
 python -m pip install -r ../frontend/requirements.txt
 python ../frontend/servidor.py
 ```
+
+Por padrão o servidor usa uma amostra de até 5.000 passagens. Para consultar o índice completo já
+construído, execute:
+
+```powershell
+python ..\frontend\servidor.py --indice-completo
+```
+
+Opcionalmente informe um caminho após `--indice-completo`; `--n` só se aplica à amostragem.
+O índice deve existir, estar completo e corresponder ao corpus. O servidor mostra erro na
+inicialização caso contrário; não muda silenciosamente para a amostra. A interface indica o modo
+ativo. `--min-sim` controla o limiar cosseno da busca comum (padrão `0.4`), sem garantir que uma
+fonte sustente a resposta. Para inspecionar trechos sem geração, use `--sem-llm`.
 
 ## 🧪 Avaliação e testes
 
