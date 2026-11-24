@@ -12,7 +12,8 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from rag import LLM, SistemaRAG
+from indice_lexical import INDICE
+from rag import LLM, SEM_CONTEXTO, SistemaRAG
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -21,7 +22,7 @@ SAIDA = Path(__file__).parent / "avaliacao_resultados.json"
 
 
 def metricas_proprias(itens, resultados):
-    hits, rr, cit_ok, citou = [], [], [], []
+    hits, rr, cit_ok, citou, abstencoes = [], [], [], [], []
     for it, r in zip(itens, resultados):
         ids = [t["id"] for t in r["trechos"]]
         pos = ids.index(it["id_esperado"]) + 1 if it["id_esperado"] in ids else None
@@ -29,11 +30,13 @@ def metricas_proprias(itens, resultados):
         rr.append(1 / pos if pos else 0.0)
         citou.append(bool(r["citados"]))
         cit_ok.append(any(ids[i - 1] == it["id_esperado"] for i in r["citados"]))
+        abstencoes.append(r["resposta"] == SEM_CONTEXTO)
     return {
         "hit_at_k": float(np.mean(hits)),
         "mrr": float(np.mean(rr)),
         "respostas_com_citacao": float(np.mean(citou)),
         "citacao_da_fonte_correta": float(np.mean(cit_ok)),
+        "respostas_abstidas": float(np.mean(abstencoes)),
     }
 
 
@@ -86,17 +89,23 @@ def main():
     ap.add_argument("--llm", default=LLM)
     ap.add_argument("--juiz", default=None, help="LLM juiz do RAGAS (padrão: o mesmo --llm)")
     ap.add_argument("--sem-ragas", action="store_true")
+    ap.add_argument("--min-sim", type=float, default=0.0, help="limiar de similaridade cosseno")
+    ap.add_argument("--indice-completo", type=Path, nargs="?", const=INDICE,
+                    help="usa o índice lexical completo já construído")
     a = ap.parse_args()
 
     itens = json.loads(DATASET.read_text(encoding="utf-8"))[: a.q]
-    sistema = SistemaRAG(n=a.n, llm=a.llm, k=a.k)
+    sistema = SistemaRAG(n=a.n, llm=a.llm, k=a.k, min_sim=a.min_sim,
+                         indice_completo=a.indice_completo)
     sistema.perguntar(itens[0]["pergunta"])  # aquecimento, fora das medições
     resultados = []
     for i, it in enumerate(itens, 1):
         resultados.append(sistema.perguntar(it["pergunta"]))
         print(f"{i}/{len(itens)} {resultados[-1]['tempo_total']:.1f}s", flush=True)
 
-    saida = {"llm": a.llm, "k": a.k, "perguntas": len(itens), "proprias": metricas_proprias(itens, resultados),
+    saida = {"llm": a.llm, "k": a.k, "min_sim": a.min_sim,
+             "indice_completo": str(a.indice_completo) if a.indice_completo else None,
+             "perguntas": len(itens), "proprias": metricas_proprias(itens, resultados),
              "tempo_s": metricas_tempo(resultados)}
     if not a.sem_ragas:
         saida["ragas"], saida["ragas_nan"] = avaliar_ragas(sistema, itens, resultados, a.juiz or a.llm)

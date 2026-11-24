@@ -10,6 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from usearch.index import Index
 
 from corpus import carregar_passagens, texto_indexado
+from indice_lexical import IndiceLexical
 
 CACHE = Path(__file__).parent / "cache_indice"
 MODELO_EMB = "sentence-transformers/all-MiniLM-L6-v2"
@@ -38,27 +39,75 @@ def tokenizar(texto):
     return re.findall(r"\w+", texto.lower())
 
 
-class SistemaRAG:
-    def __init__(self, n=20000, semente=42, llm=LLM, k=3, max_tokens=200, min_sim=0.0):
-        self.k, self.max_tokens, self.min_sim = k, max_tokens, min_sim
-        self.modelo_emb = SentenceTransformer(MODELO_EMB, device="cpu")
-        CACHE.mkdir(exist_ok=True)
-        self.passagens = carregar_passagens(CACHE, n, semente)
-        self.emb = self._embeddings(n, semente)
-        self.indice = Index(ndim=self.emb.shape[1], metric="cos", connectivity=16, expansion_add=128,
-                            expansion_search=64)
-        self.indice.add(np.arange(len(self.emb)), self.emb)
+def validar_citacoes(resposta, quantidade):
+    """Mantém apenas citações que referenciam trechos existentes e retorna a resposta segura."""
+    validas = sorted({int(m) for m in re.findall(r"\[(\d+)\]", resposta) if 1 <= int(m) <= quantidade})
+    resposta = re.sub(
+        r"\[(\d+)\]",
+        lambda m: m.group(0) if 1 <= int(m.group(1)) <= quantidade else "",
+        resposta,
+    ).strip()
+    if resposta != SEM_CONTEXTO and not validas:
+        return SEM_CONTEXTO, []
+    return resposta, validas
 
-        self.bm25 = BM25Okapi([tokenizar(texto_indexado(p)) for p in self.passagens]) if HAS_BM25 else None
+
+def titulo_pergunta_autoria(pergunta):
+    match = re.fullmatch(r"\s*who\s+wrote\s+(.+?)\s*\??\s*", pergunta, re.IGNORECASE)
+    if not match:
+        return None
+    titulo = match.group(1).strip()
+    if len(titulo) > 1 and (titulo[0], titulo[-1]) in {
+        ('"', '"'), ("'", "'"), ("“", "”"), ("‘", "’")
+    }:
+        titulo = titulo[1:-1].strip()
+    return titulo
+
+
+def autoria_inequivoca(livros):
+    autores = []
+    for livro in livros:
+        titulo = livro["titulo"]
+        autor = livro["autores"].strip()
+        if (not autor or "\ufffd" in autor or "\ufffd" in titulo
+                or re.search(r"[;\[\]]|\band\b|\b(?:anonymous|unknown|various)\b", autor, re.IGNORECASE)
+                or re.search(r"\b(?:adapted|adaptation|dramatization|dramatisation|based (?:on|upon)|"
+                             r"founded (?:on|upon)|translated|translation|retold|abridged|"
+                             r"illustrated|edited|selected|compiled|arranged)\b",
+                             titulo, re.IGNORECASE)):
+            return None
+        autores.append(" ".join(autor.casefold().split()))
+    return livros[0] if livros and len(set(autores)) == 1 else None
+
+
+class SistemaRAG:
+    def __init__(self, n=20000, semente=42, llm=LLM, k=3, max_tokens=200, min_sim=0.0,
+                 indice_completo=None):
+        self.k, self.max_tokens, self.min_sim = k, max_tokens, min_sim
+        self.indice_lexical = IndiceLexical(indice_completo) if indice_completo else None
+        print(f"Carregando modelo de embeddings: {MODELO_EMB}", flush=True)
+        self.modelo_emb = SentenceTransformer(MODELO_EMB, device="cpu")
+        print("Modelo de embeddings pronto.", flush=True)
+        if self.indice_lexical is None:
+            CACHE.mkdir(exist_ok=True)
+            self.passagens = carregar_passagens(CACHE, n, semente)
+            self.emb = self._embeddings(n, semente)
+            self.indice = Index(ndim=self.emb.shape[1], metric="cos", connectivity=16, expansion_add=128,
+                                expansion_search=64)
+            self.indice.add(np.arange(len(self.emb)), self.emb)
+            self.bm25 = BM25Okapi([tokenizar(texto_indexado(p)) for p in self.passagens]) if HAS_BM25 else None
+        else:
+            self.modelo_emb.max_seq_length = 128
 
         self.tok = AutoTokenizer.from_pretrained(llm) if llm else None
         self.lm = AutoModelForCausalLM.from_pretrained(llm, dtype=torch.float32).eval() if llm else None
 
     def _embeddings(self, n, semente):
-        arq = CACHE / f"emb_gutenberg_{n}_{semente}.npy"
+        arq = CACHE / f"emb_gutenberg_v3_{n}_{semente}.npy"
         if arq.exists():
             return np.load(arq)
-        print(f"Primeira execução: codificando {len(self.passagens)} passagens (alguns minutos em CPU)...")
+        print(f"Primeira execução: codificando {len(self.passagens)} passagens (pode levar vários minutos em CPU)...",
+              flush=True)
         self.modelo_emb.max_seq_length = 128
         emb = self.modelo_emb.encode([texto_indexado(p) for p in self.passagens], batch_size=64,
                                      normalize_embeddings=True, show_progress_bar=True).astype(np.float32)
@@ -70,6 +119,22 @@ class SistemaRAG:
 
     def recuperar(self, pergunta):
         """Top-k passagens (híbrido BM25 + semântico, ou só semântico sem BM25). A similaridade é o cosseno real."""
+        if self.indice_lexical is not None:
+            candidatos = self.indice_lexical.recuperar(pergunta, max(50, self.k * 10))
+            if not candidatos:
+                return []
+            q = self._vetor(pergunta)
+            vetores = self.modelo_emb.encode(
+                [texto_indexado(p) for p in candidatos], batch_size=64,
+                normalize_embeddings=True, show_progress_bar=False,
+            )
+            similaridades = np.asarray(vetores) @ q
+            ordem_semantica = sorted(range(len(candidatos)), key=lambda i: -similaridades[i])
+            rank_semantico = {idx: pos for pos, idx in enumerate(ordem_semantica, 1)}
+            ordem = sorted(range(len(candidatos)),
+                           key=lambda i: 1 / (60 + i + 1) + 1 / (60 + rank_semantico[i]),
+                           reverse=True)
+            return [{**candidatos[i], "similaridade": float(similaridades[i])} for i in ordem[:self.k]]
         q = self._vetor(pergunta)
         if self.bm25 is None:
             achados = self.indice.search(q, self.k)
@@ -102,6 +167,24 @@ class SistemaRAG:
 
     def perguntar(self, pergunta):
         t0 = time.perf_counter()
+        titulo = titulo_pergunta_autoria(pergunta) if self.lm and self.indice_lexical is not None else None
+        livros = self.indice_lexical.buscar_titulo(titulo) if titulo else []
+        if livros:
+            livro = autoria_inequivoca(livros)
+            t1 = time.perf_counter()
+            if livro is None:
+                resposta, trechos, citados = SEM_CONTEXTO, [], []
+                aviso = "Os metadados do título são ambíguos ou não identificam um único autor."
+            else:
+                fonte = {chave: livro[chave] for chave in ("id", "titulo", "autores", "url")}
+                fonte["tipo_fonte"] = "metadados"
+                fonte["texto"] = f"Title: {livro['titulo']}\nAuthor: {livro['autores']}"
+                resposta = f"According to the catalog, the author of {livro['titulo']} is {livro['autores']}. [1]"
+                trechos, citados, aviso = [fonte], [1], None
+            t2 = time.perf_counter()
+            return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
+                    "descartados": [], "aviso": aviso, "tempo_recuperacao": t1 - t0,
+                    "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}
         candidatos = self.recuperar(pergunta)
         trechos = [t for t in candidatos if t["similaridade"] >= self.min_sim]
         t1 = time.perf_counter()
@@ -110,7 +193,10 @@ class SistemaRAG:
         else:
             resposta = self.gerar(pergunta, trechos) if self.lm else ""
         t2 = time.perf_counter()
-        citados = sorted({int(m) for m in re.findall(r"\[(\d+)\]", resposta) if 1 <= int(m) <= len(trechos)})
+        if self.lm:
+            resposta, citados = validar_citacoes(resposta, len(trechos))
+        else:
+            citados = []
         return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
                 "descartados": [t for t in candidatos if t not in trechos],
                 "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}

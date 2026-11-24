@@ -21,7 +21,8 @@ O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 - [x] Exibição das fontes recuperadas e citações
 - [x] Ferramentas de avaliação e benchmarking
 - [ ] Indexar uma fração maior do corpus de livros
-- [ ] Aprimorar a extração e a validação de citações
+- [x] Rejeitar respostas que não citam uma passagem recuperada
+- [ ] Aprimorar a validação semântica de citações
 - [ ] Expandir os testes e a avaliação das respostas
 
 ## 💻 Pré-requisitos
@@ -66,7 +67,7 @@ Antes da primeira consulta, baixe os livros (a partir da raiz do projeto; veja [
 python dados\coletar_gutenberg.py --contato "seu-email@exemplo.com"
 ```
 
-Na primeira consulta, o programa sorteia as passagens, calcula os embeddings (alguns minutos em CPU) e baixa os modelos necessários.
+Na primeira consulta, o programa escolhe até 20.000 passagens, calcula os embeddings (cerca de 20 minutos em CPU, dependendo da máquina) e baixa os modelos necessários. O cache é reutilizado nas consultas seguintes.
 
 ## ☕ Usando
 
@@ -108,7 +109,7 @@ python consultar.py -p "Who is Captain Ahab?" --trechos
 | `--n` | Número de passagens indexadas | `20000` |
 | `--k` | Número de trechos recuperados por pergunta | `3` |
 | `--semente` | Semente usada na amostragem do corpus | `42` |
-| `--min-sim` | Similaridade (cosseno) mínima para uma passagem virar fonte; abaixo disso a resposta é "contexto insuficiente" | `0.4` |
+| `--min-sim` | Similaridade cosseno mínima (não é porcentagem) para usar uma passagem; não se aplica a respostas baseadas em metadados | `0.4` |
 | `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct |
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
@@ -120,7 +121,41 @@ Exemplo com mais passagens:
 python consultar.py --n 50000 --k 5 -p "Who is Captain Ahab?"
 ```
 
-O índice cobre uma amostra de livros do corpus (o embedding dos 10 GB inteiros não é viável em CPU); perguntas sobre livros fora da amostra recebem "contexto insuficiente".
+O índice contém uma passagem de cada livro amostrado (o embedding dos 10 GB inteiros não é viável em CPU). Se nenhuma passagem passar o limiar ou o modelo não citar uma passagem válida, a resposta será "contexto insuficiente". Isso evita respostas sem citação, mas não garante por si só que uma citação válida sustente semanticamente a resposta.
+
+### Busca experimental em todo o corpus
+
+Para indexar os livros coletados em passagens sobrepostas, execute uma vez na pasta `busca`:
+
+```powershell
+python indice_lexical.py
+```
+
+O índice SQLite é salvo em `cache_indice\gutenberg_lexical_v1.sqlite`. A construção lê os 10 GB,
+pode demorar bastante e necessita de espaço adicional em disco. Se interrompida, execute o mesmo
+comando para retomá-la; um índice incompleto não é usado para consultas. Se o corpus mudar, crie
+um novo índice em outro caminho com `--indice CAMINHO`.
+
+Depois de concluída a construção, consulte:
+
+```powershell
+python consultar.py --indice-completo --trechos -p "Who wrote Pride and Prejudice?"
+```
+
+Para um caminho personalizado, use `--indice-completo CAMINHO`. Nesse modo, `--n` e `--semente`
+não limitam o índice: a busca lexical considera o corpus completo e a similaridade semântica é
+calculada apenas para os melhores candidatos lexicais. Isso não garante que uma passagem relevante
+seja recuperada, pois candidatos sem palavras correspondentes podem ficar de fora.
+O modo padrão por amostragem continua disponível sem `--indice-completo`.
+
+Para perguntas em inglês no formato `Who wrote <título exato>?`, o índice completo também consulta
+os metadados do catálogo, quando há um único autor inequívoco. A resposta cita os metadados e não
+uma passagem do livro; por isso não é exibida similaridade nem aplicado `--min-sim` nessa consulta.
+Indícios de adaptações, autor ausente, colaboradores ou atribuições conflitantes levam à abstenção.
+Essa verificação é conservadora, mas depende da qualidade dos metadados e não identifica
+necessariamente todas as adaptações ou papéis de colaboradores.
+Se o título exato não estiver no catálogo, usa-se a recuperação normal, que não garante que as
+citações sustentem a resposta. `--sem-llm` continua apenas recuperando passagens.
 
 ## 🧪 Avaliação e testes
 
@@ -129,6 +164,10 @@ Para executar a avaliação sem as métricas do RAGAS:
 ```bash
 python avaliar.py --q 30 --sem-ragas
 ```
+
+Após criar o índice completo, é possível avaliá-lo com `python avaliar.py --indice-completo
+--min-sim 0.4 --sem-ragas`. Revise as perguntas e fontes do conjunto de avaliação antes de
+interpretar as métricas; perguntas geradas a partir de passagens indexadas podem favorecer a busca.
 
 Para executar os testes do coletor de dados, a partir da raiz do projeto:
 
