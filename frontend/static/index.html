@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RAG Wikipédia</title>
+<title>RAG Project Gutenberg</title>
 <style>
   :root {
     --fundo: #faf9f5; --superficie: #ffffff; --superficie-2: #f0eee6; --borda: #e3e0d6;
@@ -90,7 +90,7 @@
 </head>
 <body>
 <header>
-  <h1>RAG Wikipédia</h1>
+  <h1>RAG Project Gutenberg</h1>
   <button id="nova" class="botao-leve" type="button">Nova conversa</button>
 </header>
 
@@ -98,7 +98,7 @@
   <div id="conversa" class="coluna">
     <div class="vazio" id="vazio">
       <h2>O que você quer saber?</h2>
-      <p id="descricao">Respostas com base em passagens da Wikipédia, sempre com as fontes.</p>
+      <p id="descricao">Respostas com base em passagens de livros do Project Gutenberg, sempre com as fontes.</p>
       <div class="sugestoes">
         <button type="button">Quem escreveu Dom Casmurro?</button>
         <button type="button">Sobre o que é Moby Dick?</button>
@@ -150,7 +150,7 @@ function cartaoFonte(t, i, id) {
   const d = el("details", "fonte");
   d.id = `${id}-f${i}`;
   d.innerHTML = `<summary><span class="num">${i}</span><span class="tit"></span><span class="sim" title="Similaridade"></span></summary>
-    <div class="corpo"><p></p><a target="_blank" rel="noopener noreferrer">Abrir na Wikipédia ↗</a></div>`;
+    <div class="corpo"><p></p><a target="_blank" rel="noopener noreferrer">Abrir no Project Gutenberg ↗</a></div>`;
   $(".tit", d).textContent = t.titulo;
   $(".sim", d).textContent = t.similaridade.toFixed(3);
   $(".corpo p", d).textContent = t.texto;
@@ -210,6 +210,9 @@ async function perguntar(pergunta) {
           if (comLLM) { fase = "Gerando resposta…"; texto.classList.add("cursor"); tick(); }
         } else if (ev.tipo === "texto") {
           bruto += ev.delta;
+          texto.innerHTML = formatar(bruto, id, total);
+        } else if (ev.tipo === "resposta") {
+          bruto = ev.texto;
           texto.innerHTML = formatar(bruto, id, total);
         } else if (ev.tipo === "fim") {
           ev.citados.forEach(n => $(`#${id}-f${n}`)?.classList.add("citada"));
@@ -278,7 +281,7 @@ let info = null;
 function descrever() {
   if (!info) return;
   const d = $("#descricao");
-  if (d) d.textContent = `Respostas com base em ${info.passagens.toLocaleString("pt-BR")} passagens da Wikipédia.`;
+  if (d) d.textContent = `Respostas com base em ${info.passagens.toLocaleString("pt-BR")} passagens de livros do Project Gutenberg.`;
 }
 fetch("/info").then(r => r.json()).then(i => {
   info = i; comLLM = i.llm; descrever();

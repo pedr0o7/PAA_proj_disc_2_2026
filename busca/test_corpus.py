@@ -1,3 +1,42 @@
+import json
+import tempfile
+import unittest
+from pathlib import Path
+
+from corpus import amostrar_passagens
+
+
+class AmostrarPassagensTest(unittest.TestCase):
+    def test_amostra_no_maximo_uma_passagem_por_livro(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            dados = Path(tmp)
+            conteudo = ""
+            livros = []
+            for id_ in (1, 2):
+                texto = (
+                    f"Book {id_} first paragraph has enough words and a sentence ending. " * 8
+                    + "\n\n"
+                    + f"Book {id_} second paragraph also has enough words and a sentence ending. " * 8
+                )
+                inicio = len(conteudo.encode("utf-8"))
+                conteudo += texto + "\n\n"
+                livros.append({
+                    "id": id_,
+                    "titulo": f"Book {id_}",
+                    "autores": "Author",
+                    "url": f"https://www.gutenberg.org/ebooks/{id_}",
+                    "deslocamento": inicio,
+                    "bytes": len(texto.encode("utf-8")),
+                })
+            (dados / "textos.txt").write_bytes(conteudo.encode("utf-8"))
+            (dados / "livros.jsonl").write_text(
+                "".join(json.dumps(livro) + "\n" for livro in livros), encoding="utf-8"
+            )
+
+            passagens = amostrar_passagens(10, 4, dados, min_car=100, max_car=1000)
+
+            self.assertEqual(len(passagens), 2)
+            self.assertEqual(len({p["id"] for p in passagens}), len(passagens))
 import hashlib
 import json
 import os
@@ -14,7 +53,6 @@ configurar_huggingface()
 import httpx
 from huggingface_hub.errors import HfHubHTTPError, LocalEntryNotFoundError
 
-import corpus
 from infraestrutura import huggingface as hub, wikipedia
 from infraestrutura.integridade import validar_arquivo
 
@@ -183,49 +221,6 @@ class TestDownloadCorpus(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "Checksum incorreto"):
                 validar_arquivo(caminho, "sha256", hashlib.sha256(b"outro").hexdigest(), 5)
 
-    def test_informa_quando_cache_de_passagens_dispensa_shards(self):
-        with tempfile.TemporaryDirectory() as diretorio:
-            pasta = Path(diretorio)
-            passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
-            with patch.object(corpus, "amostrar_passagens_titulo", return_value=passagens) as amostrar:
-                self.assertEqual(corpus.carregar_passagens(pasta, 1, 42), passagens)
-                with self.assertLogs("busca.corpus", level="INFO") as logs:
-                    self.assertEqual(corpus.carregar_passagens(pasta, 1, 42), passagens)
-            amostrar.assert_called_once()
-            self.assertIn("não será necessário obter shards", "\n".join(logs.output))
-
-    def test_cache_legado_preservado_e_parametros_alterados_geram_novo_cache(self):
-        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
-        with tempfile.TemporaryDirectory() as diretorio:
-            pasta = Path(diretorio)
-            legado = pasta / "passagens_titulo_1_42_1.json"
-            legado.write_text("[]", encoding="utf-8")
-            with patch.object(corpus, "amostrar_passagens_titulo", return_value=passagens) as amostrar:
-                with self.assertRaisesRegex(RuntimeError, "--regenerar-cache"):
-                    corpus.carregar_passagens(pasta, 1, 42)
-                amostrar.assert_not_called()
-                with self.assertLogs("busca.corpus", level="WARNING") as logs:
-                    corpus.carregar_passagens(pasta, 1, 42, regenerar_cache=True)
-                with patch.object(corpus, "MIN_CAR", corpus.MIN_CAR + 1):
-                    corpus.carregar_passagens(pasta, 1, 42, regenerar_cache=True)
-            self.assertEqual(amostrar.call_count, 2)
-            self.assertEqual(len(list(pasta.glob("passagens_v1_*.json"))), 2)
-            self.assertEqual(legado.read_text(encoding="utf-8"), "[]")
-            self.assertIn("Cache antigo preservado", "\n".join(logs.output))
-
-    def test_rejeita_cache_de_passagens_adulterado(self):
-        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
-        with tempfile.TemporaryDirectory() as diretorio:
-            pasta = Path(diretorio)
-            with patch.object(corpus, "amostrar_passagens_titulo", return_value=passagens):
-                corpus.carregar_passagens(pasta, 1, 42)
-            arquivo = next(pasta.glob("passagens_v1_*.json"))
-            registro = json.loads(arquivo.read_text(encoding="utf-8"))
-            registro["passagens"][0]["texto"] = "alterado"
-            arquivo.write_text(json.dumps(registro), encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "Cache de passagens inválido"):
-                corpus.carregar_passagens(pasta, 1, 42)
-
     def test_baixar_shards_propaga_offline_entre_shards_e_no_retorno(self):
         conteudo = b"shard"
         with tempfile.TemporaryDirectory() as diretorio:
@@ -250,28 +245,6 @@ class TestDownloadCorpus(unittest.TestCase):
             self.assertTrue(download.call_args_list[1].kwargs["local_files_only"])
             self.assertTrue(download.call_args_list[2].kwargs["local_files_only"])
 
-    def test_carregar_passagens_cria_pasta_inexistente_e_propaga_offline(self):
-        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
-        with tempfile.TemporaryDirectory() as diretorio:
-            pasta = Path(diretorio) / "sub" / "cache"
-            with patch.object(hub, "HF_HUB_OFFLINE", False), \
-                 patch.object(corpus, "amostrar_passagens_titulo", return_value=(passagens, True)) as amostrar:
-                resultado, offline = corpus.carregar_passagens(pasta, 1, 42, offline=False, retornar_offline=True)
-            self.assertEqual(resultado, passagens)
-            self.assertTrue(offline)
-            self.assertTrue(amostrar.call_args.kwargs["retornar_offline"])
-            self.assertEqual(len(list(pasta.glob("passagens_v1_*.json"))), 1)
-
-    def test_carregar_passagens_rejeita_json_corrompido(self):
-        passagens = [{"texto": "texto", "titulo": "título", "url": "url"}]
-        with tempfile.TemporaryDirectory() as diretorio:
-            pasta = Path(diretorio)
-            with patch.object(corpus, "amostrar_passagens_titulo", return_value=passagens):
-                corpus.carregar_passagens(pasta, 1, 42)
-            arquivo = next(pasta.glob("passagens_v1_*.json"))
-            arquivo.write_text("{corrompido", encoding="utf-8")
-            with self.assertRaisesRegex(ValueError, "Cache de passagens inválido"):
-                corpus.carregar_passagens(pasta, 1, 42)
 
 
 if __name__ == "__main__":

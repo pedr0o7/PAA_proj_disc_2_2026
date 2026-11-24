@@ -1,4 +1,4 @@
-"""Compara métodos de busca semântica sobre passagens de dados/wikipedia_en_10gb/textos.txt.
+"""Compara métodos de busca semântica sobre passagens de dados/gutenberg_10gb/textos.txt (livros do Project Gutenberg).
 
 Métodos: TF-IDF + cosseno (linha de base lexical), Word2Vec médio + cosseno,
 Sentence Embeddings + cosseno (força bruta) e Sentence Embeddings + HNSW.
@@ -20,14 +20,16 @@ configurar_huggingface()
 import numpy as np
 from scipy.sparse import csr_matrix
 
+from corpus import paragrafos
+
 RAIZ = Path(__file__).resolve().parent.parent
-TEXTOS = RAIZ / "dados" / "wikipedia_en_10gb" / "textos.txt"
+TEXTOS = RAIZ / "dados" / "gutenberg_10gb" / "textos.txt"
 TOKEN = re.compile(r"[a-z0-9]+")
 FRASES = re.compile(r"(?<=[.!?])\s+")
 
 
-def amostrar_passagens(caminho, n, semente, min_car=300, max_car=1200):
-    """Sorteia passagens (blocos separados por linha em branco) em posições aleatórias do arquivo."""
+def amostrar_passagens(caminho, n, semente, min_car=300, max_car=1000):
+    """Sorteia passagens de prosa em posições aleatórias do arquivo (mesma segmentação do corpus do RAG)."""
     rng = random.Random(semente)
     tamanho = caminho.stat().st_size
     vistas, passagens = set(), []
@@ -36,8 +38,7 @@ def amostrar_passagens(caminho, n, semente, min_car=300, max_car=1200):
             f.seek(rng.randrange(tamanho - 200_000))
             f.readline()
             bloco = f.read(200_000).decode("utf-8", errors="ignore")
-            candidatas = [p.strip() for p in bloco.split("\n\n")[1:-1]]
-            candidatas = [p for p in candidatas if min_car <= len(p) <= max_car]
+            candidatas = paragrafos(bloco, min_car, max_car)
             if not candidatas:
                 continue
             for p in rng.sample(candidatas, min(3, len(candidatas))):

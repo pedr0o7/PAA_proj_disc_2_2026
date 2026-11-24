@@ -1,4 +1,4 @@
-﻿# Documentação Técnica - Projeto PAA: Sistema RAG com LLM Local
+# Documentação Técnica - Projeto PAA: Sistema RAG com LLM Local
 
 **Data**: 2026-11-11  
 **Versão**: 1.0  
@@ -68,7 +68,7 @@
 - **Não há banco de dados tradicional**
 - **Armazenamento em disco**:
   - Índice HNSW (binário): cache_indice/*.npy
-  - Passagens: cache_indice/passagens_titulo_*.json
+  - Passagens: cache_indice/passagens_gutenberg_*.json
   - Resultados: esultados.json, valiacao_resultados.json
 
 ### Modelos (Pré-treinados)
@@ -77,18 +77,18 @@
 - **LLM opcional para avaliação**: Mesmo LLM ou outro especificado
 
 ### Processamento de Dados
-- **Origem**: Wikipedia (Wikimedia dataset 20231101.en)
-- **Formato**: Arquivos Parquet
-- **Cache local**: dados/cache_ingles/ para downloads
+- **Origem**: Project Gutenberg (dataset `sedthh/gutenberg_english`, livros em inglês de domínio público)
+- **Formato**: Arquivos Parquet (colunas TEXT, SOURCE, METADATA)
+- **Cache local**: dados/cache_gutenberg/ para downloads; dados/gutenberg_10gb/ para o texto extraído
 
 ---
 
 ## 4. Tema e Funcionamento do Sistema
 
-### Tema: **Retrieval-Augmented Generation (RAG) com LLM Local**
+### Tema: **Literatura e livros (Project Gutenberg) com RAG e LLM Local**
 
-**Propósito**: Responder perguntas usando:
-1. Busca semântica em corpus de textos da Wikipedia
+**Propósito**: Responder perguntas sobre livros usando:
+1. Busca híbrida em um corpus de livros de domínio público (>= 10 GB de texto)
 2. Geração de respostas por LLM local
 3. Citação de fontes utilizadas
 
@@ -134,40 +134,38 @@
 ## 5. Dados de Treinamento
 
 ### Fonte Original
-- **Dataset**: Wikimedia Wikipedia \20231101.en\
-- **Tamanho total**: ~10GB+ de texto em inglês
-- **Artigos**: Categoria "Geography" e subcategorias
+- **Dataset**: `sedthh/gutenberg_english` (Hugging Face), licença MIT; livros de domínio público
+- **Tamanho total**: 48.284 livros, ~18 GB de texto (download de 10,7 GB). A coleta extrai 10 GB (10.000.000.000 bytes)
+- **Metadados por livro**: id (Text# do Gutenberg), título, autores; a URL da fonte é `https://www.gutenberg.org/ebooks/<id>`
 
 ### Download e Tamanho
 
-**Corpus Atual (usado nos testes)**:
-- **Tamanho**: 5.000 passagens (amostra com seed=42)
-- **Tamanho em disco**:
-  - Índice HNSW: ~62 MB
-  - Embeddings (.npy): ~7.3 MB
-  - Passagens JSON: ~5-10 MB
-  - **Total**: ~75 MB
+**Corpus Atual**:
+- **Coleta**: `python dados/coletar_gutenberg.py --contato SEU-EMAIL` gera `dados/gutenberg_10gb/` (`textos.txt`, `livros.jsonl`, `relatorio.json`)
+- **Índice do RAG**: até 20.000 passagens por padrão, uma por livro; o corpus completo de 10 GB não é embedado (inviável em CPU) e é usado no estudo de escala (`benchmark.py`, `escala.py`)
 
-**Como baixar**:
+**Como consultar**:
 \\\ash
 cd busca/
-python consultar.py --n 5000 -p "qualquer pergunta"
-# Primeira execução: ~10-15 min (download + embedding)
-# Queries subsequentes: ~30 seg cada
+python consultar.py -p "Who is Captain Ahab?"
+# Primeira execução: sorteia passagens e calcula embeddings (alguns minutos em CPU)
+# Consultas seguintes: dominadas pelo tempo de geração do LLM
 \\\
 
 ### Parâmetros de Amostragem
 \\\python
 # Arquivo: corpus.py
-def amostrar_passagens_titulo(n, semente, n_shards=1, 
-                               min_car=300, max_car=1200, por_artigo=3):
+def amostrar_passagens(n, semente, dados=DADOS,
+                       min_car=300, max_car=1000):
     """
     min_car: Caracteres mínimos por parágrafo (300)
-    max_car: Caracteres máximos (1200)
-    por_artigo: Parágrafos extraídos por artigo (3)
-    n_shards: Quantos arquivos Parquet baixar (1 = ~2.4GB)
+    max_car: Caracteres máximos (1000)
+    Retorna no máximo uma passagem por livro para ampliar a cobertura de títulos.
     """
 \\\
+
+O título e o autor entram no texto embedado e no BM25 (`texto_indexado`), para que perguntas como "Who wrote Moby Dick?" encontrem o livro.
+O score impresso é similaridade cosseno, não uma porcentagem de confiança. Uma citação válida também não prova automaticamente que o trecho implica toda a resposta; a avaliação de suporte semântico permanece necessária.
 
 ---
 
@@ -175,32 +173,32 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 
 ### Etapas de Pré-processamento
 
-#### **6.1 Coleta de Dados** (Arquivo: \coletar_ingles.py\)
+#### **6.1 Coleta de Dados** (Arquivo: \coletar_gutenberg.py\)
 \\\
-1. Baixa categoria "Geography" do dump Wikipedia
-2. Indexa artigos em SQLite
-3. Filtra por namespace
-4. Extrai textos dos Parquets
+1. Lista os Parquets do dataset via API do Hugging Face
+2. Baixa em ordem, com retomada e verificação de SHA-256
+3. Lê livros em lotes pequenos, deduplica por id
+4. Grava textos.txt + livros.jsonl (offsets) até 10 GB
 \\\
 
 **Complexidade**: 
-- **Tempo**: ~3-5 horas para 10GB
-- **Espaço**: ~30GB temporário
+- **Tempo**: dominado pelo download (~6 GB para 10 GB de texto)
+- **Espaço**: ~11 GB de cache + 10 GB de texto
 - **I/O**: Linear com tamanho do dataset
 
 #### **6.2 Amostragem de Passagens** (Arquivo: \corpus.py\)
 \\\
-1. Lê Parquet sequencialmente
-2. Split por duplas quebras (\n\n)
-3. Filtra por tamanho (300-1200 caracteres)
-4. Amostragem aleatória com seed
+1. Sorteia livros (seed) e lê cada um em textos.txt via offset
+2. Split por duplas quebras (\n\n) e junta linhas internas
+3. Filtra por tamanho (300-1000 caracteres) e por aparência de prosa
+4. Amostra até 3 parágrafos por livro
 5. Deduplicação por conteúdo
-6. Salva em JSON com metadados
+6. Salva em JSON com metadados (título, autores, url, id)
 \\\
 
 **Complexidade**:
-- **Tempo**: O(tamanho_parquet) ~ 5-10 min para 5000 passagens
-- **Espaço**: O(n_passagens) ~ 5-10 MB
+- **Tempo**: O(livros lidos), cada livro ~0,4 MB em média
+- **Espaço**: O(n_passagens)
 - **Operação**: Linear
 
 #### **6.3 Codificação (Embedding)** (Arquivo: \ag.py\)
@@ -212,13 +210,11 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 \\\
 
 **Complexidade**:
-- **Tempo**: ~43 passagens/segundo em CPU
-  - 5.000 passagens: ~116 seg (~2 min)
-  - 20.000 passagens: ~465 seg (~7.5 min)
-  - 50.000 passagens: ~20 min
-  - 100.000 passagens: ~40 min
+- **Tempo medido nesta máquina**: cerca de 16 passagens/segundo em CPU
+  - 2.000 passagens: ~123 seg
+  - 20.000 passagens: estimativa ~21 min; depende de CPU e tamanho das passagens
 - **Espaço por embedding**: 384 floats × 4 bytes = **1.5 KB/passagem**
-  - 5.000: ~7.5 MB
+  - 20.000: ~30 MB
   - 100.000: ~150 MB
 
 #### **6.4 Indexação (HNSW)** (Arquivo: \ag.py\)
@@ -231,8 +227,8 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 **Complexidade**:
 - **Tempo construção**: O(N log N), ~2-3 min para 5000
 - **Espaço**: O(N × (d + M))
-  - 5.000 passagens: ~62 MB
-  - 100.000 passagens: ~1.2 GB
+  - 20.000 passagens: medir no cache local
+  - 100.000 passagens: estimativa ~1.2 GB
 
 ### Resumo de Complexidade Geral
 
@@ -241,7 +237,7 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 | Amostragem | O(n) | O(n) | Linear ✓ |
 | Embedding | O(n) | O(n·384) | Linear ✓ |
 | HNSW | O(n log n) | O(n·40) | Sublinear ✓ |
-| **Total para N=5000** | **3-5 min** | **75 MB** | - |
+| **Total para N=20.000** | **~21 min de embedding, medido/estimado em CPU** | **varia com o índice** | - |
 
 
 ---
@@ -249,6 +245,9 @@ def amostrar_passagens_titulo(n, semente, n_shards=1,
 ## 7. Busca Semântica: Tempo e Complexidade
 
 ### Métodos Comparados (Benchmark)
+
+> Os resultados numéricos abaixo foram medidos na versão anterior com passagens da Wikipédia. Eles não representam
+> a recuperação no Gutenberg. Reexecute `benchmark.py` para produzir métricas específicas do novo corpus.
 
 **Setup**: 20.000 passagens, CPU (i5-13420H), 300 queries
 
@@ -339,10 +338,10 @@ the provided numbered context passages. You MUST cite sources..."
 
 INPUT:
 "Context:
-[1] (Wikipedia - Paris) Paris is a city in France...
-[2] (Wikipedia - France) France is a country...
+[1] (Moby Dick by Melville, Herman) Call me Ishmael...
+[2] (Moby Dick by Melville, Herman) Captain Ahab was...
 
-Question: What is the capital of France?"
+Question: Who is Captain Ahab?"
 \\\
 
 ### Complexidade de Inferência
@@ -511,7 +510,7 @@ Sistema Operacional: Windows 11
 
 \\\
 AGORA (Imediato):
-  ✓ Corpus 5.000-20.000 passagens
+  ✓ Corpus de 10 GB e índice RAG de 20.000 livros/passagens
   ✓ Hybrid search
   ✓ SmolLM2-1.7B (otimizado para CPU)
 
@@ -535,14 +534,14 @@ LONGO PRAZO:
 
 ## 11. Tempo de Execução de Cada Fase
 
-### Fases do Projeto (Estimativas para 5.000 passagens)
+### Fases do Projeto (estimativas antigas; devem ser medidas novamente para o Gutenberg)
 
 | Fase | Atividade | Tempo | Notas |
 |---|---|---|---|
 | **SETUP** | Instalação de pacotes | 5-10 min | pip install -r requirements.txt |
-| **COLETA** | Download Wikipedia | 5-15 min | 1-2 GB de dados |
+| **COLETA** | Download Gutenberg até 10 GB de texto | variável pela rede | ~6 GB de Parquet |
 | **AMOSTRAGEM** | Leitura Parquet + filtro | 1-2 min | Linear com tamanho |
-| **EMBEDDING** | Codificação 5k passagens | 2-3 min | 43 pass/seg em CPU |
+| **EMBEDDING** | Codificação de até 20k passagens | ~21 min (estimativa) | ~16 pass/seg medido em CPU |
 | **INDEXAÇÃO** | HNSW grafo | 0.5-1 min | O(n log n) |
 | **RECUPERAÇÃO** (primeira query) | Warmup modelo | 30-60 seg | Cache Python |
 | **RECUPERAÇÃO** (queries 2+) | BM25 + HNSW | 50-150 ms | Muito rápido |
@@ -785,28 +784,27 @@ Longo Prazo:
 | **2** | Linguagens/Bibliotecas | Python 3.12 + 13 libs open-source (Apache 2.0/MIT/BSD) |
 | **3** | Programas/Infraestrutura | CLI Python + HNSW index em disco + JSON. Sem servidor web. |
 | **4** | Tema/Funcionamento | RAG: busca semântica + LLM 1.7B gera resposta com citações |
-| **5** | Dados de Treinamento | 5.000 passagens (75MB total) de Wikipedia. Download automático. |
+| **5** | Dados de Treinamento | 27.740 livros, 10.000.018.524 bytes extraídos do Project Gutenberg; índice de 20.000 passagens. |
 | **6** | Pré-processamento | Amostragem O(n) → Embedding 2-3min → HNSW 30seg. Linear. |
 | **7** | Busca Semântica | HNSW: 14ms latência total. Recall@10=85%. 21x mais rápido que força bruta. |
 | **8** | Treinamento LLM | SEM treinamento local. Modelo pré-treinado SmolLM2-1.7B. Inferência ~52seg. |
 | **9** | Formação Resposta | Recupera 3 trechos (4ms) → Monta prompt → LLM gera tokens → Extrai citações. |
 | **10** | Recursos Disponíveis | i5-13420H 16GB. Viável: até 100k passagens. Corpus 5-50k recomendado. |
-| **11** | Tempo Fases | Setup 5min → Embedding 3min → HNSW 1min → Query ~1-3min (dominada por LLM). |
+| **11** | Tempo Fases | Embedding até 20.000 passagens: ~21 min estimados; geração LLM varia por pergunta. |
 | **12** | Tempo Training × Qualidade | Sem treinamento. max_tokens=200 é ótimo. Corpus quality impacta mais que tempo. |
 | **13** | Tempo Inferência × Qualidade | 20-50seg = qualidade boa. Linear até saturation (~100seg). |
-| **14** | Avaliação RAGAS | Hit@3=100%, MRR=100% (recuperação perfeita). Citação=45%. RAGAS incompleto. |
+| **14** | Avaliação RAGAS | Resultados da Wikipédia não são válidos para o corpus Gutenberg; avaliar novamente com perguntas de livros. |
 
 ### Próximos Passos Recomendados
 
-**1. Aumentar corpus para 20.000 passagens** (30 min)
+**1. Aumentar a cobertura do corpus indexado** (padrão atual: 20.000 passagens, uma por livro)
 \\\ash
-python consultar.py --n 20000 --shards 2 -p "sua pergunta"
+python consultar.py --n 20000 -p "Who is Captain Ahab?"
 \\\
 
-**2. Ajustar parâmetros de amostragem** (5 min)
+**2. Ajustar os parâmetros de amostragem** conforme os resultados de avaliação
 - Arquivo: \usca/corpus.py\
-- Mudar \min_car\ de 300 → 80
-- Mudar \por_artigo\ de 3 → 5
+- As passagens do corpus atual são limitadas a uma por livro para ampliar a cobertura de títulos.
 
 **3. Implementar query expansion** (1 hora)
 - Gerar variações da pergunta
@@ -825,9 +823,8 @@ python consultar.py --n 20000 --shards 2 -p "sua pergunta"
 - **consultar.py** - Interface CLI interativa
 - **avaliar.py** - Avaliação com RAGAS
 - **benchmark.py** - Comparação de métodos de busca
-- **ANALISE_PROBLEMA.md** - Diagnóstico do problema de recuperação
-- **SOLUCOES_RECOMENDADAS.md** - Soluções propostas
-- **SUMARIO_EXECUTIVO.md** - Resumo do projeto
+- **dados/coletar_gutenberg.py** - Coleta e extração do corpus de livros
+- **dados/README.md** - Instruções da coleta e atribuição/licença
 
 ---
 
@@ -837,7 +834,8 @@ python consultar.py --n 20000 --shards 2 -p "sua pergunta"
 - [Hugging Face Hub](https://huggingface.co/) - Modelos pré-treinados
 - [USearch](https://github.com/unum-cloud/usearch) - Indexação HNSW
 - [RAGAS](https://docs.ragas.io/) - Framework de avaliação
-- [Wikimedia Datasets](https://www.wikimedia.org/) - Fonte de dados
+- [Dataset Gutenberg em inglês](https://huggingface.co/datasets/sedthh/gutenberg_english) - Corpus de dados
+- [Project Gutenberg](https://www.gutenberg.org/) - Catálogo e fontes dos livros
 
 ---
 

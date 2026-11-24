@@ -1,116 +1,92 @@
-"""Amostragem de passagens da Wikipédia EN com título e URL."""
+"""Passagens de livros do Project Gutenberg com título/autor/URL de origem (necessários para citar as fontes).
+
+Lê dados/gutenberg_10gb (gerado por dados/coletar_gutenberg.py): livros.jsonl indica onde cada livro está em
+textos.txt. Sorteia livros e, de cada um, alguns parágrafos de prosa, mantendo {texto, titulo, autores, url, id}.
+"""
 import json
-import logging
 import random
+import re
+import time
 from pathlib import Path
 
-from configuracao_hf import configurar_huggingface
-
-configurar_huggingface()
-
-import pyarrow.parquet as pq
-
-from cache import gravar_atomico, identidade
-from infraestrutura.wikipedia import REVISAO_HF, baixar_shards
-
-LOG = logging.getLogger("busca.corpus")
-MIN_CAR = 300
-MAX_CAR = 1200
-POR_ARTIGO = 3
+RAIZ = Path(__file__).resolve().parent.parent
+DADOS = RAIZ / "dados" / "gutenberg_10gb"
+ESPACOS = re.compile(r"\s+")
 
 
-def amostrar_passagens_titulo(n, semente, n_shards=1, min_car=MIN_CAR, max_car=MAX_CAR,
-                              por_artigo=POR_ARTIGO, offline=None, retornar_offline=False):
-    """Sorteia artigos e, de cada um, até `por_artigo` parágrafos de tamanho adequado."""
-    artigos = []
-    if retornar_offline:
-        arquivos, offline = baixar_shards(n_shards, offline, retornar_offline=True)
-    else:
-        arquivos = baixar_shards(n_shards, offline)
-    for arq in arquivos:
-        for lote in pq.ParquetFile(arq).iter_batches(batch_size=2000, columns=["title", "url", "text"]):
-            for titulo, url, texto in zip(lote.column("title").to_pylist(), lote.column("url").to_pylist(),
-                                          lote.column("text").to_pylist()):
-                paragrafos = [p.strip() for p in (texto or "").split("\n\n")]
-                paragrafos = [p for p in paragrafos if min_car <= len(p) <= max_car]
-                if paragrafos:
-                    artigos.append((titulo, url, paragrafos))
-    rng = random.Random(semente)
-    rng.shuffle(artigos)
+def parece_prosa(p):
+    """Descarta índices, versos soltos, tabelas e linhas em maiúsculas."""
+    letras = sum(c.isalpha() for c in p)
+    return (letras / len(p) > 0.75 and p[-1] in '.!?"”\'’' and not p.isupper()
+            and sum(c.isdigit() for c in p) / len(p) < 0.05)
+
+
+def paragrafos(texto, min_car, max_car):
+    """Parágrafos de prosa com tamanho entre min_car e max_car, com quebras internas trocadas por espaço.
+
+    Em parte dos livros cada linha do HTML vem separada por uma linha em branco e o parágrafo por duas;
+    em outros o parágrafo é uma única linha em branco. O estilo é detectado pela proporção entre os dois.
+    """
+    uma = len(re.findall(r"(?<!\n)\n\n(?!\n)", texto))
+    duas = len(re.findall(r"(?<!\n)\n\n\n(?!\n)", texto))
+    separador = r"\n{3,}" if duas > 0.03 * (uma + duas) else r"\n{2,}"
+    juntos = (ESPACOS.sub(" ", p).strip() for p in re.split(separador, texto))
+    return [p for p in juntos if min_car <= len(p) <= max_car and parece_prosa(p)]
+
+
+def ler_livros(dados=DADOS):
+    with open(dados / "livros.jsonl", encoding="utf-8") as f:
+        return [json.loads(linha) for linha in f]
+
+
+def amostrar_passagens(n, semente, dados=DADOS, min_car=300, max_car=1000):
+    """Sorteia no máximo uma passagem por livro, com leitura ordenada para evitar seeks aleatórios."""
+    livros = ler_livros(dados)
+    random.Random(semente).shuffle(livros)
+    livros = sorted(livros[:min(len(livros), max(n * 2, int(n * 1.35)))],
+                    key=lambda livro: livro["deslocamento"])
+    rng = random.Random(semente + 1)
     passagens, vistas = [], set()
-    for titulo, url, paragrafos in artigos:
-        for p in rng.sample(paragrafos, min(por_artigo, len(paragrafos))):
-            if p not in vistas:
+    bytes_lidos, livros_processados, inicio = 0, 0, time.perf_counter()
+    print(f"Selecionando até {n:,} passagens de {len(livros):,} livros...", flush=True)
+    with open(dados / "textos.txt", "rb") as f:
+        for i, livro in enumerate(livros, 1):
+            livros_processados = i
+            f.seek(livro["deslocamento"])
+            texto = f.read(livro["bytes"]).decode("utf-8", errors="ignore")
+            bytes_lidos += livro["bytes"]
+            candidatos = paragrafos(texto, min_car, max_car)
+            p = rng.choice(candidatos) if candidatos else None
+            if p is not None and p not in vistas:
                 vistas.add(p)
-                passagens.append({"texto": p, "titulo": titulo, "url": url})
-        if len(passagens) >= n:
-            break
-    resultado = passagens[:n]
-    return (resultado, offline) if retornar_offline else resultado
+                passagens.append({"texto": p, "titulo": livro["titulo"], "autores": livro["autores"],
+                                  "url": livro["url"], "id": livro["id"]})
+            if i % 1000 == 0:
+                print(f"  {i:,}/{len(livros):,} livros; {len(passagens):,}/{n:,} passagens; "
+                      f"{bytes_lidos / 1e9:.2f} GB lidos; {time.perf_counter() - inicio:.0f}s",
+                      flush=True)
+            if len(passagens) >= n:
+                break
+    print(f"Seleção concluída: {len(passagens):,} passagens de {livros_processados:,} livros em "
+          f"{time.perf_counter() - inicio:.0f}s.", flush=True)
+    return passagens[:n]
 
 
-def verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache):
-    cache_dir = Path(cache_dir)
-    parametros = {
-        "versao": 1, "revisao": REVISAO_HF, "n": n, "semente": semente,
-        "n_shards": n_shards, "min_car": MIN_CAR, "max_car": MAX_CAR, "por_artigo": POR_ARTIGO,
-    }
-    arq = cache_dir / f"passagens_v1_{identidade(parametros)}.json"
-    legado = cache_dir / f"passagens_titulo_{n}_{semente}_{n_shards}.json"
-    if not arq.exists() and legado.exists() and not regenerar_cache:
-        raise RuntimeError(
-            f"Cache antigo preservado em {legado}, mas faltam metadados de amostragem. "
-            "Use --regenerar-cache para criar um novo cache sem modificar o antigo."
-        )
-    return parametros, arq, legado
+def texto_indexado(p):
+    """Texto usado nos embeddings e no BM25: o título e o autor ajudam a achar o livro certo."""
+    cabecalho = f"{p['titulo']} by {p['autores']}" if p["autores"] else p["titulo"]
+    return f"{cabecalho}. {p['texto']}"
 
 
-def carregar_passagens(cache_dir, n, semente, n_shards=1, offline=None, regenerar_cache=False,
-                       retornar_offline=False):
-    """Carrega ou cria passagens identificadas pela origem e pelos parâmetros."""
-    from infraestrutura import huggingface as hub
-
-    cache_dir = Path(cache_dir)
-    offline = hub.HF_HUB_OFFLINE if offline is None else bool(offline) or hub.HF_HUB_OFFLINE
-    parametros, arq, legado = verificar_cache_passagens(cache_dir, n, semente, n_shards, regenerar_cache)
+def carregar_passagens(cache_dir, n, semente, dados=DADOS):
+    """Retorna lista de dicts {texto, titulo, autores, url, id}; usa cache em disco se existir."""
+    arq = cache_dir / f"passagens_gutenberg_v3_{n}_{semente}.json"
     if arq.exists():
-        try:
-            registro = json.loads(arq.read_text(encoding="utf-8"))
-        except ValueError as exc:
-            raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}") from exc
-        if (not isinstance(registro, dict) or registro.get("parametros") != parametros
-                or not isinstance(registro.get("passagens"), list)
-                or registro.get("sha256") != identidade(registro["passagens"])):
-            raise ValueError(f"Cache de passagens inválido ou incompatível: {arq}")
-        validar_passagens(registro["passagens"])
-        LOG.info("Usando passagens em cache; não será necessário obter shards para o corpus.")
-        return (registro["passagens"], offline) if retornar_offline else registro["passagens"]
-    if legado.exists():
-        LOG.warning("Cache antigo preservado, mas não reutilizado: faltam metadados de amostragem.")
-    LOG.info("Cache de passagens ausente; preparando corpus a partir de %d shard(s).", n_shards)
-    if retornar_offline:
-        passagens, offline = amostrar_passagens_titulo(
-            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
-            offline=offline, retornar_offline=True,
-        )
-    else:
-        passagens = amostrar_passagens_titulo(
-            n, semente, n_shards, min_car=MIN_CAR, max_car=MAX_CAR, por_artigo=POR_ARTIGO,
-            offline=offline,
-        )
-    validar_passagens(passagens)
-    cache_dir.mkdir(parents=True, exist_ok=True)
-    registro = {"parametros": parametros, "sha256": identidade(passagens), "passagens": passagens}
-    dados = json.dumps(registro, ensure_ascii=False).encode("utf-8")
-    gravar_atomico(arq, lambda arquivo: arquivo.write(dados))
-    LOG.info("Corpus preparado: %d passagens.", len(passagens))
-    return (passagens, offline) if retornar_offline else passagens
-
-
-def validar_passagens(passagens):
-    if not passagens or any(
-        not isinstance(item, dict)
-        or any(not isinstance(item.get(campo), str) or not item[campo] for campo in ("texto", "titulo", "url"))
-        for item in passagens
-    ):
-        raise ValueError("As passagens estão vazias ou contêm texto, título ou URL inválidos.")
+        return json.loads(arq.read_text(encoding="utf-8"))
+    if not (dados / "livros.jsonl").exists():
+        raise FileNotFoundError(
+            f"Corpus não encontrado em {dados}. Execute: python dados\\coletar_gutenberg.py --contato SEU-EMAIL")
+    print("Cache de passagens ausente; iniciando a leitura do corpus...", flush=True)
+    passagens = amostrar_passagens(n, semente, dados)
+    arq.write_text(json.dumps(passagens, ensure_ascii=False), encoding="utf-8")
+    return passagens

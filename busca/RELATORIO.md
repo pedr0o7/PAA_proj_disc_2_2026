@@ -1,5 +1,8 @@
 # Busca semântica: comparação de métodos
 
+> Os resultados numéricos abaixo são históricos e foram medidos na versão com Wikipédia. O código do benchmark
+> agora usa o corpus do Project Gutenberg; execute-o novamente para obter métricas comparáveis no tema atual.
+
 Scripts: [benchmark.py](./benchmark.py) (qualidade e latência em passagens reais) e
 [escala.py](./escala.py) (busca vetorial pura em N até 1 milhão). Resultados brutos em
 `resultados.json` e `escala.json`.
@@ -15,8 +18,8 @@ $py="$env:LOCALAPPDATA\Programs\Python\Python312\python.exe"
 
 ## Metodologia
 
-- Corpus: passagens (parágrafos de 300–1200 caracteres) sorteadas em posições aleatórias de
-  `dados\wikipedia_en_10gb\textos.txt`; N = 2.000, 8.000 e 20.000.
+- Corpus histórico: passagens de `dados\wikipedia_en_10gb\textos.txt`; N = 2.000, 8.000 e 20.000.
+- Corpus atual para novos benchmarks: passagens de `dados\gutenberg_10gb\textos.txt`.
 - Consultas: 300 frases (>= 8 palavras) extraídas da passagem-alvo; a passagem de origem é a
   única relevante. Métricas: recall@1, recall@10, MRR@10 (k = 10).
 - Métodos (todos com similaridade de cosseno, vetores normalizados):
@@ -73,7 +76,7 @@ Os vetores sintéticos são mais difíceis que embeddings reais, então esse rec
   construção do grafo, ~2x de memória e recall aproximado.
 - **Recomendação:** sentence embeddings + HNSW para o corpus completo, possivelmente combinado
   com TF-IDF/BM25 (híbrido) para consultas lexicais.
-- **Limite prático:** o corpus de 10 GB tem da ordem de 14 milhões de passagens (estimativa a ~700
-  caracteres por passagem). A 43 passagens/s em CPU, codificá-las levaria ~90 horas e os vetores
+- **Limite prático:** 10 GB podem conter da ordem de 14 milhões de passagens (estimativa a ~700
+  caracteres por passagem). A 16 passagens/s medidas em CPU, codificá-las levaria ~243 horas e os vetores
   ocupariam ~21 GB (float32). Indexar tudo exige GPU, quantização (usearch suporta f16/i8) ou
   índice em disco; por isso os testes usam amostras.

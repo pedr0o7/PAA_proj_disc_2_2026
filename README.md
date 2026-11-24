@@ -1,4 +1,4 @@
-# Sistema RAG com LLM Local para Consulta à Wikipédia
+# Sistema RAG com LLM Local para Consulta a Livros do Project Gutenberg
 
 ![GitHub repo size](https://img.shields.io/github/repo-size/pedr0o7/PAA_proj_disc_2_2026?style=for-the-badge)
 ![GitHub language count](https://img.shields.io/github/languages/count/pedr0o7/PAA_proj_disc_2_2026?style=for-the-badge)
@@ -10,7 +10,7 @@
   <img src="assets/logo-cic-unb.png" alt="Logo do CIC/UnB" width="220">
 </p>
 
-> Projeto acadêmico que implementa um sistema de Retrieval-Augmented Generation (RAG) para responder perguntas com base em passagens da Wikipédia. O sistema combina busca híbrida — semântica e por palavras-chave — com um modelo de linguagem executado localmente, apresentando as fontes recuperadas.
+> Projeto acadêmico que implementa um sistema de Retrieval-Augmented Generation (RAG) para responder perguntas sobre literatura, com base em passagens de livros em inglês de domínio público do Project Gutenberg (corpus de pelo menos 10 GB de texto). O sistema combina busca híbrida — semântica e por palavras-chave — com um modelo de linguagem executado localmente, apresentando as fontes recuperadas (livro, autor e link).
 
 ## Ajustes e melhorias
 
@@ -20,7 +20,10 @@ O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 - [x] Geração local de respostas com o modelo SmolLM2
 - [x] Exibição das fontes recuperadas e citações
 - [x] Ferramentas de avaliação e benchmarking
-- [ ] Interface web de chat com respostas em tempo real e fontes clicáveis
+- [ ] Indexar uma fração maior do corpus de livros
+- [x] Rejeitar respostas que não citam uma passagem recuperada
+- [ ] Aprimorar a validação semântica de citações
+- [x] Interface web de chat com respostas em tempo real e fontes clicáveis
 - [ ] Ampliar e melhorar a cobertura do corpus
 - [ ] Aprimorar a extração e a validação de citações
 - [ ] Expandir os testes e a avaliação das respostas
@@ -31,8 +34,8 @@ Antes de começar, verifique se você tem:
 
 - Python 3.12.
 - Windows 11, sistema usado nos testes do projeto. Linux e macOS podem funcionar, mas não foram validados.
-- Conexão com a internet na primeira execução, para baixar os dados e os modelos do Hugging Face.
-- Espaço em disco e memória suficientes para os dados, o índice e o modelo local. A necessidade varia conforme o tamanho do corpus.
+- Conexão com a internet para baixar os dados e os modelos do Hugging Face.
+- Cerca de 25 GB livres em disco (download de até ~11 GB, texto extraído de 10 GB e índice) e memória suficiente para o índice e o modelo local.
 - Familiaridade básica com terminal e ambientes virtuais Python.
 
 ## 🚀 Instalando
@@ -59,7 +62,15 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-Na primeira execução, o programa pode baixar as passagens da Wikipédia e os modelos necessários. Esse processo pode levar alguns minutos.
+### Coletar o corpus
+
+Antes da primeira consulta, baixe os livros (a partir da raiz do projeto; veja [dados/README.md](dados/README.md)):
+
+```powershell
+python dados\coletar_gutenberg.py --contato "seu-email@exemplo.com"
+```
+
+Na primeira consulta, o programa escolhe até 20.000 passagens, calcula os embeddings (cerca de 20 minutos em CPU, dependendo da máquina) e baixa os modelos necessários. O cache é reutilizado nas consultas seguintes.
 
 ### Autenticação no Hugging Face
 
@@ -72,7 +83,7 @@ Variáveis já definidas no ambiente têm prioridade sobre o `.env`; um `HF_TOKE
 
 O acesso usa a rede por padrão e, sem credencial, os recursos públicos são acessados anonimamente. Quando há credencial, o pipeline a verifica no início; uma credencial inválida causa erro explícito, sem tentativa anônima. A verificação exige uma chamada adicional ao Hub.
 
-Os downloads do Hub usam `hf_xet` em modo de alto desempenho por padrão. Para desativar esse modo, defina `HF_XET_HIGH_PERFORMANCE=0` no `.env` ou no ambiente. Se `hf_xet` não estiver disponível, ou se `HF_HUB_DISABLE_XET=1`, será exibido um aviso e os downloads usarão HTTP. Shards completos em `dados/cache_ingles` são verificados e reutilizados; novos downloads usam o cache do Hugging Face. O coletor inglês ainda retoma seus arquivos `.part` antigos por HTTP público; a busca não os retoma.
+Os downloads dos modelos pelo Hub usam `hf_xet` em modo de alto desempenho por padrão. Para desativar esse modo, defina `HF_XET_HIGH_PERFORMANCE=0` no `.env` ou no ambiente. Se `hf_xet` não estiver disponível, ou se `HF_HUB_DISABLE_XET=1`, será exibido um aviso e os downloads usarão HTTP. O corpus Gutenberg é coletado separadamente pelo script descrito em [dados/README.md](dados/README.md).
 
 Para executar **offline**, prepare previamente os modelos e o corpus com rede e defina `HF_HUB_OFFLINE=1` antes de iniciar o programa. No PowerShell, a partir de `busca`:
 
@@ -82,41 +93,18 @@ python consultar.py --sem-llm -p "What is the capital of France?"
 Remove-Item Env:\HF_HUB_OFFLINE
 ```
 
-Uma variável já definida no terminal tem prioridade sobre o `.env`; reinicie o processo ao alterar o modo. Offline, a credencial não é verificada e arquivos ausentes causam erro. É necessária a revisão fixa do modelo de embeddings e, se usado, o modelo de geração. O cache de passagens compatível evita a leitura dos shards; caso ele não exista, são necessários o manifesto salvo em uma execução online e todos os shards selecionados completos. Os shards são verificados pelo tamanho e SHA-256 do manifesto salvo. Embeddings ausentes podem ser calculados a partir do modelo e das passagens locais.
+Uma variável já definida no terminal tem prioridade sobre o `.env`; reinicie o processo ao alterar o modo. Offline, a credencial não é verificada e arquivos de modelo ausentes causam erro. É necessária a revisão fixa do modelo de embeddings e, se usado, o modelo de geração. O corpus Gutenberg deve ter sido coletado previamente; embeddings ausentes podem ser calculados a partir do modelo e das passagens locais.
 
-Uma falha de conexão ou timeout durante a verificação de credencial ou consulta do manifesto permite tentar os caches locais, com aviso; as bibliotecas de modelos também podem usar seus caches quando a rede falha. Isso não garante fallback para toda falha: erros de autenticação, permissão, servidor ou transferência podem interromper a execução. Um cache incompleto também causa erro.
+Uma falha de conexão ou timeout durante a verificação de credencial permite tentar os caches locais, com aviso; as bibliotecas de modelos também podem usar seus caches quando a rede falha. Isso não garante fallback para toda falha: erros de autenticação, permissão, servidor ou transferência podem interromper a execução. Um cache incompleto também causa erro.
 
-Na consulta, mensagens `INFO` indicam o carregamento dos modelos e se o corpus
-usa cache ou precisa obter shards. A validação da credencial é informada quando
-concluída; usar um cache ou baixar um recurso público por si só não comprova
-autenticação. A validação de tamanho e SHA-256 é informada após cada shard ser
-verificado. Os logs não exibem o token e não confirmam qual transporte foi usado.
-
-### Caches anteriores
-
-Os novos caches de passagens registram a revisão do corpus e os parâmetros de
-amostragem; os embeddings registram a identidade das passagens, a revisão fixa
-do modelo e as versões das bibliotecas. Arquivos antigos não possuem esses
-metadados e **não são apagados nem reutilizados automaticamente**.
-
-Se um cache antigo corresponder aos parâmetros solicitados, o programa pede
-confirmação explícita para regenerar os arquivos novos. Na pasta `busca`:
-
-```powershell
-python consultar.py --regenerar-cache --sem-llm -p "What is the capital of France?"
-```
-
-Isso não converte os arquivos antigos: amostra as passagens novamente e calcula
-os embeddings, podendo exigir rede, espaço e tempo. Offline, o manifesto, os
-shards e a revisão do modelo precisam estar completos no cache. A opção também
-existe em `avaliar.py` e `gerar_dataset.py`. Depois da criação, não é preciso
-repeti-la para a mesma configuração.
+Na consulta, mensagens `INFO` indicam o carregamento dos modelos. A validação da credencial é informada quando concluída; usar um cache ou baixar um recurso público por si só não comprova autenticação. Os logs não exibem o token e não confirmam qual transporte foi usado.
 
 ## Organização
 
-`infraestrutura/` concentra configuração do Hub, manifesto da Wikipédia e
-verificação de integridade; `dados/` coleta e extrai as fontes; `busca/`
-amostra passagens, gera embeddings e executa consultas e avaliações.
+`infraestrutura/` concentra a configuração de acesso ao Hub e componentes de
+manifesto e integridade; `dados/` coleta e extrai o corpus Gutenberg; `busca/`
+amostra passagens, gera embeddings e executa consultas e avaliações; `frontend/`
+contém a interface web local.
 
 ## ☕ Usando
 
@@ -125,7 +113,7 @@ Execute os comandos a partir da pasta `busca`.
 ### Fazer uma pergunta
 
 ```bash
-python consultar.py -p "What is the capital of France?"
+python consultar.py -p "Who is Captain Ahab?"
 ```
 
 ### Iniciar o modo interativo
@@ -141,13 +129,13 @@ Digite as perguntas em inglês. Para encerrar, envie uma linha vazia ou digite `
 Este modo executa a recuperação e mostra as passagens encontradas, sem chamar o LLM:
 
 ```bash
-python consultar.py -p "What is the capital of France?" --sem-llm
+python consultar.py -p "Who is Captain Ahab?" --sem-llm
 ```
 
 ### Mostrar o conteúdo das passagens recuperadas
 
 ```bash
-python consultar.py -p "What is the capital of France?" --trechos
+python consultar.py -p "Who is Captain Ahab?" --trechos
 ```
 
 ### Opções principais
@@ -155,21 +143,79 @@ python consultar.py -p "What is the capital of France?" --trechos
 | Opção | Descrição | Padrão |
 |---|---|---:|
 | `-p`, `--pergunta` | Faz uma pergunta única e encerra | — |
-| `--n` | Número de passagens indexadas | `5000` |
+| `--n` | Número de passagens indexadas | `20000` |
 | `--k` | Número de trechos recuperados por pergunta | `3` |
 | `--semente` | Semente usada na amostragem do corpus | `42` |
-| `--shards` | Número de arquivos Parquet usados como fonte | `1` |
+| `--min-sim` | Similaridade cosseno mínima (não é porcentagem) para a busca semântica; não se aplica a consultas diretas de metadados ou frases | `0.4` |
 | `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct |
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
 | `--trechos` | Exibe o texto dos trechos recuperados | — |
-| `--regenerar-cache` | Permite recriar caches antigos sem metadados | desativado |
 
 Exemplo com mais passagens:
 
 ```bash
-python consultar.py --n 20000 --k 5 -p "What is the capital of France?"
+python consultar.py --n 50000 --k 5 -p "Who is Captain Ahab?"
 ```
+
+O índice contém uma passagem de cada livro amostrado (o embedding dos 10 GB inteiros não é viável em CPU). Se nenhuma passagem passar o limiar ou o modelo não citar uma passagem válida, a resposta será "contexto insuficiente". Isso evita respostas sem citação, mas não garante por si só que uma citação válida sustente semanticamente a resposta.
+
+### Busca experimental em todo o corpus
+
+Para indexar os livros coletados em passagens sobrepostas, execute uma vez na pasta `busca`:
+
+```powershell
+python indice_lexical.py
+```
+
+O índice SQLite é salvo em `cache_indice\gutenberg_lexical_v1.sqlite`. A construção lê os 10 GB,
+pode demorar bastante e necessita de espaço adicional em disco. Se interrompida, execute o mesmo
+comando para retomá-la; um índice incompleto não é usado para consultas. Se o corpus mudar, crie
+um novo índice em outro caminho com `--indice CAMINHO`.
+
+Depois de concluída a construção, consulte:
+
+```powershell
+python consultar.py --indice-completo --trechos -p "Who wrote Pride and Prejudice?"
+```
+
+Para um caminho personalizado, use `--indice-completo CAMINHO`. Nesse modo, `--n` e `--semente`
+não limitam o índice: a busca lexical considera o corpus completo e a similaridade semântica é
+calculada apenas para os melhores candidatos lexicais. As passagens são divididas em janelas de
+tokens sobrepostas para o cálculo de embeddings; a similaridade exibida é o maior cosseno entre
+essas janelas e a pergunta. Isso pode aumentar o tempo de recuperação. Não é necessário reconstruir
+o índice existente. A busca não garante que uma passagem relevante
+seja recuperada, pois candidatos sem palavras correspondentes podem ficar de fora.
+O modo padrão por amostragem continua disponível sem `--indice-completo`.
+
+Para perguntas em inglês no formato `Who wrote <título exato>?`, o índice completo também consulta
+os metadados do catálogo, quando há um único autor inequívoco. A resposta cita os metadados e não
+uma passagem do livro; por isso não é exibida similaridade nem aplicado `--min-sim` nessa consulta.
+Indícios de adaptações, autor ausente, colaboradores ou atribuições conflitantes levam à abstenção.
+Essa verificação é conservadora, mas depende da qualidade dos metadados e não identifica
+necessariamente todas as adaptações ou papéis de colaboradores.
+Se o título exato não estiver no catálogo, o sistema se abstém, sem afirmar que a obra não existe.
+`--sem-llm` continua apenas recuperando passagens.
+
+Para consultas no formato `Where does the phrase <frase> come from?`, o índice completo procura
+primeiro a sequência de palavras no texto, ignorando diferenças de pontuação e maiúsculas.
+Também aceita, por exemplo, `Which book contains the quote <frase>?`.
+Uma correspondência é apresentada como ocorrência em um livro, não como prova da origem da frase.
+Frases com menos de cinco palavras levam à abstenção por serem potencialmente ambíguas.
+Se não houver correspondência literal, o sistema pode apresentar um trecho com redação semelhante,
+explicitando que a origem e o significado não foram confirmados. Esse recurso compara palavras:
+paráfrases com vocabulário muito diferente podem não ser reconhecidas. Na ausência de correspondência
+suficiente, o sistema se abstém e mostra apenas candidatos lexicais, se houver.
+Esses resultados não usam o cosseno nem `--min-sim`. `--sem-llm` mostra os candidatos sem responder.
+
+Por exemplo, no PowerShell:
+
+```powershell
+python consultar.py --indice-completo --trechos -p "Where does the phrase tranquillise the mind as a steady purpose come from?"
+```
+
+Para outras perguntas, o LLM ainda pode citar uma passagem que não sustenta a resposta: o validador
+verifica os números das citações, mas não confirma automaticamente seu suporte semântico.
 
 ## 🖥️ Interface web
 
@@ -195,7 +241,7 @@ Fontes do próprio sistema operacional (serifada para as respostas, sem serifa p
 - **Uma geração por vez:** um `threading.Lock` impede duas gerações simultâneas, que só disputariam os mesmos núcleos da CPU.
 - **Leitura do fluxo no navegador:** `fetch` + `ReadableStream` + `TextDecoderStream`, que monta as linhas NDJSON conforme chegam.
 - **Citações:** o texto é escapado (proteção contra injeção de HTML) e cada `[n]` válido vira um link para o cartão da fonte `n`; as fontes citadas ficam destacadas ao final.
-- **Fontes como cartões expansíveis:** elementos nativos `<details>`/`<summary>`, com título, similaridade, trecho e link para a Wikipédia.
+- **Fontes como cartões expansíveis:** elementos nativos `<details>`/`<summary>`, com título, similaridade, trecho e link para o Project Gutenberg.
 - **Visual responsivo e acessível:** variáveis CSS (*custom properties*), modo escuro automático (`prefers-color-scheme`), animações desligadas para quem prefere menos movimento (`prefers-reduced-motion`), layout para celular e rótulos para leitores de tela.
 - **Segurança:** o servidor escuta só em `127.0.0.1` (acesso local), valida a entrada e abre links externos com `rel="noopener noreferrer"`.
 
@@ -223,7 +269,11 @@ Para executar a avaliação sem as métricas do RAGAS:
 python avaliar.py --q 30 --sem-ragas
 ```
 
-Para executar os testes dos coletores de dados, a partir da raiz do projeto:
+Após criar o índice completo, é possível avaliá-lo com `python avaliar.py --indice-completo
+--min-sim 0.4 --sem-ragas`. Revise as perguntas e fontes do conjunto de avaliação antes de
+interpretar as métricas; perguntas geradas a partir de passagens indexadas podem favorecer a busca.
+
+Para executar os testes do coletor de dados, a partir da raiz do projeto:
 
 ```powershell
 py -3.12 -m unittest discover -s dados -p "test_coletar*.py" -v
@@ -239,7 +289,7 @@ py -3.12 -m unittest discover -s busca -p "test_*.py" -v
 
 - [Documentação técnica](Documentacao.md)
 - [Coleta de dados](dados/README.md)
-- [Migração do Hugging Face e compatibilidade](busca/MIGRACAO_HUGGING_FACE.md)
+- [Histórico da migração do Hugging Face](busca/MIGRACAO_HUGGING_FACE.md)
 
 ## 📫 Contribuindo
 

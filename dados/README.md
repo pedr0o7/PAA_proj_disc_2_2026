@@ -1,123 +1,57 @@
-# Coleta inicial de geografia
+# Coleta de dados: livros do Project Gutenberg
 
-O script `coletar_geografia.py` coleta artigos diretamente associados à
-categoria Geografia da Wikipédia em português. A profundidade é zero: não
-inclui subcategorias como países e cidades. A classificação é feita pela
-Wikipédia e não garante que todo artigo seja igualmente pertinente ao projeto.
+O tema do projeto é **literatura**. O corpus são livros em inglês de domínio público do
+[Project Gutenberg](https://www.gutenberg.org/), obtidos do dataset
+[`sedthh/gutenberg_english`](https://huggingface.co/datasets/sedthh/gutenberg_english) no Hugging Face
+(48.284 livros, cerca de 18 GB de texto; download de 10,7 GB em 37 arquivos Parquet). O cabeçalho e o rodapé de
+licença do Gutenberg já foram removidos pelo dataset, e cada livro traz metadados (id, título, autores).
 
-Na raiz do projeto, execute no PowerShell:
+`coletar_gutenberg.py` baixa os arquivos na ordem, com verificação de tamanho e SHA-256, e para assim que a soma
+do texto atinge a meta de 10 GB decimais (10.000.000.000 bytes). Isso exige cerca de 21 dos 37 arquivos
+(aproximadamente 6 GB de download).
 
-```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" dados\coletar_geografia.py --contato "seu-email@exemplo.com"
-```
-
-Substitua o contato por um endereço real para identificar o programa perante a
-Wikipédia. A saída padrão é `dados\geografia_coleta`. Ela não é sobrescrita:
-para uma nova coleta, escolha uma pasta que ainda não exista com `--saida`,
-por exemplo `--saida dados\geografia_coleta_2`. Se ocorrer uma falha, a pasta
-pode conter uma coleta incompleta, sem relatório; escolha outra pasta ao repetir.
-
-Em `textos`, cada arquivo é nomeado pelo identificador único do artigo. O
-`relatorio.json` contém títulos, URLs, revisões, datas e tamanhos em bytes, além
-da soma dos textos e da comparação com a meta de 10 GB decimais
-(10.000.000.000 bytes). Metadados não entram nessa soma. Os títulos das seções
-podem aparecer marcados com sinais de igual no texto retornado pela API.
-
-A classificação e os artigos mudam ao longo do tempo, portanto outra coleta pode
-ter resultados diferentes. Para reutilizar os textos, consulte as condições de
-licença e atribuição da Wikipédia; o relatório preserva informações de origem.
-
-Para executar os testes:
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m unittest discover -s dados -p "test_coletar_geografia.py" -v
-```
-
-## Coleta em lote
-
-`coletar_lote.py` identifica a categoria Geografia e suas subcategorias
-até a profundidade escolhida, sem repetir artigos. Por padrão usa
-profundidade 2. A categoria de origem vem dos dumps da Wikipédia em português
-de 01/11/2026; os textos vêm do conjunto `wikimedia/wikipedia`,
-`20231101.pt`, de 01/11/2023. Como as datas são diferentes, alguns artigos
-selecionados pelas categorias atuais não estarão no conjunto antigo.
-O relatório informa quantos não foram encontrados.
-
-As categorias são uma aproximação do tema, não uma garantia de relevância.
-Subcategorias mais profundas podem incluir assuntos distantes de geografia.
-Um resultado inferior a 10 GB não demonstra que o conjunto completo da
-Wikipédia em português ou outros recortes de geografia sejam insuficientes.
+## Executar
 
 Na raiz do projeto:
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m pip install -r dados\requirements.txt
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" dados\coletar_lote.py --contato "seu-email@exemplo.com" --profundidade 2
+python -m pip install -r dados\requirements.txt
+python dados\coletar_gutenberg.py --contato "seu-email@exemplo.com"
 ```
 
-O programa verifica os checksums dos downloads e os guarda em
-`dados\cache_lote` para reutilização. Exige conexão e vários gigabytes de espaço
-em disco. Se um download for interrompido, o respectivo arquivo `.part`
-permanece no cache: remova apenas esse arquivo parcial antes de repetir.
+Substitua o contato por um endereço real, usado no `User-Agent` das requisições. Reserve cerca de 25 GB livres.
+Se o download for interrompido, execute o mesmo comando: o arquivo parcial (`.part`) é retomado. Se ele estiver
+corrompido, apague apenas esse `.part`.
 
-A saída padrão é `dados\geografia_lote` e não é sobrescrita. Escolha um novo
-destino com `--saida dados\outra_coleta` para executar novamente. Se ocorrer
-uma falha durante a extração, o destino pode conter uma coleta incompleta;
-nesse caso, use outro destino.
+Opções: `--meta` (bytes de texto, padrão 10.000.000.000), `--cache` (padrão `dados\cache_gutenberg`) e
+`--saida` (padrão `dados\gutenberg_10gb`; é sobrescrita a cada execução).
 
-`textos.txt` contém os textos em UTF-8, separados por duas quebras de linha.
-`artigos.jsonl` registra o título, a URL e o deslocamento e tamanho em bytes
-de cada texto dentro desse arquivo, um artigo por linha. `relatorio.json`
-soma apenas os bytes dos artigos, excluindo os separadores e os metadados,
-e compara o total com 10.000.000.000 bytes. Os dados mantêm a origem para
-atribuição, mas é necessário consultar as condições de uso e licença da Wikipédia.
-O relatório também mede os bytes do campo `text` de todos os artigos da versão
-portuguesa do dataset, inclusive os que não foram selecionados, para comparar
-o teto dessa fonte com a meta.
+## Saída (`dados\gutenberg_10gb`)
 
-Na coleta verificada em `dados\geografia_lote_verificada`, o recorte de
-profundidade 2 contém 68.642 artigos e 52.028.195 bytes de texto. O conjunto
-português inteiro de 2023 contém 2.650.621.405 bytes no campo `text`.
-Portanto, essa versão do dataset, mesmo sem filtro de tema, não fornece
-10 GB de texto. Isso não determina o tamanho da Wikipédia atual nem de outras
-fontes. A pasta `dados\geografia_lote` guarda a primeira medição, anterior ao
-filtro de namespace e à medição do dataset completo; prefira a verificada.
+- `textos.txt`: livros em UTF-8, cada um seguido de uma linha em branco.
+- `livros.jsonl`: um livro por linha, com `id` (Text# do Gutenberg), `titulo`, `autores`, `url`
+  (`https://www.gutenberg.org/ebooks/<id>`), `deslocamento` e `bytes` do texto dentro de `textos.txt`.
+- `relatorio.json`: livros únicos, bytes de texto e `atingiu_meta`. A meta só está comprovada se esse campo for
+  verdadeiro. Os livros são deduplicados por `id`, e o último livro é gravado inteiro, então o total pode
+  ultrapassar levemente a meta.
 
-Para executar todos os testes de coleta:
+Esses dados e o cache não são versionados (veja `.gitignore`).
+
+## Testes
 
 ```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m unittest discover -s dados -p "test_coletar*.py" -v
+python -m unittest discover -s dados -p "test_coletar*.py" -v
 ```
 
-## Complemento em inglês
+Os testes não usam a rede.
 
-`coletar_ingles.py` usa os dumps `enwiki` de 01/11/2026 e os textos
-`wikimedia/wikipedia`, `20231101.en`, de 01/11/2023. A combinação de datas
-tem a mesma limitação descrita para o português. Por padrão, considera a
-categoria `Geography` e duas camadas de subcategorias. Profundidades maiores
-podem incluir muitos artigos que não são pertinentes a geografia.
+## Licença e atribuição
 
-Esse processo baixa aproximadamente 18 GB de arquivos compactados e precisa
-de espaço adicional para os índices SQLite e textos extraídos. A indexação é
-feita em disco para reduzir o consumo de memória. Pode demorar bastante.
-
-```powershell
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" -m pip install -r dados\requirements.txt
-& "$env:LOCALAPPDATA\Programs\Python\Python312\python.exe" dados\coletar_ingles.py --contato "seu-email@exemplo.com" --profundidade 2
-```
-
-O manifesto e os arquivos antigos ficam em `dados\cache_ingles`; novos shards
-usam o cache do Hugging Face, compartilhado com a busca. Configure o acesso
-conforme o README principal. O programa verifica tamanho e checksum: parciais
-antigos `.part` são retomados pelo coletor usando HTTP público, quando o
-servidor aceita requisições parciais; novos downloads seguem as regras do Hub.
-No modo offline são necessários o manifesto, os shards e os dumps completos;
-parciais não são retomados. Se a construção do
-índice for interrompida, o arquivo `.sqlite.part` permanece no cache; remova
-apenas esse índice incompleto antes de tentar novamente.
-
-A saída fica em `dados\geografia_ingles` e não é sobrescrita. Além dos textos,
-metadados e relatório individuais, o arquivo `resumo_bilingue.json` soma o texto
-dessa coleta em inglês ao da coleta verificada em português. Versões do mesmo
-artigo em línguas diferentes são consideradas documentos distintos. A meta
-somente estará comprovada se o campo `atingiu_meta` for verdadeiro.
+Os livros são de domínio público nos Estados Unidos, mas alguns podem ter direitos autorais em outros países; o
+próprio dataset avisa para conferir os metadados antes de reutilizar. O dataset está sob licença MIT. O
+Project Gutenberg pede a seguinte nota junto aos livros: *"This eBook is for the use of anyone anywhere in the
+United States and most other parts of the world at no cost and with almost no restrictions whatsoever. You may
+copy it, give it away or re-use it under the terms of the Project Gutenberg License included with this eBook or
+online at www.gutenberg.org. If you are not located in the United States, you will have to check the laws of the
+country where you are located before using this eBook."* Termos completos:
+<https://www.gutenberg.org/policy/permission.html>.

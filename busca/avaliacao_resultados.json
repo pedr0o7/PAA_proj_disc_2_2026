@@ -3,311 +3,302 @@
  "k": 3,
  "perguntas": 20,
  "proprias": {
-  "hit_at_k": 1.0,
-  "mrr": 1.0,
-  "respostas_com_citacao": 0.45,
-  "citacao_da_fonte_correta": 0.45
+  "hit_at_k": 0.9,
+  "mrr": 0.9,
+  "respostas_com_citacao": 0.3,
+  "citacao_da_fonte_correta": 0.25
  },
  "tempo_s": {
   "tempo_recuperacao": {
-   "media": 0.04199568000040017,
-   "mediana": 0.021897499995247927,
-   "p95": 0.15612110000074608
+   "media": 0.1338858449998952,
+   "mediana": 0.13205550000202493,
+   "p95": 0.1692248000035761
   },
   "tempo_geracao": {
-   "media": 52.66335641000042,
-   "mediana": 32.582294900003035,
-   "p95": 189.31788270000106
+   "media": 36.79243616499953,
+   "mediana": 33.09129060000487,
+   "p95": 57.107703499998024
   },
   "tempo_total": {
-   "media": 52.705352090000815,
-   "mediana": 32.63357334999819,
-   "p95": 189.35705099999905
+   "media": 36.926322009999424,
+   "mediana": 33.22641520000252,
+   "p95": 57.2769283000016
   }
  },
  "detalhe": [
   {
-   "pergunta": "What is the name of the Surrey town center with the highest population density?",
-   "referencia": "Whalley",
-   "resposta": "The name of the Surrey town center with the highest population density is Whalley. This information can be found in contexts [1], [2], and [3].",
-   "fonte_esperada": "Whalley, Surrey",
+   "pergunta": "What is the purpose of the Carets on Mars?",
+   "referencia": "The Carets serve as natural reservoirs for water near the poles, providing ideal facilities for the preservation of an adequate supply.",
+   "resposta": "The purpose of the Carets on Mars is to provide an adequate supply of water for the Martian population. According to the passage, these dark areas on Mars are its old sea bottoms, and the Carets are located at the edges of these areas. The Carets serve as natural reservoirs for water, making them essential for the survival of the Martian inhabitants.",
+   "fonte_esperada": "The Planet Mars and Its Inhabitants, a Psychic Revelation",
    "fontes": [
-    "Whalley, Surrey",
-    "Whalley, Surrey",
-    "Woollard"
+    "The Planet Mars and Its Inhabitants, a Psychic Revelation",
+    "The Planet Mars and Its Inhabitants, a Psychic Revelation",
+    "Edison's Conquest of Mars"
+   ],
+   "citados": [],
+   "tempo_total": 28.91813959999854
+  },
+  {
+   "pergunta": "What is the author's justification for his actions during the Battle of Platsaumbe?",
+   "referencia": "The author justifies his actions during the Battle of Platsaumbe by stating that he did nothing personally more effectively than his comrades.",
+   "resposta": "The author's justification for his actions during the Battle of Platsaumbe is based on the accounts found in Passage [1], specifically the story of Horatius Cocles who defended Veii against the Romans. According to the passage, Horatius' bravery and sacrifice led to the Roman victory, making him a symbol of honor and courage. The author draws inspiration from this historical event to justify his own actions during the Battle of Platsaumbe, where he fought bravely despite being outnumbered. He believes that his actions were motivated by a desire to emulate Horatius' heroism and uphold the values of courage and selflessness.",
+   "fonte_esperada": "The Campaigns of the British Army at Washington and New Orleans 1814-1815",
+   "fontes": [
+    "Stories From Livy",
+    "Gorgias",
+    "The Story of the Great War, Volume V (of 12) Neuve Chapelle, Battle of Ypres, Przemysl, Mazurian Lakes"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 55.33355799999845
+  },
+  {
+   "pergunta": "Who are some notable individuals involved in betting on gladiatorial contests in Quo Vadis?",
+   "referencia": "Priests, Vestals, Senators, Knights, and people of the crowd.",
+   "resposta": "In Quo Vadis, notable individuals involved in betting on gladiatorial contests include priests, vestals, senators, knights, and even common people like the populace. These individuals placed wagers on various gladiators, hoping to win immense sums if their chosen fighters won. Additionally, Cæsar himself bet on gladiators, along with others such as priests, Vestals, and senators.",
+   "fonte_esperada": "Quo Vadis: A Narrative of the Time of Nero",
+   "fontes": [
+    "Quo Vadis: A Narrative of the Time of Nero",
+    "Thoroughbreds",
+    "The Firm of Nucingen"
+   ],
+   "citados": [],
+   "tempo_total": 38.86489110000548
+  },
+  {
+   "pergunta": "What is the process of replacing a phase unit on the first sled from the spaceship?",
+   "referencia": "The process involves Harcraft performing the task while Arnold watches and provides instructions via the suit's inter-com.",
+   "resposta": "The process of replacing a phase unit on the first sled from the spaceship involves following the steps outlined in Passage [1], where both Arnold and Harcraft are shown working together to replace the phase unit.",
+   "fonte_esperada": "Unspecialist",
+   "fontes": [
+    "Unspecialist",
+    "Microscopes and Accessory Apparatus: Catalogue No. 40",
+    "How it Works Dealing in simple language with steam, electricity, light, heat, sound, hydraulics, optics, etc., and with their applications to apparatus in common use"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 25.476956699996663
+  },
+  {
+   "pergunta": "What does the author mean when he says \"knowledge bears no blossoms till quickened by the life\"?",
+   "referencia": "In this context, the author means that true understanding and wisdom come only through living and experiencing life, rather than just accumulating knowledge.",
+   "resposta": "When the author says \"knowledge bears no blossoms till quickened by the life,\" he means that true understanding and wisdom cannot emerge without experiencing and living through experiences. Just like how flowers need sunlight, water, and nutrients to bloom, human knowledge requires personal growth, trials, and challenges to flourish. In essence, the author emphasizes that genuine insight into the world can only arise from actively engaging with reality rather than simply accumulating theoretical knowledge.",
+   "fonte_esperada": "The Story of Chautauqua",
+   "fontes": [
+    "The Story of Chautauqua",
+    "Charmides",
+    "Leaves of Life, for Daily Inspiration"
+   ],
+   "citados": [],
+   "tempo_total": 36.979856000005384
+  },
+  {
+   "pergunta": "What is the purpose of the two stallions being taken out of the corral?",
+   "referencia": "The purpose of taking the two stallions out of the corral is to secure them and prevent them from running away during the cattle drive.",
+   "resposta": "The purpose of the two stallions being taken out of the corral is to secure them as part of the cowboy band's herd. Stevens has instructed his men to take the stallions outside the corral and stake them down securely before rounding up the rest of the captured stock. This ensures that the captured horses will be under control during the journey.",
+   "fonte_esperada": "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze",
+   "fontes": [
+    "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze",
+    "The Heritage of the Sioux",
+    "Ruth Fielding In the Saddle; Or, College Girls in the Land of Gold"
+   ],
+   "citados": [],
+   "tempo_total": 29.609087500000896
+  },
+  {
+   "pergunta": "What activity is Joe doing when he catches flies and lets them go again?",
+   "referencia": "Joe is catching flies and letting them go again without their wings.",
+   "resposta": "When Joe is down the hole shovelling up the dirt, he is catching flies and letting them go again without their wings. This activity is mentioned in passage [1], where Joe is described as \"catching flies and letting them go again without their wings.\"",
+   "fonte_esperada": "On Our Selection",
+   "fontes": [
+    "On Our Selection",
+    "Joe Strong, the Boy Fish; or, Marvelous Doings in a Big Tank",
+    "Joe Wilson and His Mates"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 27.60415220000141
+  },
+  {
+   "pergunta": "What is the author's sentiment towards nature and its changing seasons in the poem?",
+   "referencia": "The author expresses a melancholic view on the passing of time and the decline of natural beauty, as seen through the eyes of an observer who remains unaffected by these changes.",
+   "resposta": "The author's sentiment towards nature and its changing seasons is predominantly positive. The poet expresses appreciation for the constant sources of happiness and the ability to find comfort in the ever-changing environment. The changing seasons are portrayed as reinforcing the emotional state of the poet, whether it's joy, sadness, or excitement. The poet also highlights the beauty and significance of natural elements such as birdsong, blossoms, and the changing colors of leaves, emphasizing the importance of these moments in life. Overall, the author seems to view nature as an integral part of human experience, providing solace and inspiration during various stages of life.",
+   "fonte_esperada": "My Schools and Schoolmasters; Or, The Story of My Education",
+   "fontes": [
+    "Poetry",
+    "Aesthetic Poetry",
+    "Our Boys, and Other Poems"
+   ],
+   "citados": [],
+   "tempo_total": 52.04219649999868
+  },
+  {
+   "pergunta": "What does Rocdiane think about the protagonist's preference for older men over younger ones?",
+   "referencia": "Rocdiane believes that the protagonist likely prefers older men due to their maturity and experience, rather than just youthful charm.",
+   "resposta": "Rocdiane believes that the protagonist likely prefers older men over younger ones due to their maturity and experience. He mentions that the protagonist has seen and known many men of different ages and that she might prefer the comfort and reliability of an older man over the youthful energy of a younger one.",
+   "fonte_esperada": "Strong as Death",
+   "fontes": [
+    "Strong as Death",
+    "The Big Nightcap Letters Being the Fifth Book of the Series",
+    "The Idle Thoughts of an Idle Fellow"
+   ],
+   "citados": [],
+   "tempo_total": 34.902732900001865
+  },
+  {
+   "pergunta": "What does Bragg plan to do when he returns?",
+   "referencia": "Bragg plans to settle with the villain Botts.",
+   "resposta": "[1] When Bragg returns, he plans to settle with the villain Botts. The context states, \"He is demented,\" said the Professor, but later, \"Here Tom gave an account of Bragg's residence in Africa as related by himself.\" This implies that Bragg intends to deal with Botts, possibly resolving their conflict over the money.\n\n[2] In this passage, Captain Bragg proposes to marry Flora off-hand and settle four hundred pounds per year upon her. It seems that Bragg is planning to propose marriage to Flora, though the context doesn't specify what happens after she accepts.\n\n[3] In this story, Mr. Belknap wishes to know what to do with the stubborn boy, who refuses to obey and shows disrespect. He believes the boy should be punished, but he asks for advice from his aunt, Aunt Mary. The context doesn't provide details about what Bragg plans to do when he returns, but it suggests",
+   "fonte_esperada": "The Funny Philosophers, or Wags and Sweethearts. A Novel",
+   "fontes": [
+    "The Funny Philosophers, or Wags and Sweethearts. A Novel",
+    "The Christmas Books of Mr. M.A. Titmarsh",
+    "Home Lights and Shadows"
    ],
    "citados": [
     1,
     2,
     3
    ],
-   "tempo_total": 20.989862900001754
+   "tempo_total": 81.58016189999762
   },
   {
-   "pergunta": "What is the name of the UK-based online poker room that provided a virtual reality poker experience with customizable 3D graphics and animated players?",
-   "referencia": "PKR.com",
-   "resposta": "The name of the UK-based online poker room that provided a virtual reality poker experience with customizable 3D graphics and animated players is PKR.com. This information is derived from the given context passages, specifically [1], which states \"PKR.com (also PKR) was an Alderney, UK-based online poker room...\" and [2], which explains the gameplay features of the site.",
-   "fonte_esperada": "PKR.com",
+   "pergunta": "What is the name of the species of sunbird found around Naini Tal in the Himalayas?",
+   "referencia": "The Himalayan yellow-backed sunbird (Æthopyga scheriæ)",
+   "resposta": "The name of the species of sunbird found around Naini Tal in the Himalayas is the Himalayan yellow-backed sunbird (Æthopyga scheriæ).",
+   "fonte_esperada": "Birds of the Indian Hills",
    "fontes": [
-    "PKR.com",
-    "Hoyle Card Games",
-    "Yūsuke Numata"
-   ],
-   "citados": [
-    1,
-    2
-   ],
-   "tempo_total": 34.75094949999766
-  },
-  {
-   "pergunta": "What is the full title of the first solo album released by Maggie Bell?",
-   "referencia": "Queen of the Night",
-   "resposta": "The full title of the first solo album released by Maggie Bell is \"Queen of the Night\". This album was recorded in New York City with record producer Jerry Wexler.",
-   "fonte_esperada": "Maggie Bell",
-   "fontes": [
-    "Maggie Bell",
-    "Maggie Bell",
-    "Maggie Bell"
+    "Birds of the Indian Hills",
+    "Himalayan Journals — Complete Or, Notes of a Naturalist in Bengal, the Sikkim and Nepal Himalayas, the Khasia Mountains, etc.",
+    "Himalayan Journals — Complete Or, Notes of a Naturalist in Bengal, the Sikkim and Nepal Himalayas, the Khasia Mountains, etc."
    ],
    "citados": [],
-   "tempo_total": 21.62173530000291
+   "tempo_total": 26.35887869999715
   },
   {
-   "pergunta": "What is the name of the mountain range where the Orange River originates?",
-   "referencia": "The Orange River originates from the Maloti Mountains.",
-   "resposta": "The name of the mountain range where the Orange River originates is the Maloti Mountains. This information can be found in passage [1], which states, \"The sources of two of the principal rivers in South Africa, the Orange River, known as Senqu in Lesotho, and the Tugela River, are in these mountains.\"",
-   "fonte_esperada": "Maloti Mountains",
+   "pergunta": "What was the name given to the tribe that lived mainly by fishing and root-digging?",
+   "referencia": "The Klamaths",
+   "resposta": "The name given to the tribe that lived mainly by fishing and root-digging is Klamaths. This information can be found in Passage [1], where it states, \"KLAMATHS. A comprehensive name applied to this as well as to several tribes on the Klamath River, differing in language and type.\"",
+   "fonte_esperada": "Descriptive Catalogue of Photographs of North American Indians",
    "fontes": [
-    "Maloti Mountains",
-    "Anadyr (river)",
-    "Pine Nut Mountains"
+    "Descriptive Catalogue of Photographs of North American Indians",
+    "The Western United States: A Geographical Reader",
+    "The Iowa"
    ],
    "citados": [
     1
    ],
-   "tempo_total": 29.686285099996894
+   "tempo_total": 37.072850599994126
   },
   {
-   "pergunta": "What is the name of the Serie C club where Cristian Brocchi has been appointed as the new head coach?",
-   "referencia": "Monza",
-   "resposta": "The name of the Serie C club where Cristian Brocchi has been appointed as the new head coach is Monza. This information can be found in Context [2], which states \"In October 2018, Brocchi was named the new head coach of Serie C club Monza, under the ownership of the former Milan duo of Silvio Berlusconi and Adriano Galliani.\"",
-   "fonte_esperada": "Cristian Brocchi",
+   "pergunta": "What is the name of the book \"Faces in the Fire, and Other Fancies\" written by Boreham, Frank?",
+   "referencia": "\"Faces in the Fire, and Other Fancies\"",
+   "resposta": "The name of the book \"Faces in the Fire, and Other Fancies\" written by Boreham, Frank, is \"Faces in the Fire, and Other Fancies.\"",
+   "fonte_esperada": "Faces in the Fire, and Other Fancies",
    "fontes": [
-    "Cristian Brocchi",
-    "Cristian Brocchi",
-    "Altona East Phoenix SC"
-   ],
-   "citados": [
-    2
-   ],
-   "tempo_total": 38.69049680000171
-  },
-  {
-   "pergunta": "What is the frequency of Haplogroup F1b in Mongolians, Kazakhs, Uyghurs, and Japanese?",
-   "referencia": "F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, with percentages ranging from 20% to 45%.",
-   "resposta": "According to the provided context, Haplogroup F1b tends to become more frequent as a fraction of total F in populations of the northern parts of East Asia and Central Asia, such as Mongols, Kazakhs, Uyghurs, and Japanese. Therefore, the frequency of Haplogroup F1b in Mongolians, Kazakhs, Uyghurs, and Japanese is approximately 31%.",
-   "fonte_esperada": "Haplogroup F (mtDNA)",
-   "fontes": [
-    "Haplogroup F (mtDNA)",
-    "Haplogroup F (mtDNA)",
-    "Haplogroup O-M175"
+    "Faces in the Fire, and Other Fancies",
+    "Faces in the Fire, and Other Fancies",
+    "Faces in the Fire, and Other Fancies"
    ],
    "citados": [],
-   "tempo_total": 37.812953200002084
+   "tempo_total": 20.584178799996153
   },
   {
-   "pergunta": "Who is Billy Hinsche?",
-   "referencia": "Billy Hinsche was an American musician of Filipino descent who played guitar in The Beach Boys' backing band and was also a composer for television.",
-   "resposta": "Billy Hinsche is a Filipino-American musician who gained recognition through his association with The Beach Boys. Born in Manila, Philippines, Hinsche grew up in Beverly Hills, USA, and attended Loyola High School. He initially worked as a session musician for The Beach Boys before joining them as a vocalist and multi-instrumentalist from 1971 to 1977 and 1982 to 1996. Hinsche pursued higher education at the University of California, Los Angeles, School of Theater, Film and Television, earning a B.F.A. in 1974. Known for his contributions to various bands, including Uriah Heep and Savoy Brown, Hinsche is perhaps most famous for his time with The Beach Boys and his collaborations with Ozzy Osbourne's band.",
-   "fonte_esperada": "Billy Hinsche",
+   "pergunta": "What is the title of the book where the editor-in-chief of the Maison Mazarin aims to collect and present undying romances with the crown of merit awarded by the French Academy?",
+   "referencia": "The Immortals: Masterpieces of Fiction, Crowned by the French Academy",
+   "resposta": "The title of the book where the editor-in-chief of the Maison Mazarin aims to collect and present undying romances with the crown of merit awarded by the French Academy is \"The Immortals: Masterpieces of Fiction, Crowned by the French Academy.\"",
+   "fonte_esperada": "The Immortals: Masterpieces of Fiction, Crowned by the French Academy — Complete",
    "fontes": [
-    "Billy Hinsche",
-    "Billy Hinsche",
-    "John Sinclair (musician)"
+    "The Immortals: Masterpieces of Fiction, Crowned by the French Academy — Complete",
+    "The Immortals: Masterpieces of Fiction, Crowned by the French Academy — Complete",
+    "Memoirs of the Comtesse Du Barry With Minute Details of Her Entire Career as Favorite of Louis XV"
    ],
    "citados": [],
-   "tempo_total": 129.07025389999762
+   "tempo_total": 27.304619299997285
   },
   {
-   "pergunta": "What role do viral glycoproteins play in immune response and how do they contribute to the maturation process of enveloped viruses?",
-   "referencia": "Viral glycoproteins play significant roles in immunity and infection by interacting with host cell receptors and facilitating entry into host cells. During the maturation process of enveloped viruses, viral glycoproteins integrate into membrane vesicles containing viral core components, allowing for discharge",
-   "resposta": "Viral glycoproteins play a crucial role in both the immune response and the maturation process of enveloped viruses. They act as antigens, triggering an immune response against the virus upon interaction with antibodies or T lymphocytes. Additionally, viral glycoproteins facilitate the attachment of the virus to its target host cell through specific receptors, allowing the virus to gain entry into the host cell. Furthermore, certain viral glycoproteins, like those found in HIV, are involved in the activation of dendritic cells, which then present viral antigens to T cells, contributing to the initiation of an antiviral immune response. In the case of enveloped viruses, viral glycoproteins help maintain the integrity of the envelope during budding, ensuring proper transmission of the virus from one host cell to another. Overall, viral glycoproteins are essential components of both the immune response and the maturation process of enveloped viruses, enabling them to effectively interact with their hosts and propagate.",
-   "fonte_esperada": "Viral envelope",
+   "pergunta": "What is the name of the Greek-souled artist whose work is the sole focus of Rachel's dying gaze?",
+   "referencia": "The Greek-souled artist is Polymnia, the queen of legendary lore.",
+   "resposta": "The name of the Greek-souled artist whose work is the sole focus of Rachel's dying gaze is Polymnia. This is supported by Passage 1, which mentions \"Polymnia, full on her death-bed.\"",
+   "fonte_esperada": "Poetical Works of Matthew Arnold",
    "fontes": [
-    "Viral envelope",
-    "Viral envelope",
-    "Viral envelope"
+    "Poetical Works of Matthew Arnold",
+    "The Dramatic Works of G. E. Lessing Miss Sara Sampson, Philotas, Emilia Galotti, Nathan the Wise",
+    "Authors of Greece"
    ],
    "citados": [],
-   "tempo_total": 189.35705099999905
+   "tempo_total": 31.550097500003176
   },
   {
-   "pergunta": "What are the main economic activities in Mundo Novo, Goiás?",
-   "referencia": "The main economic activities in Mundo Novo, Goiás include cattle raising, agriculture, services, government employment, wood extraction, and modest transformation industries.",
-   "resposta": "The main economic activities in Mundo Novo, Goiás, can be inferred from the given contexts. Firstly, it is mentioned that Mundo Novo is located in the São Miguel do Araguaia Microregion in the extreme north-west of the state. This suggests that the area might have some agricultural or mining industries due to its geographical location near rivers like the Rio Palmital and the Araguaia River. Secondly, the fact that Mundo Novo is ranked low on various development indices indicates that the region faces significant challenges in terms of poverty and economic growth. Lastly, the comparison with other parts of the state highlights the stark contrast between the prosperous areas like Luanda and the less developed ones such as Mundo Novo. Therefore, the main economic activities in Mundo Novo, Goiás, seem to revolve around agriculture, mining, and possibly small-scale manufacturing, but these sectors may face significant obstacles due to the region's underdeveloped infrastructure and lack of resources",
-   "fonte_esperada": "Mundo Novo, Goiás",
+   "pergunta": "What were the conquests of Justinian in the west, and what were the first campaigns of Belisarius?",
+   "referencia": "Conquests of Justinian in the west included the Vandal kingdom of Africa, Sicily, Naples, and Rome. Belisarius's first campaigns involved invading and subduing the Vandal kingdom of Africa.",
+   "resposta": "The conquests of Justinian in the west were primarily focused on reclaiming territories lost during the fall of the Western Roman Empire. The first campaigns of Belisarius, who would later become one of Justinian's most trusted generals, involved him invading and subduing the Vandal Kingdom of Africa. His triumph marked a significant victory for the Byzantine Empire, as it secured a crucial region previously controlled by the Vandals. This conquest also laid the groundwork for further expansion into North Africa under Belisarius' command.",
+   "fonte_esperada": "History of the Decline and Fall of the Roman Empire — Volume 4",
    "fontes": [
-    "Mundo Novo, Goiás",
-    "Mundo Novo, Goiás",
-    "Angola"
+    "History of the Decline and Fall of the Roman Empire — Volume 4",
+    "History of the Decline and Fall of the Roman Empire — Volume 5",
+    "Historical Sketches, Volume I (of 3) The Turks in Their Relation to Europe; Marcus Tullius Cicero; Apollonius of Tyana; Primitive Christianity"
    ],
    "citados": [],
-   "tempo_total": 210.32444260000193
+   "tempo_total": 41.711469800000486
   },
   {
-   "pergunta": "What is the stated mission of the Dublin Docklands Development Authority?",
-   "referencia": "To develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration, ensuring high standards of access to education, employment, housing, and social amenities while contributing significantly to the social and economic prosperity of Dublin and Ireland.",
-   "resposta": "The stated mission of the Dublin Docklands Development Authority is to develop the Dublin Docklands into a world-class city quarter paragon of sustainable inner city regeneration, ensuring the highest standards of access to education, employment, housing, and social amenities while making a significant contribution to the social and economic prosperity of Dublin and the whole of Ireland.",
-   "fonte_esperada": "Dublin Docklands Development Authority",
+   "pergunta": "Who made the decision to leave for Ostend by special steamer?",
+   "referencia": "Edward Alexander Powell",
+   "resposta": "The decision to leave for Ostend by special steamer was made by the members of the Government and the Diplomatic Corps at a Cabinet meeting. This information can be found in passage [1], where it states, \"It has just been decided at a Cabinet meeting.\"",
+   "fonte_esperada": "Fighting in Flanders",
    "fontes": [
-    "Dublin Docklands Development Authority",
-    "Dublin Docklands Development Authority",
-    "Dublin Docklands Development Authority"
-   ],
-   "citados": [],
-   "tempo_total": 74.42544510000153
-  },
-  {
-   "pergunta": "Who does Philip encounter at the gas station after waking up with no memory of Peaceful Valley?",
-   "referencia": "Philip encounters Ellen at the gas station after waking up with no memory of Peaceful Valley.",
-   "resposta": "[1] Philip encounters Ellen, the proprietor of the gas station, after waking up with no memory of Peaceful Valley.",
-   "fonte_esperada": "Valley of the Shadow",
-   "fontes": [
-    "Valley of the Shadow",
-    "Valley of the Shadow",
-    "Valley of the Shadow"
+    "Fighting in Flanders",
+    "The Crucial Moment 1911",
+    "Around the World in Eighty Days"
    ],
    "citados": [
     1
    ],
-   "tempo_total": 37.6639811999994
+   "tempo_total": 26.862315300000773
   },
   {
-   "pergunta": "What was the name of the society founded by the descendants of the passengers of the Winthrop Fleet?",
-   "referencia": "The Winthrop Society",
-   "resposta": "The name of the society founded by the descendants of the passengers of the Winthrop Fleet is the Winthrop Society. This society is mentioned in contexts [1] and [2], where it is described as a hereditary organization made up of the descendants of those who arrived on the Winthrop Fleet or other Great Migration ships before 1634.",
-   "fonte_esperada": "Robert Seeley",
+   "pergunta": "What is the title of the book featuring illustrations of French cathedrals?",
+   "referencia": "The title of the book is \"Winkles's French Cathedrals.\"",
+   "resposta": "The title of the book featuring illustrations of French cathedrals is \"Winkles’s French Cathedrals.\"",
+   "fonte_esperada": "The Comic Latin Grammar: A new and facetious introduction to the Latin tongue",
    "fontes": [
-    "Robert Seeley",
-    "Robert Seeley",
-    "Lockeport"
-   ],
-   "citados": [
-    1,
-    2
-   ],
-   "tempo_total": 30.516197199998714
-  },
-  {
-   "pergunta": "Who are the Serbian twin brothers who played as defenders for FK Čukarički?",
-   "referencia": "The Serbian twin brothers who played as defenders for FK Čukarički were Milan Dudić and Milivoje Dudić.",
-   "resposta": "The Serbian twin brothers who played as defenders for FK Čukarički were Stojan Stole Aranđelović and Stole Dimitrievski.",
-   "fonte_esperada": "Milan Dudić",
-   "fontes": [
-    "Milan Dudić",
-    "Stole",
-    "Milko Djurovski"
+    "The Comic Latin Grammar: A new and facetious introduction to the Latin tongue",
+    "French Book-plates",
+    "The Cathedrals of Northern France"
    ],
    "citados": [],
-   "tempo_total": 20.434709799999837
+   "tempo_total": 23.039948799996637
   },
   {
-   "pergunta": "What is the function of the P2Y12 receptor in platelet aggregation?",
-   "referencia": "The P2Y12 receptor plays a role in platelet aggregation, making it a potential therapeutic target for treating thromboembolic disorders such as heart attacks and strokes.",
-   "resposta": "The P2Y12 receptor plays a crucial role in platelet aggregation through its involvement in the activation of platelets. It is primarily expressed on the surface of blood platelets and acts as a chemoreceptor for adenosine diphosphate (ADP), leading to platelet aggregation and thrombosis. Additionally, the P2Y12 receptor is also implicated in the regulation of microglial functions in the central nervous system, particularly in monitoring neuronal functions and promoting microglial neuroprotection.",
-   "fonte_esperada": "P2Y12",
+   "pergunta": "What is the significance of Italian names being used in naming territories after Italy's decline in power?",
+   "referencia": "This phenomenon signifies that when Italian power waned, local languages and dialects became more prominent, and Italian names were gradually replaced with those of the respective regions.",
+   "resposta": "The significance of Italian names being used in naming territories after Italy's decline in power lies in the fact that they reflect the country's historical identity and cultural heritage during its period of dominance. As the power of the Italian states declined, the use of Italian names on territories became less common, and local languages and dialects began to take precedence. However, the preservation of these Italian names serves as a testament to the enduring legacy of the Italian language and culture, even as the region underwent significant changes and transformations. In essence, the continued use of Italian names on territories symbolizes the lasting impact of Italy's past glory and its ongoing influence on the modern world.",
+   "fonte_esperada": "The Mirror of Literature, Amusement, and Instruction. Volume 10, No. 276, October 6, 1827",
    "fontes": [
-    "P2Y12",
-    "P2Y12",
-    "Pleckstrin homology domain"
+    "The Mirror of Literature, Amusement, and Instruction. Volume 10, No. 276, October 6, 1827",
+    "A Short History of Italy (476-1900)",
+    "A Short History of Italy (476-1900)"
    ],
    "citados": [],
-   "tempo_total": 40.681597599999805
+   "tempo_total": 57.2769283000016
   },
   {
-   "pergunta": "What is the full name of the company that operates under the name S. P. Richards Company?",
-   "referencia": "S. P. Richards Company",
-   "resposta": "S. P. Richards Company operates under the full name of Genuine Parts Company.",
-   "fonte_esperada": "Genuine Parts Company",
+   "pergunta": "What does the title \"A Leap in the Dark\" suggest about the Home Rule Bill's impact on the UK?",
+   "referencia": "The title suggests that the Home Rule Bill represents a significant change in the governance structure of the entire United Kingdom, potentially leading to a leap into uncharted territory with far-reaching consequences for English institutions.",
+   "resposta": "The title \"A Leap in the Dark\" suggests that the Home Rule Bill has significant implications for the entire United Kingdom, rather than just Ireland. It implies that the bill represents a bold and potentially risky move that challenges the existing constitutional framework of England, Scotland, and Ireland. The description emphasizes that the bill aims to create a new constitution for the country, rather than simply addressing issues within Ireland alone.",
+   "fonte_esperada": "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893",
    "fontes": [
-    "Genuine Parts Company",
-    "List of largest United Kingdom–based law firms by revenue",
-    "Clif Bar"
+    "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893",
+    "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893",
+    "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893"
    ],
    "citados": [],
-   "tempo_total": 14.409006900001259
-  },
-  {
-   "pergunta": "What is the seating capacity of the Škoda 1000 MB?",
-   "referencia": "The Škoda 1000 MB had a seating capacity of five passengers.",
-   "resposta": "The seating capacity of the Škoda 1000 MB is 4 people. This information can be found in [1], where it states \"By the late 1960s, Škoda decided it was time for an update of the 'MB series...\".",
-   "fonte_esperada": "Škoda 1000 MB",
-   "fontes": [
-    "Škoda 1000 MB",
-    "Škoda 1000 MB",
-    "Škoda 1000 MB"
-   ],
-   "citados": [
-    1
-   ],
-   "tempo_total": 28.220651000003272
-  },
-  {
-   "pergunta": "What alternative lyrics were used in modern performances of the song to replace the word \"nigger\"?",
-   "referencia": "In modern performances, the line \"He's been roasting peanuts\" has been used instead of the original word \"nigger\".",
-   "resposta": "In modern performances of the song, alternative lyrics were used to replace the word \"nigger,\" including \"He's been tanning Negroes\" (Jonathan King version), \"He's been roasting peanuts\" (Stephen Fry version), and \"Fuck That\" (hard rock blues song category). These changes reflect contemporary attitudes towards racial sensitivity and social acceptability.",
-   "fonte_esperada": "The Sun Has Got His Hat On",
-   "fontes": [
-    "The Sun Has Got His Hat On",
-    "The Sun Has Got His Hat On",
-    "The History of Rock"
-   ],
-   "citados": [],
-   "tempo_total": 29.068099700001767
-  },
-  {
-   "pergunta": "Who is the director of the 1997 film Paradise Road?",
-   "referencia": "The director of the 1997 film Paradise Road is Richard Attenborough.",
-   "resposta": "The director of the 1997 film Paradise Road is Martin Meader. The relevant passage numbers are [1] and [2].",
-   "fonte_esperada": "Paradise Road (1997 film)",
-   "fontes": [
-    "Paradise Road (1997 film)",
-    "Paradise (video game)",
-    "A Great and Terrible Beauty"
-   ],
-   "citados": [
-    1,
-    2
-   ],
-   "tempo_total": 17.46993470000598
-  },
-  {
-   "pergunta": "What branch of service did Richard A. Anderson enlist in?",
-   "referencia": "Anderson enlisted in the Marine Corps.",
-   "resposta": "Anderson enlisted in the Marine Corps on 8 April 1968.",
-   "fonte_esperada": "Richard A. Anderson",
-   "fontes": [
-    "Richard A. Anderson",
-    "James Anderson Jr.",
-    "Richard A. Anderson"
-   ],
-   "citados": [],
-   "tempo_total": 12.8402688999995
-  },
-  {
-   "pergunta": "What year did Horace Mann School begin operating on Kearsarge Avenue?",
-   "referencia": "1929",
-   "resposta": "[1] By 1890, the school was relocated from 63 Warrenton Street to 178 Newbury Street. From 1929 onwards, Horace Mann School operated on Kearsarge Avenue for the next forty-five years. Therefore, the year Horace Mann School began operating on Kearsarge Avenue is 1929.",
-   "fonte_esperada": "Horace Mann School for the Deaf and Hard of Hearing",
-   "fontes": [
-    "Horace Mann School for the Deaf and Hard of Hearing",
-    "Horace Mann School for the Deaf and Hard of Hearing",
-    "Wausau School District"
-   ],
-   "citados": [
-    1
-   ],
-   "tempo_total": 36.073119400003634
+   "tempo_total": 35.45342069999606
   }
  ]
 }

@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import re
 import sys
 import threading
 import time
@@ -25,7 +24,7 @@ def linha(evento):
 
 
 def criar_app(sistema):
-    app = FastAPI(title="RAG Wikipédia")
+    app = FastAPI(title="RAG Project Gutenberg")
     trava = threading.Lock()  # um único LLM na CPU: gerações em paralelo só disputariam os núcleos
 
     @app.get("/")
@@ -47,16 +46,29 @@ def eventos(sistema, trava, pergunta):
     with trava:
         try:
             t0 = time.perf_counter()
-            trechos = sistema.recuperar(pergunta)
+            candidatos = sistema.recuperar(pergunta)
+            limiar = getattr(sistema, "min_sim", 0.0)
+            trechos = [t for t in candidatos if t.get("similaridade", 1.0) >= limiar]
             t1 = time.perf_counter()
             yield linha({"tipo": "fontes", "trechos": trechos})
             resposta = ""
             if sistema.lm is not None:
-                for delta in gerar_em_partes(sistema, pergunta, trechos):
-                    resposta += delta
-                    yield linha({"tipo": "texto", "delta": delta})
+                caminho_busca = str(RAIZ / "busca")
+                if caminho_busca not in sys.path:
+                    sys.path.insert(0, caminho_busca)
+                from rag import SEM_CONTEXTO, validar_citacoes
+
+                if trechos:
+                    for delta in gerar_em_partes(sistema, pergunta, trechos):
+                        resposta += delta
+                        yield linha({"tipo": "texto", "delta": delta})
+                    resposta, citados = validar_citacoes(resposta, len(trechos))
+                else:
+                    resposta, citados = SEM_CONTEXTO, []
+                yield linha({"tipo": "resposta", "texto": resposta})
+            else:
+                citados = []
             t2 = time.perf_counter()
-            citados = sorted({int(m) for m in re.findall(r"\[(\d+)\]", resposta) if 1 <= int(m) <= len(trechos)})
             yield linha({"tipo": "fim", "citados": citados, "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1})
         except Exception as e:  # o erro vai para a tela em vez de cortar a resposta sem aviso
             yield linha({"tipo": "erro", "mensagem": str(e)})
