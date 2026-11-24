@@ -84,6 +84,14 @@ class IndiceLexicalTest(unittest.TestCase):
         self.assertEqual([livro["id"] for livro in indice.buscar_titulo("  BOOK   1  ")], [1])
         self.assertEqual(indice.buscar_titulo("Book"), [])
 
+    def test_busca_frase_no_texto_sem_confundir_palavras_isoladas(self):
+        construir(self.dados, self.indice)
+        indice = IndiceLexical(self.indice, self.dados)
+        self.addCleanup(indice.close)
+        achados = indice.buscar_frase("Ahab pursued the white whale", 3)
+        self.assertEqual([item["id"] for item in achados], [1])
+        self.assertEqual(indice.buscar_frase("Ahab reached the white whale", 3), [])
+
 
 class SegmentarTest(unittest.TestCase):
     def test_texto_completo_com_sobreposicao_e_unicode(self):

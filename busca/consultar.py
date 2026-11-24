@@ -25,15 +25,17 @@ def imprimir(r, mostrar_trechos):
         print(f"  {r['aviso']}")
     elif not r["trechos"]:
         print("  Nenhuma passagem do corpus é relevante o bastante para esta pergunta.")
-    elif not r["citados"]:
+    elif not r["citados"] and r["resposta"]:
         print("  O modelo não confirmou suporte em uma passagem; trate estes resultados apenas como candidatos.")
     for t in r.get("descartados", []):
         print(f"  (descartada) {t['titulo']} (similaridade {t['similaridade']:.3f})")
     for i, t in enumerate(r["trechos"], 1):
         marca = "*" if i in r["citados"] else " "
         autor = f" - {t['autores']}" if t["autores"] else ""
-        descricao = "metadados do catálogo" if t.get("tipo_fonte") == "metadados" else \
-                    f"similaridade {t['similaridade']:.3f}"
+        tipos = {"metadados": "metadados do catálogo", "correspondencia_literal": "correspondência textual",
+                 "correspondencia_aproximada": "trecho com redação semelhante",
+                 "candidato_lexical": "candidato lexical"}
+        descricao = tipos[t["tipo_fonte"]] if "tipo_fonte" in t else f"similaridade {t['similaridade']:.3f}"
         print(f" {marca}[{i}] {t['titulo']}{autor} - {t['url']} ({descricao})")
         if mostrar_trechos or not r["resposta"]:
             print(bloco(t["texto"]))

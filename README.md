@@ -109,7 +109,7 @@ python consultar.py -p "Who is Captain Ahab?" --trechos
 | `--n` | Número de passagens indexadas | `20000` |
 | `--k` | Número de trechos recuperados por pergunta | `3` |
 | `--semente` | Semente usada na amostragem do corpus | `42` |
-| `--min-sim` | Similaridade cosseno mínima (não é porcentagem) para usar uma passagem; não se aplica a respostas baseadas em metadados | `0.4` |
+| `--min-sim` | Similaridade cosseno mínima (não é porcentagem) para a busca semântica; não se aplica a consultas diretas de metadados ou frases | `0.4` |
 | `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct |
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
@@ -144,7 +144,10 @@ python consultar.py --indice-completo --trechos -p "Who wrote Pride and Prejudic
 
 Para um caminho personalizado, use `--indice-completo CAMINHO`. Nesse modo, `--n` e `--semente`
 não limitam o índice: a busca lexical considera o corpus completo e a similaridade semântica é
-calculada apenas para os melhores candidatos lexicais. Isso não garante que uma passagem relevante
+calculada apenas para os melhores candidatos lexicais. As passagens são divididas em janelas de
+tokens sobrepostas para o cálculo de embeddings; a similaridade exibida é o maior cosseno entre
+essas janelas e a pergunta. Isso pode aumentar o tempo de recuperação. Não é necessário reconstruir
+o índice existente. A busca não garante que uma passagem relevante
 seja recuperada, pois candidatos sem palavras correspondentes podem ficar de fora.
 O modo padrão por amostragem continua disponível sem `--indice-completo`.
 
@@ -154,8 +157,28 @@ uma passagem do livro; por isso não é exibida similaridade nem aplicado `--min
 Indícios de adaptações, autor ausente, colaboradores ou atribuições conflitantes levam à abstenção.
 Essa verificação é conservadora, mas depende da qualidade dos metadados e não identifica
 necessariamente todas as adaptações ou papéis de colaboradores.
-Se o título exato não estiver no catálogo, usa-se a recuperação normal, que não garante que as
-citações sustentem a resposta. `--sem-llm` continua apenas recuperando passagens.
+Se o título exato não estiver no catálogo, o sistema se abstém, sem afirmar que a obra não existe.
+`--sem-llm` continua apenas recuperando passagens.
+
+Para consultas no formato `Where does the phrase <frase> come from?`, o índice completo procura
+primeiro a sequência de palavras no texto, ignorando diferenças de pontuação e maiúsculas.
+Também aceita, por exemplo, `Which book contains the quote <frase>?`.
+Uma correspondência é apresentada como ocorrência em um livro, não como prova da origem da frase.
+Frases com menos de cinco palavras levam à abstenção por serem potencialmente ambíguas.
+Se não houver correspondência literal, o sistema pode apresentar um trecho com redação semelhante,
+explicitando que a origem e o significado não foram confirmados. Esse recurso compara palavras:
+paráfrases com vocabulário muito diferente podem não ser reconhecidas. Na ausência de correspondência
+suficiente, o sistema se abstém e mostra apenas candidatos lexicais, se houver.
+Esses resultados não usam o cosseno nem `--min-sim`. `--sem-llm` mostra os candidatos sem responder.
+
+Por exemplo, no PowerShell:
+
+```powershell
+python consultar.py --indice-completo --trechos -p "Where does the phrase tranquillise the mind as a steady purpose come from?"
+```
+
+Para outras perguntas, o LLM ainda pode citar uma passagem que não sustenta a resposta: o validador
+verifica os números das citações, mas não confirma automaticamente seu suporte semântico.
 
 ## 🧪 Avaliação e testes
 

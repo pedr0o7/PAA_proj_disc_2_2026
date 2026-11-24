@@ -1,6 +1,7 @@
 """Sistema RAG: busca híbrida (embeddings + HNSW + BM25) em livros do Project Gutenberg + LLM local que responde citando as fontes."""
 import re
 import time
+from difflib import SequenceMatcher
 from pathlib import Path
 
 import numpy as np
@@ -37,6 +38,52 @@ except ImportError:
 
 def tokenizar(texto):
     return re.findall(r"\w+", texto.lower())
+
+
+def frase_pergunta(pergunta):
+    match = re.fullmatch(r"\s*where\s+does\s+the\s+(?:phrase|quote|quotation)\s+"
+                         r"(.+?)\s+come\s+from\s*\??\s*", pergunta, re.IGNORECASE)
+    if not match:
+        match = re.fullmatch(r"\s*(?:what|which)\s+(?:book|novel|work)\s+(?:contains|includes)\s+"
+                             r"the\s+(?:phrase|quote|quotation)\s+(.+?)\s*\??\s*", pergunta, re.IGNORECASE)
+    if not match:
+        return None
+    frase = match.group(1).strip()
+    if len(frase) > 1 and (frase[0], frase[-1]) in {
+        ('"', '"'), ("'", "'"), ("“", "”"), ("‘", "’")
+    }:
+        frase = frase[1:-1].strip()
+    return frase or None
+
+
+def correspondencia_aproximada(frase, texto):
+    palavras = tokenizar(frase)
+    if len(palavras) < 8:
+        return 0.0
+    blocos = [b for b in SequenceMatcher(None, palavras, tokenizar(texto), autojunk=False).get_matching_blocks()
+              if b.size]
+    if not blocos or max(b.size for b in blocos) < 4:
+        return 0.0
+    iguais = sum(b.size for b in blocos)
+    extensao = blocos[-1].b + blocos[-1].size - blocos[0].b
+    return 2 * iguais / (len(palavras) + extensao)
+
+
+def janelas_embedding(modelo, texto):
+    offsets = modelo.tokenizer(texto, add_special_tokens=False, truncation=False,
+                              return_offsets_mapping=True, verbose=False)["offset_mapping"]
+    if not offsets:
+        return [texto]
+    limite = modelo.max_seq_length - modelo.tokenizer.num_special_tokens_to_add(pair=False)
+    if limite < 2:
+        raise ValueError("O limite de tokens do modelo de embeddings é insuficiente.")
+    janelas = []
+    for inicio in range(0, len(offsets), limite // 2):
+        fim = min(inicio + limite, len(offsets))
+        janelas.append(texto[offsets[inicio][0]:offsets[fim - 1][1]])
+        if fim == len(offsets):
+            break
+    return janelas
 
 
 def validar_citacoes(resposta, quantidade):
@@ -124,11 +171,17 @@ class SistemaRAG:
             if not candidatos:
                 return []
             q = self._vetor(pergunta)
+            janelas = [janelas_embedding(self.modelo_emb, texto_indexado(p)) for p in candidatos]
             vetores = self.modelo_emb.encode(
-                [texto_indexado(p) for p in candidatos], batch_size=64,
+                [janela for grupo in janelas for janela in grupo], batch_size=64,
                 normalize_embeddings=True, show_progress_bar=False,
             )
-            similaridades = np.asarray(vetores) @ q
+            scores = np.asarray(vetores) @ q
+            similaridades = []
+            posicao = 0
+            for grupo in janelas:
+                similaridades.append(float(np.max(scores[posicao:posicao + len(grupo)])))
+                posicao += len(grupo)
             ordem_semantica = sorted(range(len(candidatos)), key=lambda i: -similaridades[i])
             rank_semantico = {idx: pos for pos, idx in enumerate(ordem_semantica, 1)}
             ordem = sorted(range(len(candidatos)),
@@ -169,6 +222,11 @@ class SistemaRAG:
         t0 = time.perf_counter()
         titulo = titulo_pergunta_autoria(pergunta) if self.lm and self.indice_lexical is not None else None
         livros = self.indice_lexical.buscar_titulo(titulo) if titulo else []
+        if titulo and not livros:
+            t1 = time.perf_counter()
+            return {"pergunta": pergunta, "resposta": SEM_CONTEXTO, "trechos": [], "citados": [],
+                    "descartados": [], "aviso": "O título exato não foi encontrado no catálogo.",
+                    "tempo_recuperacao": t1 - t0, "tempo_geracao": 0.0, "tempo_total": t1 - t0}
         if livros:
             livro = autoria_inequivoca(livros)
             t1 = time.perf_counter()
@@ -181,6 +239,40 @@ class SistemaRAG:
                 fonte["texto"] = f"Title: {livro['titulo']}\nAuthor: {livro['autores']}"
                 resposta = f"According to the catalog, the author of {livro['titulo']} is {livro['autores']}. [1]"
                 trechos, citados, aviso = [fonte], [1], None
+            t2 = time.perf_counter()
+            return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
+                    "descartados": [], "aviso": aviso, "tempo_recuperacao": t1 - t0,
+                    "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}
+        frase = frase_pergunta(pergunta) if self.indice_lexical is not None else None
+        if frase:
+            curta = len(tokenizar(frase)) < 5
+            literais = self.indice_lexical.buscar_frase(frase, self.k) if not curta else []
+            if literais:
+                fontes = literais
+                tipo = "correspondencia_literal"
+            else:
+                candidatos = self.indice_lexical.recuperar(pergunta, max(50, self.k * 10)) if not curta else []
+                similares = [(correspondencia_aproximada(frase, t["texto"]), t) for t in candidatos]
+                similares = sorted((item for item in similares if item[0] >= 0.8),
+                                   key=lambda item: -item[0])
+                fontes = [t for _, t in similares[:self.k]]
+                tipo = "correspondencia_aproximada" if fontes else "candidato_lexical"
+                if not fontes:
+                    fontes = candidatos[:self.k]
+            t1 = time.perf_counter()
+            trechos = [{**fonte, "tipo_fonte": tipo} for fonte in fontes]
+            citados = [1] if self.lm and fontes and tipo != "candidato_lexical" else []
+            aviso = None
+            if citados:
+                descricao = "The wording appears" if tipo == "correspondencia_literal" else \
+                            "A passage with similar wording appears"
+                resposta = (f"{descricao} in {fontes[0]['titulo']} [1]. "
+                            "This does not establish the origin or meaning of the requested wording.")
+            else:
+                resposta = SEM_CONTEXTO if self.lm else ""
+                if tipo == "candidato_lexical":
+                    aviso = ("A frase é curta demais para identificar uma fonte com segurança." if curta else
+                             "Não foi encontrada correspondência textual suficiente para a frase.")
             t2 = time.perf_counter()
             return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
                     "descartados": [], "aviso": aviso, "tempo_recuperacao": t1 - t0,

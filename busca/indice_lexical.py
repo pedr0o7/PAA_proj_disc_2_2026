@@ -140,14 +140,11 @@ class IndiceLexical:
             self.catalogo = catalogo
         return self.catalogo.get(" ".join(titulo.casefold().split()), [])
 
-    def recuperar(self, pergunta, limite):
-        termos = list(dict.fromkeys(
-            termo for termo in re.findall(r"\w+", pergunta.lower())
-            if termo not in PALAVRAS_COMUNS
-        ))[:32]
-        if not termos:
-            return []
-        consulta = " OR ".join(f'"{termo}"' for termo in termos)
+    def buscar_frase(self, frase, limite):
+        consulta = 'texto : "' + frase.replace('"', '""') + '"'
+        return self._consultar(consulta, limite)
+
+    def _consultar(self, consulta, limite):
         linhas = self.con.execute(
             "SELECT titulo, autores, texto, livro_id, url, inicio FROM passagens "
             "WHERE passagens MATCH ? ORDER BY bm25(passagens, 3.0, 2.0, 1.0) LIMIT ?",
@@ -156,6 +153,16 @@ class IndiceLexical:
         return [{"titulo": titulo, "autores": autores, "texto": texto, "id": int(id_),
                  "url": url, "inicio": int(inicio)}
                 for titulo, autores, texto, id_, url, inicio in linhas]
+
+    def recuperar(self, pergunta, limite):
+        termos = list(dict.fromkeys(
+            termo for termo in re.findall(r"\w+", pergunta.lower())
+            if termo not in PALAVRAS_COMUNS
+        ))[:32]
+        if not termos:
+            return []
+        consulta = " OR ".join(f'"{termo}"' for termo in termos)
+        return self._consultar(consulta, limite)
 
     def close(self):
         self.con.close()
