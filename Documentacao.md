@@ -4,6 +4,11 @@
 **Versão**: 1.0  
 **Status**: ✅ Documentação Completa
 
+> **Atualização de infraestrutura:** as seções abaixo sobre formato dos caches,
+> amostragem e preparação do ambiente descrevem uma versão anterior. Consulte
+> [README.md](README.md) e [migração do Hugging Face](busca/MIGRACAO_HUGGING_FACE.md)
+> para os formatos atuais, a regeneração explícita e a revisão do modelo.
+
 ---
 
 ## Índice

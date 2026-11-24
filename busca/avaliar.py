@@ -10,10 +10,15 @@ import statistics
 import sys
 from pathlib import Path
 
+from configuracao_hf import configurar_huggingface
+
+configurar_huggingface()
+
 import numpy as np
 import torch
+from acesso_hf import carregar_modelo
 from indice_lexical import INDICE
-from rag import LLM, SEM_CONTEXTO, SistemaRAG
+from rag import LLM, MODELO_EMB, REVISAO_EMB, SEM_CONTEXTO, SistemaRAG
 
 sys.stdout.reconfigure(encoding="utf-8")
 
@@ -47,8 +52,17 @@ def metricas_tempo(resultados):
     return {c: resumo(c) for c in ("tempo_recuperacao", "tempo_geracao", "tempo_total")}
 
 
+def _carregar_embeddings_ragas(modelo, revisao, local_files_only=False):
+    from langchain_huggingface import HuggingFaceEmbeddings
+
+    return HuggingFaceEmbeddings(
+        model_name=modelo,
+        model_kwargs={"revision": revisao, "local_files_only": local_files_only},
+    )
+
+
 def avaliar_ragas(sistema, itens, resultados, juiz):
-    from langchain_huggingface import HuggingFaceEmbeddings, HuggingFacePipeline
+    from langchain_huggingface import HuggingFacePipeline
     from ragas import EvaluationDataset, SingleTurnSample, evaluate
     from ragas.embeddings import LangchainEmbeddingsWrapper
     from ragas.llms import LangchainLLMWrapper
@@ -60,12 +74,27 @@ def avaliar_ragas(sistema, itens, resultados, juiz):
     if juiz == LLM:
         tok, lm = sistema.tok, sistema.lm
     else:
-        tok = AutoTokenizer.from_pretrained(juiz)
-        lm = AutoModelForCausalLM.from_pretrained(juiz, dtype=torch.float32).eval()
+        tok, sistema.offline = carregar_modelo(
+            f"o tokenizer do juiz {juiz}", AutoTokenizer.from_pretrained, juiz,
+            local_files_only=sistema.offline, retornar_offline=True,
+        )
+        lm, sistema.offline = carregar_modelo(
+            f"o modelo juiz {juiz}", AutoModelForCausalLM.from_pretrained, juiz,
+            dtype=torch.float32, local_files_only=sistema.offline, retornar_offline=True,
+        )
+        lm = lm.eval()
     pipe = pipeline("text-generation", model=lm, tokenizer=tok, max_new_tokens=350, do_sample=False,
                     return_full_text=False)
     llm = LangchainLLMWrapper(HuggingFacePipeline(pipeline=pipe))
-    emb = LangchainEmbeddingsWrapper(HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2"))
+    emb_lc, sistema.offline = carregar_modelo(
+        f"o modelo de embeddings {MODELO_EMB}",
+        _carregar_embeddings_ragas,
+        MODELO_EMB,
+        REVISAO_EMB,
+        local_files_only=sistema.offline,
+        retornar_offline=True,
+    )
+    emb = LangchainEmbeddingsWrapper(emb_lc)
 
     amostras = [SingleTurnSample(user_input=it["pergunta"], response=r["resposta"], reference=it["referencia"],
                                  retrieved_contexts=[t["texto"] for t in r["trechos"]])

@@ -3,6 +3,7 @@
 Uso: consultar.py [--n 20000] [--k 3] [--min-sim 0.4] [--llm HF_ID] [--sem-llm] [-p "pergunta"]
 """
 import argparse
+import logging
 import sys
 import textwrap
 from pathlib import Path
@@ -44,6 +45,13 @@ def imprimir(r, mostrar_trechos):
 
 
 def main():
+    log = logging.getLogger("busca")
+    if not log.handlers:
+        handler = logging.StreamHandler()
+        handler.setFormatter(logging.Formatter("%(levelname)s: %(message)s"))
+        log.addHandler(handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
     ap = argparse.ArgumentParser()
     ap.add_argument("--n", type=int, default=20000, help="passagens indexadas")
     ap.add_argument("--semente", type=int, default=42)

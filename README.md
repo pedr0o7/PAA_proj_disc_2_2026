@@ -23,6 +23,9 @@ O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 - [ ] Indexar uma fração maior do corpus de livros
 - [x] Rejeitar respostas que não citam uma passagem recuperada
 - [ ] Aprimorar a validação semântica de citações
+- [x] Interface web de chat com respostas em tempo real e fontes clicáveis
+- [ ] Ampliar e melhorar a cobertura do corpus
+- [ ] Aprimorar a extração e a validação de citações
 - [ ] Expandir os testes e a avaliação das respostas
 
 ## 💻 Pré-requisitos
@@ -68,6 +71,40 @@ python dados\coletar_gutenberg.py --contato "seu-email@exemplo.com"
 ```
 
 Na primeira consulta, o programa escolhe até 20.000 passagens, calcula os embeddings (cerca de 20 minutos em CPU, dependendo da máquina) e baixa os modelos necessários. O cache é reutilizado nas consultas seguintes.
+
+### Autenticação no Hugging Face
+
+Após instalar as dependências, autentique-se de uma das formas:
+
+- Copie `.env.example` da raiz para `.env` e preencha `HF_TOKEN` com um [Access Token](https://huggingface.co/settings/tokens) de leitura.
+- Ou execute `hf auth login` e informe o token quando solicitado. Nesse caso, não é necessário preencher `HF_TOKEN`.
+
+Variáveis já definidas no ambiente têm prioridade sobre o `.env`; um `HF_TOKEN` preenchido tem prioridade sobre o login da CLI. O `.env` é ignorado pelo Git, mas **remova-o também do ZIP de entrega**.
+
+O acesso usa a rede por padrão e, sem credencial, os recursos públicos são acessados anonimamente. Quando há credencial, o pipeline a verifica no início; uma credencial inválida causa erro explícito, sem tentativa anônima. A verificação exige uma chamada adicional ao Hub.
+
+Os downloads dos modelos pelo Hub usam `hf_xet` em modo de alto desempenho por padrão. Para desativar esse modo, defina `HF_XET_HIGH_PERFORMANCE=0` no `.env` ou no ambiente. Se `hf_xet` não estiver disponível, ou se `HF_HUB_DISABLE_XET=1`, será exibido um aviso e os downloads usarão HTTP. O corpus Gutenberg é coletado separadamente pelo script descrito em [dados/README.md](dados/README.md).
+
+Para executar **offline**, prepare previamente os modelos e o corpus com rede e defina `HF_HUB_OFFLINE=1` antes de iniciar o programa. No PowerShell, a partir de `busca`:
+
+```powershell
+$env:HF_HUB_OFFLINE = "1"
+python consultar.py --sem-llm -p "What is the capital of France?"
+Remove-Item Env:\HF_HUB_OFFLINE
+```
+
+Uma variável já definida no terminal tem prioridade sobre o `.env`; reinicie o processo ao alterar o modo. Offline, a credencial não é verificada e arquivos de modelo ausentes causam erro. É necessária a revisão fixa do modelo de embeddings e, se usado, o modelo de geração. O corpus Gutenberg deve ter sido coletado previamente; embeddings ausentes podem ser calculados a partir do modelo e das passagens locais.
+
+Uma falha de conexão ou timeout durante a verificação de credencial permite tentar os caches locais, com aviso; as bibliotecas de modelos também podem usar seus caches quando a rede falha. Isso não garante fallback para toda falha: erros de autenticação, permissão, servidor ou transferência podem interromper a execução. Um cache incompleto também causa erro.
+
+Na consulta, mensagens `INFO` indicam o carregamento dos modelos. A validação da credencial é informada quando concluída; usar um cache ou baixar um recurso público por si só não comprova autenticação. Os logs não exibem o token e não confirmam qual transporte foi usado.
+
+## Organização
+
+`infraestrutura/` concentra a configuração de acesso ao Hub e componentes de
+manifesto e integridade; `dados/` coleta e extrai o corpus Gutenberg; `busca/`
+amostra passagens, gera embeddings e executa consultas e avaliações; `frontend/`
+contém a interface web local.
 
 ## ☕ Usando
 
@@ -180,6 +217,50 @@ python consultar.py --indice-completo --trechos -p "Where does the phrase tranqu
 Para outras perguntas, o LLM ainda pode citar uma passagem que não sustenta a resposta: o validador
 verifica os números das citações, mas não confirma automaticamente seu suporte semântico.
 
+## 🖥️ Interface web
+
+Interface de chat no estilo de assistentes de IA: a pessoa faz a pergunta, as fontes aparecem logo após a busca e a resposta do LLM é exibida enquanto é gerada, com as citações `[n]` clicáveis levando ao trecho de origem.
+
+### Tecnologias
+
+| Camada | Tecnologia | Licença | Uso |
+|---|---|---|---|
+| Servidor | [FastAPI](https://fastapi.tiangolo.com/) | MIT | Rotas HTTP (`/`, `/info`, `/perguntar`) e resposta em fluxo |
+| Servidor | [Uvicorn](https://www.uvicorn.org/) | BSD-3-Clause | Servidor ASGI que executa a aplicação |
+| Servidor | [Pydantic](https://docs.pydantic.dev/) | MIT | Validação da pergunta recebida (1 a 2000 caracteres) |
+| Servidor | [Transformers](https://github.com/huggingface/transformers) (`TextIteratorStreamer`) | Apache 2.0 | Entrega dos tokens do LLM à medida que são gerados |
+| Página | HTML5, CSS3 e JavaScript puro | — | Interface sem frameworks, sem Node.js e sem etapa de build |
+| Testes | `unittest` (Python) + `TestClient` do FastAPI + [HTTPX](https://www.python-httpx.org/) | PSF / MIT / BSD-3-Clause | Testes da rota com um sistema RAG falso |
+
+Fontes do próprio sistema operacional (serifada para as respostas, sem serifa para a interface); nenhuma fonte, ícone ou biblioteca externa é carregada.
+
+### Métodos
+
+- **Resposta em fluxo (streaming) com NDJSON:** a rota `POST /perguntar` devolve um objeto JSON por linha, na ordem `fontes` → vários `texto` → `fim` (ou `erro`). As fontes chegam em menos de 0,1 s, enquanto a geração pode levar de 30 s a 3 min na CPU. Assim a tela nunca fica parada.
+- **Geração em thread separada:** o `model.generate` roda em uma `threading.Thread`, e o `TextIteratorStreamer` repassa o texto ao servidor parte por parte.
+- **Uma geração por vez:** um `threading.Lock` impede duas gerações simultâneas, que só disputariam os mesmos núcleos da CPU.
+- **Leitura do fluxo no navegador:** `fetch` + `ReadableStream` + `TextDecoderStream`, que monta as linhas NDJSON conforme chegam.
+- **Citações:** o texto é escapado (proteção contra injeção de HTML) e cada `[n]` válido vira um link para o cartão da fonte `n`; as fontes citadas ficam destacadas ao final.
+- **Fontes como cartões expansíveis:** elementos nativos `<details>`/`<summary>`, com título, similaridade, trecho e link para o Project Gutenberg.
+- **Visual responsivo e acessível:** variáveis CSS (*custom properties*), modo escuro automático (`prefers-color-scheme`), animações desligadas para quem prefere menos movimento (`prefers-reduced-motion`), layout para celular e rótulos para leitores de tela.
+- **Segurança:** o servidor escuta só em `127.0.0.1` (acesso local), valida a entrada e abre links externos com `rel="noopener noreferrer"`.
+
+### Arquivos
+
+- `frontend/servidor.py`: servidor FastAPI que usa o `SistemaRAG` de `busca/rag.py`.
+- `frontend/static/index.html`: página do chat (HTML, CSS e JS em um único arquivo).
+- `frontend/test_servidor.py`: testes automáticos.
+- `frontend/requirements.txt`: dependências (inclui as de `busca/`).
+
+### Executando
+
+Com o ambiente virtual ativo, a partir da pasta `busca`:
+
+```bash
+python -m pip install -r ../frontend/requirements.txt
+python ../frontend/servidor.py
+```
+
 ## 🧪 Avaliação e testes
 
 Para executar a avaliação sem as métricas do RAGAS:
@@ -198,10 +279,17 @@ Para executar os testes do coletor de dados, a partir da raiz do projeto:
 py -3.12 -m unittest discover -s dados -p "test_coletar*.py" -v
 ```
 
+Para testar a configuração do Hugging Face e os downloads do corpus:
+
+```powershell
+py -3.12 -m unittest discover -s busca -p "test_*.py" -v
+```
+
 ## 📚 Documentação
 
 - [Documentação técnica](Documentacao.md)
 - [Coleta de dados](dados/README.md)
+- [Histórico da migração do Hugging Face](busca/MIGRACAO_HUGGING_FACE.md)
 
 ## 📫 Contribuindo
 
