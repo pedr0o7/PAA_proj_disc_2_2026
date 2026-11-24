@@ -5,6 +5,7 @@ import hashlib
 import json
 import re
 import sqlite3
+import threading
 import time
 from pathlib import Path
 
@@ -118,41 +119,45 @@ class IndiceLexical:
         self.catalogo = None
         if not caminho.is_file():
             raise FileNotFoundError(f"Índice lexical ausente: {caminho}. Execute python indice_lexical.py.")
-        self.con = sqlite3.connect(caminho)
+        self.trava = threading.RLock()
+        self.con = sqlite3.connect(caminho, check_same_thread=False)
         try:
             estado = self.con.execute(
-                "SELECT assinatura, completo FROM estado WHERE id = 1"
+                "SELECT assinatura, completo, proximo FROM estado WHERE id = 1"
             ).fetchone()
             if not estado or not estado[1]:
                 raise ValueError("Índice lexical incompleto. Execute python indice_lexical.py para retomá-lo.")
             if estado[0] != assinatura(self.dados):
                 raise ValueError("O índice lexical não corresponde ao corpus atual; construa um novo índice.")
+            self.total_livros = estado[2]
         except (sqlite3.Error, OSError, ValueError):
             self.con.close()
             raise
 
     def buscar_titulo(self, titulo):
-        if self.catalogo is None:
-            catalogo = {}
-            for livro in ler_livros(self.dados):
-                chave = " ".join(livro["titulo"].casefold().split())
-                catalogo.setdefault(chave, []).append(livro)
-            self.catalogo = catalogo
-        return self.catalogo.get(" ".join(titulo.casefold().split()), [])
+        with self.trava:
+            if self.catalogo is None:
+                catalogo = {}
+                for livro in ler_livros(self.dados):
+                    chave = " ".join(livro["titulo"].casefold().split())
+                    catalogo.setdefault(chave, []).append(livro)
+                self.catalogo = catalogo
+            return self.catalogo.get(" ".join(titulo.casefold().split()), [])
 
     def buscar_frase(self, frase, limite):
         consulta = 'texto : "' + frase.replace('"', '""') + '"'
         return self._consultar(consulta, limite)
 
     def _consultar(self, consulta, limite):
-        linhas = self.con.execute(
-            "SELECT titulo, autores, texto, livro_id, url, inicio FROM passagens "
-            "WHERE passagens MATCH ? ORDER BY bm25(passagens, 3.0, 2.0, 1.0) LIMIT ?",
-            (consulta, limite),
-        )
-        return [{"titulo": titulo, "autores": autores, "texto": texto, "id": int(id_),
-                 "url": url, "inicio": int(inicio)}
-                for titulo, autores, texto, id_, url, inicio in linhas]
+        with self.trava:
+            linhas = self.con.execute(
+                "SELECT titulo, autores, texto, livro_id, url, inicio FROM passagens "
+                "WHERE passagens MATCH ? ORDER BY bm25(passagens, 3.0, 2.0, 1.0) LIMIT ?",
+                (consulta, limite),
+            )
+            return [{"titulo": titulo, "autores": autores, "texto": texto, "id": int(id_),
+                     "url": url, "inicio": int(inicio)}
+                    for titulo, autores, texto, id_, url, inicio in linhas]
 
     def recuperar(self, pergunta, limite):
         termos = list(dict.fromkeys(
@@ -165,7 +170,8 @@ class IndiceLexical:
         return self._consultar(consulta, limite)
 
     def close(self):
-        self.con.close()
+        with self.trava:
+            self.con.close()
 
 
 if __name__ == "__main__":
