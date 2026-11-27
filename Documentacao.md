@@ -34,6 +34,7 @@
 ### Linguagens Principais
 - **Python 3.12** - Linguagem principal
 - **JSON** - Formato de armazenamento de dados
+- **HTML5, CSS3 e JavaScript** (sem frameworks) - Página da interface web em `frontend/static/index.html`
 
 ### Bibliotecas Utilizadas
 
@@ -52,6 +53,10 @@
 | scikit-learn | - | BSD 3-Clause | Utilitários de ML |
 | numpy | - | BSD | Computação numérica |
 | datasets | - | Apache 2.0 | Download de datasets HF |
+| fastapi | - | MIT | Servidor web da interface (rotas `/`, `/info`, `/perguntar`) |
+| uvicorn | - | BSD 3-Clause | Servidor ASGI que executa o FastAPI |
+| pydantic | - | MIT | Validação da pergunta recebida pela interface (1 a 2000 caracteres) |
+| httpx | - | BSD 3-Clause | Cliente HTTP (acesso ao Hub e testes da interface com `TestClient`) |
 
 **Resumo de Licenças**: Todas são permissivas/open-source, compatíveis com uso comercial e acadêmico.
 
@@ -60,9 +65,10 @@
 ## 3. Programas e Infraestrutura
 
 ### Servidor
-- **Python standalone** (sem servidor web específico)
-- Arquitetura: CLI interativa em consultar.py
-- Possibilidade futura: FastAPI/Flask para REST API
+- **Servidor web local**: FastAPI executado pelo Uvicorn em `127.0.0.1:8000` (só aceita conexões da própria máquina), em `frontend/servidor.py`
+- **Cliente**: navegador comum abrindo `http://localhost:8000`; a página é um único arquivo estático (`frontend/static/index.html`), sem Node.js nem etapa de build
+- **Alternativa sem navegador**: CLI interativa em `busca/consultar.py`
+- Os dois usam o mesmo `SistemaRAG` de `busca/rag.py`; detalhes do fluxo no [item 9](#9-formação-de-resposta-do-servidor)
 
 ### Banco de Dados
 - **Não há banco de dados tradicional**
@@ -127,6 +133,17 @@
 - ✅ **CPU viável**: Roda em i5-13420H (16GB RAM)
 - ✅ **Rastreável**: Sempre cita fontes
 - ✅ **Avaliável**: Integrado com RAGAS
+- ✅ **Interface web**: chat no navegador com as fontes em cartões e as citações `[n]` clicáveis
+
+### Uso pela interface web
+
+A pessoa digita a pergunta na página `http://localhost:8000`. O navegador envia a pergunta ao
+servidor (`POST /perguntar`), que executa a recuperação e a geração descritas acima e devolve
+eventos de progresso. A página mostra um indicador com o tempo decorrido e, ao final, a resposta, os
+trechos usados como fonte (título, trecho, similaridade ou tipo de correspondência e link para o
+livro no Project Gutenberg) e os tempos de busca e geração. Cada `[n]` da resposta é um link para o
+trecho `n`, e as fontes citadas ficam destacadas. O topo da página indica o modo de busca ativo
+(`Amostra` ou `Índice completo`).
 
 
 ---
@@ -456,6 +473,47 @@ def gerar(self, pergunta, trechos):
 
 **Gargalo**: 99.9% do tempo é geração LLM, não recuperação!
 
+### Servidor web (arquivo: `frontend/servidor.py`)
+
+Na interface web, a resposta é formada pelo mesmo `SistemaRAG.perguntar()` da CLI. O servidor só
+recebe a pergunta, controla a concorrência e entrega o resultado ao navegador:
+
+```
+Navegador                         Servidor (FastAPI)                      SistemaRAG (busca/rag.py)
+   │  POST /perguntar {pergunta}       │                                        │
+   ├──────────────────────────────────►│ valida (Pydantic, 1–2000 caracteres)   │
+   │◄── status "Consultando…" ─────────┤                                        │
+   │                                   │ aguarda a trava (threading.Lock)       │
+   │                                   ├──────── perguntar(pergunta) ──────────►│ metadados, frase literal
+   │                                   │                                        │ ou busca + LLM + citações
+   │                                   │◄────── resposta, trechos, citados ─────┤
+   │◄── fontes (trechos e aviso) ──────┤                                        │
+   │◄── resposta (texto completo) ─────┤  (só quando o LLM está carregado)      │
+   │◄── fim (citados, tempos) ─────────┤                                        │
+```
+
+- **Formato da resposta:** NDJSON, um objeto JSON por linha (`status`, `fontes`, `resposta`, `fim`
+  ou `erro`). O navegador lê as linhas conforme chegam com `fetch` + `ReadableStream`.
+- **Uma pergunta por vez:** uma `threading.Lock` serializa as chamadas a `perguntar()`. Há um único
+  LLM na CPU; duas gerações em paralelo só disputariam os mesmos núcleos e ficariam ambas mais lentas.
+  Perguntas simultâneas esperam na fila.
+- **Resposta inteira, não token a token:** o texto só é enviado depois que `perguntar()` valida as
+  citações, para não mostrar um texto provisório que depois seria trocado por "contexto
+  insuficiente". O custo é que a tela mostra apenas o indicador de progresso durante a geração.
+- **Erros:** qualquer exceção vira um evento `erro` exibido na página, em vez de cortar a conexão.
+- **Na página:** o texto é escapado (evita injeção de HTML), cada `[n]` válido vira link para o
+  cartão da fonte `n` e as fontes citadas são destacadas.
+
+| Etapa no servidor/página | Complexidade | Tempo |
+|---|---|---|
+| Validação da pergunta | O(tamanho da pergunta) | desprezível |
+| Espera na trava | O(perguntas na fila × tempo de uma pergunta) | 0 com um usuário |
+| `perguntar()` (busca + LLM) | ver tabela acima | domina o total |
+| Serialização em JSON | O(k × tamanho do trecho) | < 1 ms |
+| Montagem da tela (escape + citações) | O(tamanho da resposta + k) | < 1 ms |
+
+O servidor e a página acrescentam um custo desprezível ao tempo do `SistemaRAG`.
+
 ---
 
 ## 10. Recursos Computacionais Disponíveis
@@ -577,6 +635,15 @@ TEMPO POR QUERY: ~1-3 minutos
 | 100.000 | 40 min | 6 min | 20ms | 20-50s | ~46-47 min |
 
 **Hardware**: CPU i5-13420H, 16GB RAM
+
+### Interface web
+
+| Fase | Tempo | Notas |
+|---|---|---|
+| Subir o servidor | ~1 min (estimativa) | Dominado pelo carregamento do SmolLM2 em float32; na primeira execução, somam-se a amostragem e os embeddings da tabela acima |
+| Subir com `--sem-llm` | segundos | Carrega só o modelo de embeddings |
+| Pergunta na tela | 20–35 s medidos | Medido em 16/11 com a amostra da Wikipédia (busca 0,08–0,24 s; geração 21–32 s); medir novamente com o Gutenberg |
+| Servidor + página | < 1 ms | Validação, JSON e montagem da tela |
 
 ---
 
@@ -782,13 +849,13 @@ Longo Prazo:
 | # | Pergunta | Resposta |
 |---|---|---|
 | **2** | Linguagens/Bibliotecas | Python 3.12 + 13 libs open-source (Apache 2.0/MIT/BSD) |
-| **3** | Programas/Infraestrutura | CLI Python + HNSW index em disco + JSON. Sem servidor web. |
+| **3** | Programas/Infraestrutura | Servidor web local (FastAPI + Uvicorn) com página HTML/JS, CLI alternativa, HNSW e JSON em disco. |
 | **4** | Tema/Funcionamento | RAG: busca semântica + LLM 1.7B gera resposta com citações |
 | **5** | Dados de Treinamento | 27.740 livros, 10.000.018.524 bytes extraídos do Project Gutenberg; índice de 20.000 passagens. |
 | **6** | Pré-processamento | Amostragem O(n) → Embedding 2-3min → HNSW 30seg. Linear. |
 | **7** | Busca Semântica | HNSW: 14ms latência total. Recall@10=85%. 21x mais rápido que força bruta. |
 | **8** | Treinamento LLM | SEM treinamento local. Modelo pré-treinado SmolLM2-1.7B. Inferência ~52seg. |
-| **9** | Formação Resposta | Recupera 3 trechos (4ms) → Monta prompt → LLM gera tokens → Extrai citações. |
+| **9** | Formação Resposta | Recupera 3 trechos (4ms) → Monta prompt → LLM gera tokens → Extrai citações. Na interface web, o servidor envia o resultado em eventos NDJSON, uma pergunta por vez. |
 | **10** | Recursos Disponíveis | i5-13420H 16GB. Viável: até 100k passagens. Corpus 5-50k recomendado. |
 | **11** | Tempo Fases | Embedding até 20.000 passagens: ~21 min estimados; geração LLM varia por pergunta. |
 | **12** | Tempo Training × Qualidade | Sem treinamento. max_tokens=200 é ótimo. Corpus quality impacta mais que tempo. |
@@ -821,6 +888,9 @@ python consultar.py --n 20000 -p "Who is Captain Ahab?"
 - **rag.py** - Implementação do sistema RAG (recuperação + geração)
 - **corpus.py** - Amostragem e carregamento de passagens
 - **consultar.py** - Interface CLI interativa
+- **frontend/servidor.py** - Servidor web (FastAPI) da interface de chat
+- **frontend/static/index.html** - Página do chat (HTML, CSS e JavaScript em um único arquivo)
+- **frontend/test_servidor.py** - Testes automáticos da interface web
 - **avaliar.py** - Avaliação com RAGAS
 - **benchmark.py** - Comparação de métodos de busca
 - **dados/coletar_gutenberg.py** - Coleta e extração do corpus de livros
