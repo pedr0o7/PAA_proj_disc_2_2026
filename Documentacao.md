@@ -72,7 +72,7 @@
 - **Cliente**: navegador comum abrindo `http://localhost:8000`; a página é um único arquivo estático (`frontend/static/index.html`), sem Node.js nem etapa de build
 - **Alternativa sem navegador**: CLI interativa em `busca/consultar.py`
 - Os dois usam o mesmo `SistemaRAG` de `busca/rag.py`; detalhes do fluxo no [item 9](#9-formação-de-resposta-do-servidor)
-- **Portabilidade via `.env`**: `EMB_BACKEND`, `LLM_BACKEND`, `DISPOSITIVO_IA`, `LLM_QUANTIZACAO` e `LLM_MODEL` (padrão `auto`, com *fallback* silencioso para `torch`). Os wrappers nativos (`openvino.Core`, `openvino_genai.LLMPipeline`, `onnxruntime.InferenceSession`) rodam sem `optimum-intel`/`optimum-onnx` no `.venv` principal; a exportação quantizada (`int4`/`int8`) do LLM ocorre uma única vez em ambiente efêmero isolado via `uv run`, salvando o IR em `busca/cache_indice/ov_*`.
+- **Portabilidade via `.env`**: `EMB_BACKEND`, `LLM_BACKEND`, `DISPOSITIVO_IA`, `LLM_QUANTIZACAO` e `LLM_MODEL` (padrão `auto`, com *fallback* silencioso para `torch`). Os wrappers nativos (`openvino.Core`, `openvino_genai.LLMPipeline`, `onnxruntime.InferenceSession`) rodam sem `optimum-intel`/`optimum-onnx` no `.venv` principal; a conversão única do LLM para **IR** (*Intermediate Representation*, formato nativo do OpenVINO com `openvino_model.xml` + `openvino_model.bin` já quantizados em `int4`/`int8`) ocorre em ambiente efêmero isolado via `uv run` (alternativa rápida: `python -m pip install uv` no `.venv`, evitando *downgrade* de `transformers>=5.23` e `huggingface_hub>=1.33`), salvando o cache em `busca/cache_indice/ov_*`.
 
 ### Banco de Dados
 - **Armazenamento em disco**:
@@ -865,6 +865,7 @@ RESULTADO:
 - **Pendentes:**
   - ⏳ **Avaliação completa com RAGAS:** executar `avaliar.py` com 10–15 perguntas e LLM juiz real (e otimizar/quantizar o juiz em CPU).
   - ⏳ **Modelos maiores / treino específico para RAG:** avaliar LLMs de 3–7B ou *fine-tuning* dedicado em hardware com maior VRAM/RAM.
+  - ⏳ **Modelos OpenVINO IR pré-convertidos do Hub:** suportar download direto de repositórios oficiais `OpenVINO/` no Hugging Face Hub (ex.: `OpenVINO/Qwen2.5-1.5B-Instruct-int8-ov`), dispensando a conversão local via `uv`/`optimum-intel` para modelos já pré-exportados.
 
 ---
 
@@ -900,7 +901,7 @@ RESULTADO:
 - Gerar variações da pergunta e combinar resultados na recuperação híbrida.
 
 **4. Pendências de validação e engenharia (⏳ Pendente — ver [`busca/TAREFAS_FUTURAS.md`](busca/TAREFAS_FUTURAS.md))**
-- Executar avaliação completa com juiz RAGAS (10–15 perguntas), validar retomada HTTP real de shards `.part`, gerar *lockfile* de dependências e otimizar `metodo_tfidf` em `busca/benchmark.py`.
+- Executar avaliação completa com juiz RAGAS (10–15 perguntas), validar retomada HTTP real de shards `.part`, gerar *lockfile* de dependências, otimizar `metodo_tfidf` em `busca/benchmark.py` e suportar download direto de modelos OpenVINO IR pré-convertidos do Hub (`OpenVINO/*-ov`).
 
 ---
 

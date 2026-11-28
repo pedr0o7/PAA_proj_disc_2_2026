@@ -69,3 +69,10 @@ Itens ainda não validados de ponta a ponta. Detalhes em
       só há testes simulados.
 - [ ] Lockfile de dependências (`datasets`, `pyarrow`, `huggingface_hub`,
       `hf-xet`) para tornar a instalação em ambiente limpo reproduzível.
+
+## 3. Evolução futura: modelos OpenVINO IR pré-convertidos do Hub
+
+**Motivação:** hoje a exportação/quantização do LLM para OpenVINO **IR** (*Intermediate Representation*, arquivos `openvino_model.xml` + `openvino_model.bin`) ocorre localmente na primeira execução via `uv run` isolado (`optimum-intel==2.2.0`), para não causar *downgrade* de `transformers>=5.23` e `huggingface_hub>=1.33` no `.venv` principal.
+
+**Melhoria proposta:**
+- [ ] Detectar/suportar repositórios oficiais já pré-convertidos em IR da organização `OpenVINO/` no Hugging Face Hub (ex.: `OpenVINO/Qwen2.5-1.5B-Instruct-int8-ov`), baixando `openvino_model.xml` e `openvino_model.bin` diretamente sem precisar de `uv` nem `optimum-intel` para esses modelos, mantendo o fluxo isolado via `uv run` como *fallback* genérico para qualquer `LLM_MODEL` em PyTorch.

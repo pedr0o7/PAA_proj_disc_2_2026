@@ -111,9 +111,10 @@ Para instalar os runtimes opcionais de aceleração (`openvino`, `openvino-genai
 
 ```powershell
 python -m pip install -r busca\requirements-aceleracao.txt
+python -m pip install uv   # opcional: alternativa rápida para habilitar a exportação única do LLM em OpenVINO
 ```
 
-Quando o backend `openvino` for usado no LLM local, `LLM_QUANTIZACAO=auto` prioriza `int8` (melhor fidelidade em citações; se o cache `int8` não existir e já houver cache `int4` pronto, reutiliza `int4` automaticamente). Você também pode alternar explicitamente entre `int4`, `int8`, `fp16` e `fp32` via `.env`. A exportação/quantização é executada **uma única vez** em um ambiente efêmero isolado via `uv run` (separando *build* de *runtime* para não forçar *downgrade* de pacotes no `.venv` principal) e salva em `busca/cache_indice/ov_*`. Para pré-exportar manualmente a partir da raiz:
+Quando o backend `openvino` for usado no LLM local, `LLM_QUANTIZACAO=auto` prioriza `int8` (melhor fidelidade em citações; se o cache `int8` não existir e já houver cache `int4` pronto, reutiliza `int4` automaticamente). Você também pode alternar explicitamente entre `int4`, `int8`, `fp16` e `fp32` via `.env`. Na primeira execução, o modelo PyTorch baixado do Hugging Face é convertido e quantizado **uma única vez** para **IR** (*Intermediate Representation*, formato nativo do OpenVINO composto por `openvino_model.xml` e `openvino_model.bin`, com o grafo e os pesos já comprimidos) em `busca/cache_indice/ov_*`. Essa conversão roda em um ambiente efêmero isolado via `uv run` — porque `optimum-intel==2.2.0` exige versões mais antigas (`transformers<5.6` e `huggingface_hub<1.22`), evitando *downgrade* no `.venv` principal; caso `uv` não esteja disponível no `PATH`, o sistema faz *fallback* silencioso para `torch/CPU`. Para pré-exportar manualmente a partir da raiz:
 
 ```powershell
 python -m infraestrutura.aceleracao --exportar-llm HuggingFaceTB/SmolLM2-1.7B-Instruct --quant int8
