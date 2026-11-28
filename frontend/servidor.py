@@ -38,7 +38,8 @@ def criar_app(sistema):
         return {"modo": "completo" if indice is not None else "amostra",
                 "livros": indice.total_livros if indice is not None else None,
                 "passagens": None if indice is not None else len(sistema.passagens),
-                "k": sistema.k, "llm": sistema.lm is not None}
+                "k": sistema.k, "llm": sistema.lm is not None,
+                "execucao": getattr(sistema, "config_execucao", None)}
 
     @app.post("/perguntar")
     def perguntar(p: Pergunta):
@@ -68,6 +69,7 @@ def main():
     ap.add_argument("--n", type=int, default=5000, help="passagens indexadas")
     ap.add_argument("--k", type=int, default=3, help="trechos recuperados por pergunta")
     ap.add_argument("--min-sim", type=float, default=0.4, help="similaridade cosseno mínima")
+    ap.add_argument("--llm", default=None, help="modelo local de geração (HF id; padrão: LLM_MODEL/.env)")
     ap.add_argument("--sem-llm", action="store_true", help="só mostra as fontes (não carrega o LLM)")
     ap.add_argument("--max-tokens", type=int, default=200)
     ap.add_argument("--porta", type=int, default=8000)
@@ -83,7 +85,7 @@ def main():
 
     if a.k < 1:
         ap.error("--k deve ser maior que zero")
-    sistema = SistemaRAG(n=a.n, llm=None if a.sem_llm else LLM, k=a.k, max_tokens=a.max_tokens,
+    sistema = SistemaRAG(n=a.n, llm=None if a.sem_llm else (a.llm or LLM), k=a.k, max_tokens=a.max_tokens,
                          min_sim=a.min_sim, indice_completo=a.indice_completo)
     print(f"Pronto: http://localhost:{a.porta}")
     try:

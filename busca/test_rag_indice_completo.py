@@ -81,6 +81,40 @@ class RecuperacaoCompletaTest(unittest.TestCase):
         sistema._vetor = lambda pergunta: np.array([1.0, 0.0], dtype=np.float32)
         self.assertEqual(sistema.recuperar("target")[0]["similaridade"], 1.0)
 
+    def test_deduplica_passagens_sobrepostas_entre_edicoes(self):
+        class ModeloQuatro:
+            tokenizer = TokenizerFalso()
+            max_seq_length = 128
+
+            def encode(self, textos, **kwargs):
+                vetores = [[1.0, 0.0], [0.95, 0.3], [0.9, 0.4], [0.85, 0.5]]
+                return np.array(vetores[:len(textos)], dtype=np.float32)
+
+        cena_base = (
+            "Captain Ahab stood upon the quarter-deck and spoke to Starbuck, Stubb, and Flask "
+            "about the white whale Moby Dick that dismasted him on a previous voyage"
+        )
+        cena_edicao_2 = (
+            "spoke to Starbuck, Stubb, and Flask about the white whale Moby Dick that "
+            "dismasted him on a previous voyage across the southern ocean"
+        )
+        sistema = SistemaRAG.__new__(SistemaRAG)
+        sistema.k = 3
+        sistema.indice_lexical = IndiceFalso([
+            {"id": 2489, "titulo": "Moby Dick; Or, The Whale", "autores": "Melville", "texto": cena_base},
+            {"id": 15, "titulo": "Moby-Dick; or, The Whale", "autores": "Melville", "texto": cena_edicao_2},
+            {"id": 2701, "titulo": "Moby Dick; Or, The Whale", "autores": "Melville",
+             "texto": "He was a moody captain with a wrinkled brow and a crooked jaw on the Pequod."},
+            {"id": 2489, "titulo": "Moby Dick; Or, The Whale", "autores": "Melville",
+             "texto": "Gold doubloon nailed to the mainmast as a reward for sighting the whale."},
+        ])
+        sistema.modelo_emb = ModeloQuatro()
+        sistema._vetor = lambda pergunta: np.array([1.0, 0.0], dtype=np.float32)
+
+        achados = sistema.recuperar("Who is Captain Ahab?")
+        self.assertEqual([p["id"] for p in achados], [2489, 2701, 2489])
+        self.assertNotIn(15, [p["id"] for p in achados])
+
 
 class AutoriaTest(unittest.TestCase):
     def setUp(self):

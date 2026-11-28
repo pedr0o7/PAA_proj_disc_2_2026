@@ -1,6 +1,7 @@
 """Sistema RAG: busca híbrida (embeddings + HNSW + BM25) em livros do Project Gutenberg + LLM local que responde citando as fontes."""
 import json
 import logging
+import os
 import re
 import struct
 import time
@@ -24,25 +25,67 @@ from corpus import carregar_passagens, texto_indexado
 from indice_lexical import IndiceLexical
 from acesso_hf import carregar_modelo, preparar_acesso_hub
 from cache import gravar_atomico, identidade
+from infraestrutura.aceleracao import (
+    carregar_modelo_embeddings,
+    carregar_modelo_llm,
+    normalizar_vetores,
+    resolver_config_execucao,
+    resumo_execucao,
+)
 
 CACHE = Path(__file__).parent / "cache_indice"
 MODELO_EMB = "sentence-transformers/all-MiniLM-L6-v2"
 REVISAO_EMB = "1110a243fdf4706b3f48f1d95db1a4f5529b4d41"
 MAX_SEQ_EMB = 128
-LLM = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+LLM_PADRAO = "HuggingFaceTB/SmolLM2-1.7B-Instruct"
+LLM = os.environ.get("LLM_MODEL", "").strip() or LLM_PADRAO
 SEM_CONTEXTO = "The provided context is insufficient to answer this question."
+MIN_SUPORTE_CITACAO = 0.30
 LOG = logging.getLogger("busca.rag")
 
 
 PROMPT_SISTEMA = (
-    "You are a helpful assistant that answers questions about books ONLY using the provided numbered "
-    "passages from public-domain books. "
-    "You MUST cite which passage supports each claim using square brackets, e.g. [1] or [2]. "
-    "Reply in a short, fluent paragraph of plain prose (no lists, no markdown). "
-    f"If the context does NOT contain relevant information to answer the question, you MUST respond EXACTLY: "
-    f"'{SEM_CONTEXTO}' "
-    "Do NOT make up or infer answers. Do NOT use your training data. Only use the context provided."
+    "You are a literary QA assistant for Project Gutenberg public-domain books.\n"
+    "Follow these rules strictly:\n"
+    "1. Answer ONLY using facts explicitly stated in the numbered passages below. Never use outside knowledge.\n"
+    "2. Answer in English in 1 to 3 plain prose sentences (no lists, no markdown).\n"
+    "3. End EVERY factual sentence with the supporting passage number in square brackets, like [1] or [2]. "
+    'Example: "The lighthouse keeper lit the beacon at dusk [1]."\n'
+    "4. Never cite a passage that does not directly support the claim.\n"
+    f"5. If the passages do not contain the answer, reply EXACTLY: '{SEM_CONTEXTO}'"
 )
+
+EXEMPLOS_GERACAO = [
+    {
+        "role": "user",
+        "content": (
+            "Context:\n"
+            "[1] (The Beacon by Clara Reed) Jonas tended the coastal lighthouse for thirty years "
+            "and warned ships during winter storms.\n\n"
+            "[2] (The Beacon by Clara Reed) Sailors called him a stern but faithful captain of the shore "
+            "who lost his left hand in a gale.\n\n"
+            "Question: Who is Jonas in The Beacon?\n"
+            "Answer in 1-3 sentences using only the passages above, ending every sentence with the supporting passage number ([1], [2])."
+        ),
+    },
+    {
+        "role": "assistant",
+        "content": (
+            "Jonas is a coastal lighthouse keeper who warned ships during winter storms [1]. "
+            "Sailors described him as stern but faithful after he lost his left hand in a gale [2]."
+        ),
+    },
+    {
+        "role": "user",
+        "content": (
+            "Context:\n"
+            "[1] (The Beacon by Clara Reed) Jonas tended the coastal lighthouse for thirty years.\n\n"
+            "Question: What year was the smartphone invented?\n"
+            "Answer in 1-3 sentences using only the passages above, ending every sentence with the supporting passage number ([1])."
+        ),
+    },
+    {"role": "assistant", "content": SEM_CONTEXTO},
+]
 
 # BM25 é opcional: sem ele a recuperação é apenas semântica
 try:
@@ -54,6 +97,20 @@ except ImportError:
 
 def tokenizar(texto):
     return re.findall(r"\w+", texto.lower())
+
+
+def _shingles_texto(texto, n=4):
+    """Extrai n-gramas de palavras para detectar passagens quase idênticas entre edições."""
+    palavras = tokenizar(texto)
+    if len(palavras) < n:
+        return set()
+    return {tuple(palavras[i:i + n]) for i in range(len(palavras) - n + 1)}
+
+
+def _trecho_duplicado(shingles, selecionados, limiar=0.25):
+    if not shingles:
+        return False
+    return any((len(shingles & prev) / min(len(shingles), len(prev))) >= limiar for prev in selecionados if prev)
 
 
 def frase_pergunta(pergunta):
@@ -104,6 +161,8 @@ def janelas_embedding(modelo, texto):
 
 def validar_citacoes(resposta, quantidade):
     """Mantém apenas citações que referenciam trechos existentes e retorna a resposta segura."""
+    resposta = re.sub(r"\[(?:Passage|Source|Context)\s*(\d+)\]", r"[\1]", resposta, flags=re.IGNORECASE)
+    resposta = re.sub(r"\b(?:Passage|Source|Context)\s*\[(\d+)\]", r"[\1]", resposta, flags=re.IGNORECASE)
     validas = sorted({int(m) for m in re.findall(r"\[(\d+)\]", resposta) if 1 <= int(m) <= quantidade})
     resposta = re.sub(
         r"\[(\d+)\]",
@@ -143,19 +202,47 @@ def autoria_inequivoca(livros):
     return livros[0] if livros and len(set(autores)) == 1 else None
 
 
+def _segmentos_por_citacao(resposta):
+    """Associa cada citação [n] às frases/afirmações que a referenciam."""
+    padrao = re.compile(r".+?(?:(?:\s*\[\d+\])+[.!?]?|[.!?](?:\s*\[\d+\])+|[.!?](?=\s|$)|\n|$)", re.DOTALL)
+    por_citacao = {}
+    pendentes = []
+    for match in padrao.finditer(resposta.strip()):
+        seg = match.group(0).strip()
+        if not seg:
+            continue
+        indices = [int(m) for m in re.findall(r"\[(\d+)\]", seg)]
+        limpo = re.sub(r"\s+([.!?])", r"\1", re.sub(r"\[\d+\]", "", seg)).strip()
+        if not indices:
+            if limpo:
+                pendentes.append(limpo)
+            continue
+        texto_seg = " ".join((*pendentes, limpo)).strip()
+        pendentes.clear()
+        if not texto_seg:
+            continue
+        for idx in dict.fromkeys(indices):
+            por_citacao[idx] = f"{por_citacao[idx]} {texto_seg}".strip() if idx in por_citacao else texto_seg
+    return por_citacao
+
+
 class SistemaRAG:
     def __init__(self, n=20000, semente=42, llm=LLM, k=3, max_tokens=200, min_sim=0.0,
                  indice_completo=None):
         self.k, self.max_tokens, self.min_sim = k, max_tokens, min_sim
         self.indice_lexical = IndiceLexical(indice_completo) if indice_completo else None
+        self.config_execucao = resolver_config_execucao(usar_llm=bool(llm))
+        self.config_execucao["llm_modelo"] = llm if llm else None
         self.offline = preparar_acesso_hub()
-        LOG.info("Carregando modelo de embeddings; o Hub pode usar arquivos em cache.")
-        self.modelo_emb, self.offline = carregar_modelo(
-            f"o modelo de embeddings {MODELO_EMB}", SentenceTransformer, MODELO_EMB,
-            revision=REVISAO_EMB, device="cpu", local_files_only=self.offline, retornar_offline=True,
+        LOG.info("Carregando modelo de embeddings (%s/%s); o Hub pode usar arquivos em cache.",
+                 self.config_execucao["emb_backend"], self.config_execucao["emb_dispositivo"])
+        self.modelo_emb, self.offline = carregar_modelo_embeddings(
+            MODELO_EMB, REVISAO_EMB, self.offline, self.config_execucao,
+            carregar_fn=carregar_modelo, st_cls=SentenceTransformer,
         )
         self.modelo_emb.max_seq_length = MAX_SEQ_EMB
-        LOG.info("Modelo de embeddings carregado.")
+        LOG.info("Modelo de embeddings carregado (%s/%s).",
+                 self.config_execucao["emb_backend"], self.config_execucao["emb_dispositivo"])
         if self.indice_lexical is None:
             CACHE.mkdir(parents=True, exist_ok=True)
             self.passagens = carregar_passagens(CACHE, n, semente)
@@ -169,24 +256,27 @@ class SistemaRAG:
             self.bm25 = None
 
         if llm:
-            LOG.info("Carregando modelo de geração; o Hub pode usar arquivos em cache.")
+            LOG.info("Carregando modelo de geração (%s/%s, %s); o Hub pode usar arquivos em cache.",
+                     self.config_execucao["llm_backend"], self.config_execucao["llm_dispositivo"],
+                     self.config_execucao["llm_quantizacao"])
             self.tok, self.offline = carregar_modelo(
                 f"o tokenizer {llm}", AutoTokenizer.from_pretrained, llm,
                 local_files_only=self.offline, retornar_offline=True,
             )
-            lm, self.offline = carregar_modelo(
-                f"o modelo de geração {llm}", AutoModelForCausalLM.from_pretrained, llm,
-                dtype=torch.float32, local_files_only=self.offline, retornar_offline=True,
+            self.lm, self.offline = carregar_modelo_llm(
+                llm, self.offline, self.config_execucao,
+                carregar_fn=carregar_modelo, auto_model_cls=AutoModelForCausalLM,
             )
-            self.lm = lm.eval()
-            LOG.info("Modelo de geração carregado.")
+            LOG.info("Modelo de geração carregado (%s).", resumo_execucao(self.config_execucao))
         else:
             self.tok, self.lm = None, None
+            LOG.info("Execução configurada: %s", resumo_execucao(self.config_execucao))
 
     def _embeddings(self):
         dimensao_modelo = self.modelo_emb.get_sentence_embedding_dimension()
         if not isinstance(dimensao_modelo, int) or dimensao_modelo <= 0:
             raise ValueError("O modelo de embeddings não informou uma dimensão válida.")
+        emb_backend = getattr(self, "config_execucao", {}).get("emb_backend", "torch")
         metadados = {
             "versao": 1, "passagens_sha256": identidade(self.passagens),
             "modelo": MODELO_EMB, "revisao": REVISAO_EMB, "max_seq_length": MAX_SEQ_EMB,
@@ -195,6 +285,8 @@ class SistemaRAG:
             "transformers": version("transformers"),
             "torch": version("torch"),
         }
+        if emb_backend != "torch":
+            metadados["backend"] = emb_backend
         arq = CACHE / f"embeddings_v1_{identidade(metadados)}.npz"
         if arq.exists():
             try:
@@ -236,8 +328,10 @@ class SistemaRAG:
             LOG.info("Usando embeddings em cache.")
             return emb
         print(f"Primeira execução: codificando {len(self.passagens)} passagens (alguns minutos em CPU)...")
-        emb = self.modelo_emb.encode([texto_indexado(p) for p in self.passagens], batch_size=64,
-                                     normalize_embeddings=True, show_progress_bar=True).astype(np.float32)
+        emb = normalizar_vetores(self.modelo_emb.encode(
+            [texto_indexado(p) for p in self.passagens], batch_size=64,
+            normalize_embeddings=True, show_progress_bar=True,
+        ))
         if emb.ndim != 2 or len(emb) != len(self.passagens) or emb.shape[1] != dimensao_modelo:
             raise ValueError("O modelo retornou embeddings incompatíveis com as passagens.")
         gravar_atomico(arq, lambda arquivo: np.savez(
@@ -246,7 +340,9 @@ class SistemaRAG:
         return emb
 
     def _vetor(self, pergunta):
-        return self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
+        return normalizar_vetores(
+            self.modelo_emb.encode([pergunta], normalize_embeddings=True, show_progress_bar=False)[0]
+        )
 
     def recuperar(self, pergunta):
         """Top-k passagens (híbrido BM25 + semântico, ou só semântico sem BM25). A similaridade é o cosseno real."""
@@ -256,11 +352,11 @@ class SistemaRAG:
                 return []
             q = self._vetor(pergunta)
             janelas = [janelas_embedding(self.modelo_emb, texto_indexado(p)) for p in candidatos]
-            vetores = self.modelo_emb.encode(
+            vetores = normalizar_vetores(self.modelo_emb.encode(
                 [janela for grupo in janelas for janela in grupo], batch_size=64,
                 normalize_embeddings=True, show_progress_bar=False,
-            )
-            scores = np.asarray(vetores) @ q
+            ))
+            scores = vetores @ q
             similaridades = []
             posicao = 0
             for grupo in janelas:
@@ -271,7 +367,17 @@ class SistemaRAG:
             ordem = sorted(range(len(candidatos)),
                            key=lambda i: 1 / (60 + i + 1) + 1 / (60 + rank_semantico[i]),
                            reverse=True)
-            return [{**candidatos[i], "similaridade": float(similaridades[i])} for i in ordem[:self.k]]
+            escolhidos, vistos = [], []
+            for i in ordem:
+                sh = _shingles_texto(candidatos[i]["texto"])
+                if _trecho_duplicado(sh, vistos):
+                    continue
+                escolhidos.append({**candidatos[i], "similaridade": float(similaridades[i])})
+                if sh:
+                    vistos.append(sh)
+                if len(escolhidos) == self.k:
+                    break
+            return escolhidos
         q = self._vetor(pergunta)
         if self.bm25 is None:
             achados = self.indice.search(q, self.k)
@@ -279,9 +385,17 @@ class SistemaRAG:
                     for c, d in zip(achados.keys, achados.distances)]
 
         scores_bm25 = self.bm25.get_scores(tokenizar(pergunta))
-        bm25_norm = scores_bm25 / scores_bm25.max() if scores_bm25.max() > 0 else scores_bm25
+        max_bm25 = float(scores_bm25.max()) if len(scores_bm25) else 0.0
+        bm25_norm = scores_bm25 / max_bm25 if max_bm25 > 0 else scores_bm25
         candidatos = {int(c) for c in self.indice.search(q, self.k * 3).keys}
-        candidatos.update(int(i) for i in np.argsort(bm25_norm)[::-1][:self.k * 3] if bm25_norm[i] > 0)
+        limite_bm25 = min(self.k * 3, len(bm25_norm))
+        if limite_bm25 > 0 and max_bm25 > 0:
+            if limite_bm25 == len(bm25_norm):
+                topo_bm25 = np.argsort(-bm25_norm)
+            else:
+                idx_part = np.argpartition(-bm25_norm, limite_bm25 - 1)[:limite_bm25]
+                topo_bm25 = idx_part[np.argsort(-bm25_norm[idx_part])]
+            candidatos.update(int(i) for i in topo_bm25 if bm25_norm[i] > 0)
 
         # Ranking = 0.7*cosseno + 0.3*BM25 normalizado; a similaridade exibida é sempre o cosseno
         cos = {i: float(self.emb[i] @ q) for i in candidatos}
@@ -290,16 +404,56 @@ class SistemaRAG:
 
     def completar(self, msgs, max_tokens):
         ids = self.tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True)
+        alvo_device = getattr(self.lm, "device", None)
+        if isinstance(alvo_device, torch.device):
+            ids = {chave: valor.to(alvo_device) for chave, valor in ids.items()}
         with torch.no_grad():
             saida = self.lm.generate(**ids, max_new_tokens=max_tokens, do_sample=False, repetition_penalty=1.1)
         return self.tok.decode(saida[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+
+    def _validar_suporte_semantico(self, resposta, trechos, citados, min_suporte=MIN_SUPORTE_CITACAO):
+        """Rejeita citações cujo trecho não tem suporte semântico mínimo para a afirmação associada."""
+        modelo = getattr(self, "modelo_emb", None)
+        if not citados or modelo is None or resposta == SEM_CONTEXTO:
+            return resposta, citados
+        texto_limpo = re.sub(r"\[\d+\]", "", resposta).strip()
+        if not texto_limpo:
+            return SEM_CONTEXTO, []
+        segmentos = _segmentos_por_citacao(resposta)
+        suportadas = []
+        for idx in citados:
+            if not (1 <= idx <= len(trechos)):
+                continue
+            texto_alvo = segmentos.get(idx) or texto_limpo
+            vet_resp = normalizar_vetores(
+                modelo.encode([texto_alvo], normalize_embeddings=True, show_progress_bar=False)[0]
+            )
+            conteudo = texto_indexado(trechos[idx - 1])
+            janelas = janelas_embedding(modelo, conteudo) if hasattr(modelo, "tokenizer") else [conteudo]
+            vet_trecho = normalizar_vetores(
+                modelo.encode(janelas, batch_size=64, normalize_embeddings=True, show_progress_bar=False)
+            )
+            sim = float(np.max(vet_trecho @ vet_resp))
+            if sim >= min_suporte:
+                suportadas.append(idx)
+        if not suportadas or len(suportadas) < len(citados):
+            return SEM_CONTEXTO, []
+        return resposta, suportadas
 
     def gerar(self, pergunta, trechos):
         def rotulo(t):
             return f"{t['titulo']} by {t['autores']}" if t["autores"] else t["titulo"]
         contexto = "\n\n".join(f"[{i}] ({rotulo(t)}) {t['texto']}" for i, t in enumerate(trechos, 1))
-        msgs = [{"role": "system", "content": PROMPT_SISTEMA},
-                {"role": "user", "content": f"Context:\n{contexto}\n\nQuestion: {pergunta}"}]
+        nums = ", ".join(f"[{i}]" for i in range(1, len(trechos) + 1))
+        instrucao = (
+            f"Answer in 1-3 sentences using only the passages above, "
+            f"ending every sentence with the supporting passage number ({nums})."
+        )
+        msgs = [
+            {"role": "system", "content": PROMPT_SISTEMA},
+            *EXEMPLOS_GERACAO,
+            {"role": "user", "content": f"Context:\n{contexto}\n\nQuestion: {pergunta}\n{instrucao}"},
+        ]
         return self.completar(msgs, self.max_tokens)
 
     def perguntar(self, pergunta):
@@ -371,8 +525,10 @@ class SistemaRAG:
         t2 = time.perf_counter()
         if self.lm:
             resposta, citados = validar_citacoes(resposta, len(trechos))
+            resposta, citados = self._validar_suporte_semantico(resposta, trechos, citados)
         else:
             citados = []
+        t3 = time.perf_counter()
         return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
-                "descartados": [t for t in candidatos if t not in trechos],
-                "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}
+                "descartados": [t for t in candidatos if t["similaridade"] < self.min_sim],
+                "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t3 - t0}

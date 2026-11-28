@@ -76,6 +76,10 @@ class IndiceLexicalTest(unittest.TestCase):
             IndiceLexical(self.indice, self.dados)
         with self.assertRaisesRegex(ValueError, "corpus ou a versão"):
             construir(self.dados, self.indice)
+        construir(self.dados, self.indice, reconstruir=True)
+        indice = IndiceLexical(self.indice, self.dados)
+        self.addCleanup(indice.close)
+        self.assertEqual(indice.total_livros, 2)
 
     def test_busca_titulo_exato_no_catalogo_do_indice(self):
         construir(self.dados, self.indice)

@@ -57,12 +57,17 @@ def segmentar(texto, tamanho=TAMANHO, sobreposicao=SOBREPOSICAO):
         inicio = fim - sobreposicao
 
 
-def construir(dados=DADOS, caminho=INDICE):
+def construir(dados=DADOS, caminho=INDICE, reconstruir=False):
     """Constrói ou retoma o índice; cada livro e seu checkpoint são uma transação."""
     dados, caminho = Path(dados), Path(caminho)
     identidade = assinatura(dados)
     livros = ler_livros(dados)
     caminho.parent.mkdir(parents=True, exist_ok=True)
+    if reconstruir:
+        for sufixo in ("", "-wal", "-shm", "-journal"):
+            alvo = Path(f"{caminho}{sufixo}")
+            if alvo.exists():
+                alvo.unlink()
     inicio = time.perf_counter()
     with closing(sqlite3.connect(caminho)) as con:
         con.execute("CREATE TABLE IF NOT EXISTS estado (id INTEGER PRIMARY KEY CHECK (id = 1), "
@@ -178,5 +183,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Cria ou retoma o índice lexical completo do Gutenberg.")
     parser.add_argument("--dados", type=Path, default=DADOS)
     parser.add_argument("--indice", type=Path, default=INDICE)
+    parser.add_argument("--reconstruir", action="store_true",
+                        help="remove o índice existente antes de construir novamente")
     args = parser.parse_args()
-    construir(args.dados, args.indice)
+    construir(args.dados, args.indice, reconstruir=args.reconstruir)

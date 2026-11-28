@@ -23,8 +23,9 @@ Substitua o contato por um endereço real, usado no `User-Agent` das requisiçõ
 Se o download for interrompido, execute o mesmo comando: o arquivo parcial (`.part`) é retomado. Se ele estiver
 corrompido, apague apenas esse `.part`.
 
-Opções: `--meta` (bytes de texto, padrão 10.000.000.000), `--cache` (padrão `dados\cache_gutenberg`) e
-`--saida` (padrão `dados\gutenberg_10gb`; é sobrescrita a cada execução).
+Opções: `--meta` (bytes de texto, padrão 10.000.000.000), `--cache` (padrão `dados\cache_gutenberg`),
+`--saida` (padrão `dados\gutenberg_10gb`; é sobrescrita a cada execução) e `--limpar-parquets`
+(remove automaticamente os arquivos `.parquet` de `--cache` após atingir a meta).
 
 ## Saída (`dados\gutenberg_10gb`)
 

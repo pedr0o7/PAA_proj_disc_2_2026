@@ -1,4 +1,4 @@
-"""Gera o conjunto de avaliação (pergunta, resposta de referência, artigo esperado) a partir de passagens indexadas.
+"""Gera o conjunto de avaliação (pergunta, resposta de referência, livro esperado) a partir de passagens indexadas.
 
 Para cada passagem sorteada o LLM local propõe uma pergunta factual e a resposta curta; a passagem de
 origem é o contexto de referência. Revise avaliacao_dataset.json manualmente se quiser maior rigor.

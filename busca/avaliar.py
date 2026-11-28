@@ -26,6 +26,19 @@ DATASET = Path(__file__).parent / "avaliacao_dataset.json"
 SAIDA = Path(__file__).parent / "avaliacao_resultados.json"
 
 
+def _remover_cercas_markdown(texto):
+    """Remove cercas ```json / ``` do início e do fim, sem regex (evita backtracking)."""
+    texto = texto.strip()
+    if texto.startswith("```"):
+        texto = texto[3:]
+        if texto[:4].lower() == "json":
+            texto = texto[4:]
+        texto = texto.lstrip()
+    if texto.endswith("```"):
+        texto = texto[:-3].rstrip()
+    return texto.strip()
+
+
 def metricas_proprias(itens, resultados):
     hits, rr, cit_ok, citou, abstencoes = [], [], [], [], []
     for it, r in zip(itens, resultados):
@@ -61,6 +74,46 @@ def _carregar_embeddings_ragas(modelo, revisao, local_files_only=False):
     )
 
 
+def _criar_llm_langchain_openvino(tok, lm, max_new_tokens=512):
+    from langchain_core.language_models.llms import LLM as LangchainBaseLLM
+
+    class OpenVINOGenAILangchainLLM(LangchainBaseLLM):
+        @property
+        def _llm_type(self):
+            return "openvino_genai"
+
+        def _call(self, prompt, stop=None, run_manager=None, **kwargs):
+            msgs = [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a strict evaluation judge. Return ONLY valid JSON matching the "
+                        "requested schema, with no markdown fences or extra commentary."
+                    ),
+                },
+                {"role": "user", "content": prompt},
+            ]
+            ids = tok.apply_chat_template(
+                msgs, add_generation_prompt=True, return_tensors="pt", return_dict=True
+            )
+            with torch.no_grad():
+                saida = lm.generate(
+                    **ids,
+                    max_new_tokens=max_new_tokens,
+                    do_sample=False,
+                    repetition_penalty=1.05,
+                )
+            texto = tok.decode(saida[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+            texto = _remover_cercas_markdown(texto)
+            if stop:
+                for token_parada in stop:
+                    if token_parada in texto:
+                        texto = texto.split(token_parada, 1)[0]
+            return texto.strip()
+
+    return OpenVINOGenAILangchainLLM()
+
+
 def avaliar_ragas(sistema, itens, resultados, juiz):
     from langchain_huggingface import HuggingFacePipeline
     from ragas import EvaluationDataset, SingleTurnSample, evaluate
@@ -70,8 +123,10 @@ def avaliar_ragas(sistema, itens, resultados, juiz):
                                ResponseRelevancy, SemanticSimilarity)
     from ragas.run_config import RunConfig
     from transformers import AutoModelForCausalLM, AutoTokenizer, pipeline
+    from infraestrutura.aceleracao import ModeloLLMOpenVINOGenAI
 
-    if juiz == LLM:
+    modelo_sistema = getattr(sistema, "config_execucao", {}).get("llm_modelo")
+    if juiz == LLM or (modelo_sistema and juiz == modelo_sistema):
         tok, lm = sistema.tok, sistema.lm
     else:
         tok, sistema.offline = carregar_modelo(
@@ -83,9 +138,12 @@ def avaliar_ragas(sistema, itens, resultados, juiz):
             dtype=torch.float32, local_files_only=sistema.offline, retornar_offline=True,
         )
         lm = lm.eval()
-    pipe = pipeline("text-generation", model=lm, tokenizer=tok, max_new_tokens=350, do_sample=False,
-                    return_full_text=False)
-    llm = LangchainLLMWrapper(HuggingFacePipeline(pipeline=pipe))
+    if isinstance(lm, ModeloLLMOpenVINOGenAI):
+        llm = LangchainLLMWrapper(_criar_llm_langchain_openvino(tok, lm))
+    else:
+        pipe = pipeline("text-generation", model=lm, tokenizer=tok, max_new_tokens=350, do_sample=False,
+                        return_full_text=False)
+        llm = LangchainLLMWrapper(HuggingFacePipeline(pipeline=pipe))
     emb_lc, sistema.offline = carregar_modelo(
         f"o modelo de embeddings {MODELO_EMB}",
         _carregar_embeddings_ragas,
@@ -121,6 +179,7 @@ def main():
     ap.add_argument("--min-sim", type=float, default=0.0, help="limiar de similaridade cosseno")
     ap.add_argument("--indice-completo", type=Path, nargs="?", const=INDICE,
                     help="usa o índice lexical completo já construído")
+    ap.add_argument("--saida", type=Path, default=SAIDA, help="caminho do JSON de saída")
     a = ap.parse_args()
 
     itens = json.loads(DATASET.read_text(encoding="utf-8"))[: a.q]
@@ -134,6 +193,7 @@ def main():
 
     saida = {"llm": a.llm, "k": a.k, "min_sim": a.min_sim,
              "indice_completo": str(a.indice_completo) if a.indice_completo else None,
+             "execucao": getattr(sistema, "config_execucao", None),
              "perguntas": len(itens), "proprias": metricas_proprias(itens, resultados),
              "tempo_s": metricas_tempo(resultados)}
     if not a.sem_ragas:
@@ -143,7 +203,7 @@ def main():
                          "fonte_esperada": it["titulo_esperado"], "fontes": [t["titulo"] for t in r["trechos"]],
                          "citados": r["citados"], "tempo_total": r["tempo_total"]}
                         for it, r in zip(itens, resultados)]
-    SAIDA.write_text(json.dumps(saida, ensure_ascii=False, indent=1), encoding="utf-8")
+    a.saida.write_text(json.dumps(saida, ensure_ascii=False, indent=1), encoding="utf-8")
     print(json.dumps({k: v for k, v in saida.items() if k != "detalhe"}, ensure_ascii=False, indent=1))
 
 
