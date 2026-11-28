@@ -575,6 +575,46 @@ class TestCorrecoesRevisaoPR(unittest.TestCase):
         self.assertEqual(cfg_fb["llm_dispositivo"], "CPU")
         self.assertEqual(cfg_fb["llm_quantizacao"], "fp32")
 
+    def test_caminho_cache_ir_evita_colisao_de_slug_e_diferencia_revisao(self):
+        c1 = aceleracao.caminho_cache_llm_openvino("a/b_c", "int8")
+        c2 = aceleracao.caminho_cache_llm_openvino("a_b/c", "int8")
+        c3 = aceleracao.caminho_cache_llm_openvino("a/b_c", "int8", revisao="rev-1")
+        c4 = aceleracao.caminho_cache_llm_openvino("a/b_c", "int8", revisao="rev-2")
+        self.assertNotEqual(c1, c2)
+        self.assertNotEqual(c1, c3)
+        self.assertNotEqual(c3, c4)
+
+    def test_exportar_llm_openvino_grava_metadados_e_reexporta_se_revisao_divergir(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            destino = Path(tmpdir) / "ov_modelo"
+            destino.mkdir()
+            (destino / "openvino_model.xml").write_text("<antigo/>", encoding="utf-8")
+            (destino / "openvino_model.bin").write_bytes(b"antigo")
+            (destino / "metadados_ir.json").write_text(
+                json.dumps({"modelo": "m/teste", "quantizacao": "int8", "revisao": "rev-1"}),
+                encoding="utf-8",
+            )
+
+            cmds = []
+
+            def fake_run(cmd, check=True):
+                cmds.append(cmd)
+                tmp_ir = Path(cmd[-1])
+                tmp_ir.mkdir(parents=True, exist_ok=True)
+                (tmp_ir / "openvino_model.xml").write_text("<novo/>", encoding="utf-8")
+                (tmp_ir / "openvino_model.bin").write_bytes(b"novo")
+
+            with patch.object(aceleracao.shutil, "which", return_value="uv"), \
+                 patch.object(aceleracao.subprocess, "run", side_effect=fake_run):
+                res = aceleracao.exportar_llm_openvino(
+                    "m/teste", "int8", destino=destino, offline=False, revisao="rev-2"
+                )
+            self.assertEqual(res, destino)
+            self.assertIn("--revision", cmds[0])
+            self.assertIn("rev-2", cmds[0])
+            meta = json.loads((destino / "metadados_ir.json").read_text(encoding="utf-8"))
+            self.assertEqual(meta["revisao"], "rev-2")
+
 
 if __name__ == "__main__":
     unittest.main()

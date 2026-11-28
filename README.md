@@ -107,11 +107,18 @@ Para executar os comandos de aceleração opcional em diferentes notebooks (Inte
 - `LLM_QUANTIZACAO`: `auto | fp32 | fp16 | int8 | int4`
 - `LLM_MODEL`: identificador do modelo LLM local no Hugging Face (vazio usa `HuggingFaceTB/SmolLM2-1.7B-Instruct`; ex.: `Qwen/Qwen2.5-1.5B-Instruct`)
 
-Para instalar os runtimes opcionais de aceleração (`openvino`, `openvino-genai` e `openvino-tokenizers` para Intel CPU/GPU Iris Xe, ou `onnxruntime` / `onnxruntime-directml` para AMD/universal), sem conflito com `transformers>=5.23` nem `huggingface_hub>=1.33`:
+Para instalar os runtimes opcionais de aceleração sem conflito com `transformers>=5.23` nem `huggingface_hub>=1.33`, escolha o comando conforme a sua plataforma:
 
 ```powershell
+# Intel (CPU e GPU integrada Iris Xe / UHD / Arc):
 python -m pip install -r busca\requirements-aceleracao.txt
 python -m pip install uv   # opcional: alternativa rápida para habilitar a exportação única do LLM em OpenVINO
+
+# AMD / GPU Windows (DirectML) — embeddings acelerados via ONNX:
+python -m pip install onnxruntime-directml
+
+# ONNX CPU universal (alternativa portátil sem OpenVINO):
+python -m pip install onnxruntime
 ```
 
 Quando o backend `openvino` for usado no LLM local, `LLM_QUANTIZACAO=auto` prioriza `int8` (melhor fidelidade em citações; se o cache `int8` não existir e já houver cache `int4` pronto, reutiliza `int4` automaticamente). Você também pode alternar explicitamente entre `int4`, `int8`, `fp16` e `fp32` via `.env`. Na primeira execução, o modelo PyTorch baixado do Hugging Face é convertido e quantizado **uma única vez** para **IR** (*Intermediate Representation*, formato nativo do OpenVINO composto por `openvino_model.xml` e `openvino_model.bin`, com o grafo e os pesos já comprimidos) em `busca/cache_indice/ov_*`. Essa conversão roda em um ambiente efêmero isolado via `uv run` — porque `optimum-intel==2.2.0` exige versões mais antigas (`transformers<5.6` e `huggingface_hub<1.22`), evitando *downgrade* no `.venv` principal; caso `uv` não esteja disponível no `PATH`, o sistema faz *fallback* silencioso para `torch/CPU`. Para pré-exportar manualmente a partir da raiz:

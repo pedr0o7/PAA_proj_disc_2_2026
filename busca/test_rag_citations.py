@@ -75,7 +75,8 @@ class SuporteSemanticoCitacoesTest(unittest.TestCase):
         trecho_ok = {"titulo": "Book 1", "autores": "A", "texto": "Ahab hunts the white whale."}
         trecho_ruim = {"titulo": "Book 2", "autores": "B", "texto": "Unrelated gardening tips."}
         sistema = self._sistema_com_emb({
-            "Ahab hunts the whale.  Cooking tips.": [1.0, 0.0],
+            "Ahab hunts the whale.": [1.0, 0.0],
+            "Cooking tips.": [1.0, 0.0],
             "Book 1 by A. Ahab hunts the white whale.": [1.0, 0.0],
             "Book 2 by B. Unrelated gardening tips.": [0.0, 1.0],
         })
@@ -83,6 +84,25 @@ class SuporteSemanticoCitacoesTest(unittest.TestCase):
             "Ahab hunts the whale. [1] Cooking tips. [2]", [trecho_ok, trecho_ruim], [1, 2], min_suporte=0.3
         )
         self.assertEqual((resp, cit), (SEM_CONTEXTO, []))
+
+    def test_valida_cada_citacao_contra_sua_propria_frase_em_resposta_multipassagem(self):
+        t1 = {"titulo": "Moby-Dick", "autores": "Melville", "texto": "Ahab hunts the white whale."}
+        t2 = {"titulo": "Frankenstein", "autores": "Shelley", "texto": "Elizabeth lives in Geneva."}
+        sistema = self._sistema_com_emb({
+            "Ahab hunts the whale.": [1.0, 0.0],
+            "Moby-Dick by Melville. Ahab hunts the white whale.": [1.0, 0.0],
+            "Elizabeth lives in Geneva.": [0.0, 1.0],
+            "Frankenstein by Shelley. Elizabeth lives in Geneva.": [0.0, 1.0],
+        })
+        resp, cit = sistema._validar_suporte_semantico(
+            "Ahab hunts the whale [1]. Elizabeth lives in Geneva [2].",
+            [t1, t2],
+            [1, 2],
+            min_suporte=0.3,
+        )
+        self.assertEqual(cit, [1, 2])
+        self.assertIn("[1]", resp)
+        self.assertIn("[2]", resp)
 
     def test_tempo_total_inclui_validacao_semantica(self):
         sistema = SistemaRAG.__new__(SistemaRAG)

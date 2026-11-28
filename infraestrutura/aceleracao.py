@@ -1,6 +1,8 @@
 """Detecção de hardware, resolução de backends (.env), wrappers nativos e fallback seguro para PyTorch."""
 import argparse
+import hashlib
 import importlib.util
+import json
 import logging
 import os
 import platform
@@ -446,19 +448,50 @@ class ModeloEmbeddingsONNX(_ModeloEmbeddingsBase):
         return cls(session, tokenizer), offline
 
 
-def caminho_cache_llm_openvino(llm_nome, quantizacao="int4"):
+def _identidade_ir(llm_nome, quantizacao, revisao=None):
+    return {
+        "modelo": str(llm_nome),
+        "quantizacao": str(quantizacao),
+        "revisao": str(revisao) if revisao is not None else None,
+    }
+
+
+def caminho_cache_llm_openvino(llm_nome, quantizacao="int4", revisao=None):
     slug = re.sub(r"[^a-zA-Z0-9._-]+", "_", llm_nome).strip("_")
-    return RAIZ / "busca" / "cache_indice" / f"ov_{slug}_{quantizacao}"
+    identidade = json.dumps(
+        _identidade_ir(llm_nome, quantizacao, revisao=revisao),
+        sort_keys=True,
+        ensure_ascii=False,
+    )
+    digest = hashlib.sha256(identidade.encode("utf-8")).hexdigest()[:10]
+    return RAIZ / "busca" / "cache_indice" / f"ov_{slug}_{quantizacao}_{digest}"
 
 
-def _ir_valido(pasta):
-    return (pasta / "openvino_model.xml").is_file() and (pasta / "openvino_model.bin").is_file()
+def _ir_valido(pasta, esperado=None):
+    if not ((pasta / "openvino_model.xml").is_file() and (pasta / "openvino_model.bin").is_file()):
+        return False
+    meta_arq = pasta / "metadados_ir.json"
+    if esperado is not None and meta_arq.is_file():
+        try:
+            lido = json.loads(meta_arq.read_text(encoding="utf-8"))
+        except (OSError, ValueError, TypeError):
+            return False
+        if lido != esperado:
+            return False
+    return True
 
 
-def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=False):
+def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=False, revisao=None):
     """Exporta e quantiza (1x) o LLM oficial para OpenVINO IR via `uv run` isolado."""
-    destino = Path(destino) if destino is not None else caminho_cache_llm_openvino(llm_nome, quantizacao)
-    if _ir_valido(destino):
+    peso = quantizacao if quantizacao in ("int4", "int8", "fp16", "fp32") else "int4"
+    esperado = _identidade_ir(llm_nome, peso, revisao=revisao)
+    if destino is not None:
+        destino = Path(destino)
+    elif revisao is not None:
+        destino = caminho_cache_llm_openvino(llm_nome, peso, revisao=revisao)
+    else:
+        destino = caminho_cache_llm_openvino(llm_nome, peso)
+    if _ir_valido(destino, esperado=esperado):
         return destino
     if offline:
         raise FileNotFoundError(
@@ -472,7 +505,6 @@ def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=Fa
     tmp_base = Path(tempfile.mkdtemp(prefix=f"{destino.name}.tmp.", dir=destino.parent))
     tmp = tmp_base / "ir"
 
-    peso = quantizacao if quantizacao in ("int4", "int8", "fp16", "fp32") else "int4"
     cmd = [
         uv_bin, "run", "--python", "3.12",
         "--with", "optimum-intel[openvino]==2.2.0",
@@ -483,19 +515,25 @@ def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=Fa
         "--model", llm_nome,
         "--weight-format", peso,
         "--task", "text-generation-with-past",
-        str(tmp),
     ]
+    if revisao is not None:
+        cmd.extend(["--revision", str(revisao)])
+    cmd.append(str(tmp))
     LOG.info("Exportando e quantizando %s (%s) para OpenVINO IR em %s...", llm_nome, peso, destino)
     try:
         subprocess.run(cmd, check=True)
         if not _ir_valido(tmp):
             raise RuntimeError(f"Exportação OpenVINO não gerou openvino_model.xml/.bin em {tmp}.")
-        if _ir_valido(destino):
+        (tmp / "metadados_ir.json").write_text(
+            json.dumps(esperado, sort_keys=True, ensure_ascii=False),
+            encoding="utf-8",
+        )
+        if _ir_valido(destino, esperado=esperado):
             return destino
         try:
             tmp.rename(destino)
         except OSError:
-            if _ir_valido(destino):
+            if _ir_valido(destino, esperado=esperado):
                 return destino
             if destino.exists():
                 shutil.rmtree(destino, ignore_errors=True)
@@ -634,7 +672,7 @@ def carregar_modelo_embeddings(modelo_nome, revisao, offline, config_execucao,
 
 
 def carregar_modelo_llm(llm_nome, offline, config_execucao,
-                        carregar_fn=carregar_modelo, auto_model_cls=None):
+                        carregar_fn=carregar_modelo, auto_model_cls=None, revisao=None):
     """Carrega LLM via openvino_genai.LLMPipeline, ORT ou fallback silencioso para torch."""
     if auto_model_cls is None:
         from transformers import AutoModelForCausalLM as auto_model_cls
@@ -650,8 +688,9 @@ def carregar_modelo_llm(llm_nome, offline, config_execucao,
 
                 solicitado_quant = config_execucao.get("solicitado", {}).get("llm_quantizacao", "auto")
                 if solicitado_quant == "auto" and quant == "int8":
-                    cache_int8 = caminho_cache_llm_openvino(llm_nome, "int8")
-                    cache_int4 = caminho_cache_llm_openvino(llm_nome, "int4")
+                    kw_rev = {"revisao": revisao} if revisao is not None else {}
+                    cache_int8 = caminho_cache_llm_openvino(llm_nome, "int8", **kw_rev)
+                    cache_int4 = caminho_cache_llm_openvino(llm_nome, "int4", **kw_rev)
                     int8_pronto = (cache_int8 / "openvino_model.xml").is_file()
                     int4_pronto = (cache_int4 / "openvino_model.xml").is_file()
                     pouco_espaco = shutil.disk_usage(RAIZ).free < 4 * 1024**3
@@ -662,7 +701,10 @@ def carregar_modelo_llm(llm_nome, offline, config_execucao,
                         config_execucao["llm_quantizacao"] = "int4"
                         quant = "int4"
 
-                pasta_ir = exportar_llm_openvino(llm_nome, quantizacao=quant, offline=offline)
+                kw_exp = {"quantizacao": quant, "offline": offline}
+                if revisao is not None:
+                    kw_exp["revisao"] = revisao
+                pasta_ir = exportar_llm_openvino(llm_nome, **kw_exp)
                 tok = AutoTokenizer.from_pretrained(str(pasta_ir), local_files_only=True)
                 modelo = ModeloLLMOpenVINOGenAI(pasta_ir, disp, tok)
                 return modelo.eval(), offline

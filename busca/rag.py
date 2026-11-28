@@ -202,6 +202,30 @@ def autoria_inequivoca(livros):
     return livros[0] if livros and len(set(autores)) == 1 else None
 
 
+def _segmentos_por_citacao(resposta):
+    """Associa cada citação [n] às frases/afirmações que a referenciam."""
+    padrao = re.compile(r".+?(?:(?:\s*\[\d+\])+[.!?]?|[.!?](?:\s*\[\d+\])+|[.!?](?=\s|$)|\n|$)", re.DOTALL)
+    por_citacao = {}
+    pendentes = []
+    for match in padrao.finditer(resposta.strip()):
+        seg = match.group(0).strip()
+        if not seg:
+            continue
+        indices = [int(m) for m in re.findall(r"\[(\d+)\]", seg)]
+        limpo = re.sub(r"\s+([.!?])", r"\1", re.sub(r"\[\d+\]", "", seg)).strip()
+        if not indices:
+            if limpo:
+                pendentes.append(limpo)
+            continue
+        texto_seg = " ".join((*pendentes, limpo)).strip()
+        pendentes.clear()
+        if not texto_seg:
+            continue
+        for idx in dict.fromkeys(indices):
+            por_citacao[idx] = f"{por_citacao[idx]} {texto_seg}".strip() if idx in por_citacao else texto_seg
+    return por_citacao
+
+
 class SistemaRAG:
     def __init__(self, n=20000, semente=42, llm=LLM, k=3, max_tokens=200, min_sim=0.0,
                  indice_completo=None):
@@ -388,20 +412,22 @@ class SistemaRAG:
         return self.tok.decode(saida[0][ids["input_ids"].shape[1]:], skip_special_tokens=True).strip()
 
     def _validar_suporte_semantico(self, resposta, trechos, citados, min_suporte=MIN_SUPORTE_CITACAO):
-        """Rejeita citações cujo trecho não tem suporte semântico mínimo para a resposta gerada."""
+        """Rejeita citações cujo trecho não tem suporte semântico mínimo para a afirmação associada."""
         modelo = getattr(self, "modelo_emb", None)
         if not citados or modelo is None or resposta == SEM_CONTEXTO:
             return resposta, citados
         texto_limpo = re.sub(r"\[\d+\]", "", resposta).strip()
         if not texto_limpo:
             return SEM_CONTEXTO, []
-        vet_resp = normalizar_vetores(
-            modelo.encode([texto_limpo], normalize_embeddings=True, show_progress_bar=False)[0]
-        )
+        segmentos = _segmentos_por_citacao(resposta)
         suportadas = []
         for idx in citados:
             if not (1 <= idx <= len(trechos)):
                 continue
+            texto_alvo = segmentos.get(idx) or texto_limpo
+            vet_resp = normalizar_vetores(
+                modelo.encode([texto_alvo], normalize_embeddings=True, show_progress_bar=False)[0]
+            )
             conteudo = texto_indexado(trechos[idx - 1])
             janelas = janelas_embedding(modelo, conteudo) if hasattr(modelo, "tokenizer") else [conteudo]
             vet_trecho = normalizar_vetores(
