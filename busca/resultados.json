@@ -1,0 +1,149 @@
+[
+  {
+    "n_passagens": 2000,
+    "n_consultas": 300,
+    "k": 10,
+    "resultados": {
+      "tfidf_cosseno": {
+        "recall@1": 0.9766666666666667,
+        "recall@10": 1.0,
+        "mrr@10": 0.9856666666666666,
+        "construcao_s": 0.3551930999965407,
+        "indice_mb": 0.6022567749023438,
+        "lat_media_ms": 0.8113119987926135,
+        "lat_p95_ms": 1.2064249865943566
+      },
+      "word2vec_medio_cosseno": {
+        "recall@1": 0.08,
+        "recall@10": 0.14,
+        "mrr@10": 0.09331349206349204,
+        "construcao_s": 0.9772993999649771,
+        "indice_mb": 0.762939453125,
+        "lat_media_ms": 0.11849766538944095,
+        "lat_p95_ms": 0.21071502997074276
+      },
+      "sentence_cosseno_bruto": {
+        "recall@1": 0.7,
+        "recall@10": 0.8266666666666667,
+        "mrr@10": 0.7460079365079365,
+        "construcao_s": 8.160552999994252,
+        "indice_mb": 2.9296875,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 13.313383333928263,
+        "lat_p95_ms": 19.279604949406348,
+        "busca_pura_ms": 0.12152966519352049
+      },
+      "sentence_hnsw": {
+        "recall@1": 0.6966666666666667,
+        "recall@10": 0.8133333333333334,
+        "mrr@10": 0.7389708994708994,
+        "construcao_s": 8.435161799949128,
+        "construcao_grafo_s": 0.2746087999548763,
+        "indice_mb": 18.94671630859375,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 17.09122433482359,
+        "lat_p95_ms": 26.147339964518334,
+        "busca_pura_ms": 0.48542566791487235,
+        "recall_vs_exato@10": 0.9680000000000001
+      }
+    }
+  },
+  {
+    "n_passagens": 8000,
+    "n_consultas": 300,
+    "k": 10,
+    "resultados": {
+      "tfidf_cosseno": {
+        "recall@1": 0.9766666666666667,
+        "recall@10": 0.9966666666666667,
+        "mrr@10": 0.9843333333333332,
+        "construcao_s": 0.705077100021299,
+        "indice_mb": 2.4189682006835938,
+        "lat_media_ms": 1.4198123320238665,
+        "lat_p95_ms": 1.9986499683000147
+      },
+      "word2vec_medio_cosseno": {
+        "recall@1": 0.16666666666666666,
+        "recall@10": 0.29,
+        "mrr@10": 0.20402513227513233,
+        "construcao_s": 4.024578300013673,
+        "indice_mb": 3.0517578125,
+        "lat_media_ms": 0.3230983339017257,
+        "lat_p95_ms": 0.4308550182031468
+      },
+      "sentence_cosseno_bruto": {
+        "recall@1": 0.6266666666666667,
+        "recall@10": 0.7366666666666667,
+        "mrr@10": 0.6585264550264548,
+        "construcao_s": 31.156832900014706,
+        "indice_mb": 11.71875,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 16.762733667274006,
+        "lat_p95_ms": 22.350434999680147,
+        "busca_pura_ms": 0.5019986670231447
+      },
+      "sentence_hnsw": {
+        "recall@1": 0.6133333333333333,
+        "recall@10": 0.7166666666666667,
+        "mrr@10": 0.6433597883597881,
+        "construcao_s": 33.58397859998513,
+        "construcao_grafo_s": 2.427145699970424,
+        "indice_mb": 27.78265380859375,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 14.957272331230342,
+        "lat_p95_ms": 20.487760001560677,
+        "busca_pura_ms": 0.752916331596983,
+        "recall_vs_exato@10": 0.963
+      }
+    }
+  },
+  {
+    "n_passagens": 20000,
+    "n_consultas": 300,
+    "k": 10,
+    "resultados": {
+      "tfidf_cosseno": {
+        "recall@1": 0.9866666666666667,
+        "recall@10": 0.9966666666666667,
+        "mrr@10": 0.9894166666666666,
+        "construcao_s": 1.2158556999638677,
+        "indice_mb": 6.059486389160156,
+        "lat_media_ms": 3.0304360024941466,
+        "lat_p95_ms": 4.175695011508651
+      },
+      "word2vec_medio_cosseno": {
+        "recall@1": 0.26666666666666666,
+        "recall@10": 0.4633333333333333,
+        "mrr@10": 0.3228373015873017,
+        "construcao_s": 9.102543599961791,
+        "indice_mb": 7.62939453125,
+        "lat_media_ms": 0.6018720010373121,
+        "lat_p95_ms": 0.7584800070617349
+      },
+      "sentence_cosseno_bruto": {
+        "recall@1": 0.5633333333333334,
+        "recall@10": 0.6633333333333333,
+        "mrr@10": 0.5930886243386244,
+        "construcao_s": 77.94946739997249,
+        "indice_mb": 29.296875,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 19.632106664939784,
+        "lat_p95_ms": 28.783874993678182,
+        "busca_pura_ms": 1.2850876649220784
+      },
+      "sentence_hnsw": {
+        "recall@1": 0.53,
+        "recall@10": 0.62,
+        "mrr@10": 0.5565753968253968,
+        "construcao_s": 87.72796879999805,
+        "construcao_grafo_s": 9.778501400025561,
+        "indice_mb": 61.54827880859375,
+        "execucao": "openvino/GPU",
+        "lat_media_ms": 13.465287334014041,
+        "lat_p95_ms": 17.314164972049195,
+        "busca_pura_ms": 0.8032673321819553,
+        "recall_vs_exato@10": 0.9466666666666667
+      }
+    }
+  }
+]

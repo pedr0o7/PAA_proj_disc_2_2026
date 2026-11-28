@@ -84,7 +84,7 @@ class TestServidor(unittest.TestCase):
     def test_pagina_info_e_pergunta_vazia(self):
         self.assertIn("RAG Project Gutenberg", self.cliente.get("/").text)
         self.assertEqual(self.cliente.get("/info").json(),
-                         {"modo": "completo", "livros": 1, "passagens": None, "k": 3, "llm": True})
+                         {"modo": "completo", "livros": 1, "passagens": None, "k": 3, "llm": True, "execucao": None})
         self.assertEqual(self.cliente.post("/perguntar", json={"pergunta": ""}).status_code, 422)
 
     def test_amostragem_informa_total_de_passagens(self):
@@ -92,7 +92,16 @@ class TestServidor(unittest.TestCase):
         self.sistema.indice_lexical = None
         self.sistema.passagens = [{"texto": "passagem"}]
         self.assertEqual(self.cliente.get("/info").json(),
-                         {"modo": "amostra", "livros": None, "passagens": 1, "k": 3, "llm": True})
+                         {"modo": "amostra", "livros": None, "passagens": 1, "k": 3, "llm": True, "execucao": None})
+
+    def test_info_expoe_diagnostico_execucao(self):
+        self.sistema.config_execucao = {
+            "emb_backend": "onnx", "emb_dispositivo": "CPU",
+            "llm_backend": "torch", "llm_dispositivo": "CPU", "llm_quantizacao": "fp32",
+        }
+        dados = self.cliente.get("/info").json()
+        self.assertEqual(dados["execucao"]["emb_backend"], "onnx")
+        self.assertEqual(dados["execucao"]["llm_quantizacao"], "fp32")
 
     def test_opcoes_sao_passadas_ao_rag(self):
         with mock.patch.object(sys, "argv", ["servidor.py", "--indice-completo", "--min-sim", "0.5",
@@ -103,6 +112,13 @@ class TestServidor(unittest.TestCase):
         self.assertEqual(construtor.call_args.kwargs["min_sim"], 0.5)
         self.assertEqual(construtor.call_args.kwargs["indice_completo"].name, "gutenberg_lexical_v1.sqlite")
         self.assertIsNone(construtor.call_args.kwargs["llm"])
+
+    def test_opcao_llm_personalizado_e_repassada_ao_rag(self):
+        with mock.patch.object(sys, "argv", ["servidor.py", "--llm", "Qwen/Qwen2.5-1.5B-Instruct"]), \
+             mock.patch("rag.SistemaRAG", return_value=self.sistema) as construtor, \
+             mock.patch("uvicorn.run"):
+            servidor.main()
+        self.assertEqual(construtor.call_args.kwargs["llm"], "Qwen/Qwen2.5-1.5B-Instruct")
 
     def test_erro_vira_evento(self):
         def falhar(pergunta):

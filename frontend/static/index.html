@@ -297,9 +297,16 @@ fetch("/info").then(r => {
   return r.json();
 }).then(i => {
   info = i; comLLM = i.llm; descrever();
-  $("#modo").textContent = i.modo === "completo"
+  let modoTexto = i.modo === "completo"
     ? `Índice completo · ${i.livros.toLocaleString("pt-BR")} livros`
     : `Amostra · ${i.passagens.toLocaleString("pt-BR")} passagens`;
+  if (i.execucao && i.execucao.emb_backend) {
+    modoTexto += ` · EMB: ${i.execucao.emb_backend}/${i.execucao.emb_dispositivo}`;
+    if (i.execucao.llm_backend) {
+      modoTexto += ` · LLM: ${i.execucao.llm_backend}/${i.execucao.llm_dispositivo} (${i.execucao.llm_quantizacao})`;
+    }
+  }
+  $("#modo").textContent = modoTexto;
   if (!comLLM) $("#aviso").textContent = "Modo sem LLM";
 }).catch(e => {
   $("#modo").textContent = "Modo de busca indisponível";

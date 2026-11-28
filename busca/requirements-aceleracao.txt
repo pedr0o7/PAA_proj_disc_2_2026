@@ -1,0 +1,11 @@
+# Dependências opcionais para aceleração de inferência (EMB_BACKEND / LLM_BACKEND)
+# Runtimes nativos sem conflito com transformers>=5.23:
+#
+# Intel (CPU e GPU integrada Iris Xe / UHD / Arc):
+openvino
+openvino-genai
+openvino-tokenizers
+#
+# Universal / AMD (CPU e GPU Windows via DirectML):
+# onnxruntime
+# onnxruntime-directml

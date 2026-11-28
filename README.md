@@ -17,16 +17,16 @@
 O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 
 - [x] Busca híbrida com BM25 e embeddings semânticos
-- [x] Geração local de respostas com o modelo SmolLM2
+- [x] Geração local de respostas com o modelo SmolLM2 (ou `LLM_MODEL` via `.env` / `--llm`)
 - [x] Exibição das fontes recuperadas e citações
 - [x] Ferramentas de avaliação e benchmarking
-- [ ] Indexar uma fração maior do corpus de livros
+- [x] Indexar uma fração maior do corpus de livros (índice lexical completo FTS5 com 27.740 livros / 11,7M passagens via `--indice-completo`)
 - [x] Rejeitar respostas que não citam uma passagem recuperada
-- [ ] Aprimorar a validação semântica de citações
+- [x] Aprimorar a validação semântica de citações
 - [x] Interface web de chat com respostas em tempo real e fontes clicáveis
-- [ ] Ampliar e melhorar a cobertura do corpus
-- [ ] Aprimorar a extração e a validação de citações
-- [ ] Expandir os testes e a avaliação das respostas
+- [x] Ampliar e melhorar a cobertura do corpus (corpus Project Gutenberg de 10 GB + deduplicação lexical entre edições)
+- [x] Aprimorar a extração e a validação de citações (normalização de formatos, *few-shot* multipassagem `EXEMPLOS_GERACAO` e `_validar_suporte_semantico`)
+- [ ] Concluir avaliação completa com juiz RAGAS (107 testes automatizados e benchmarks comparativos `torch` vs. `openvino` já implementados)
 
 ## 💻 Pré-requisitos
 
@@ -89,7 +89,7 @@ Para executar **offline**, prepare previamente os modelos e o corpus com rede e 
 
 ```powershell
 $env:HF_HUB_OFFLINE = "1"
-python consultar.py --sem-llm -p "What is the capital of France?"
+python consultar.py --sem-llm -p "Who is Captain Ahab?"
 Remove-Item Env:\HF_HUB_OFFLINE
 ```
 
@@ -98,6 +98,26 @@ Uma variável já definida no terminal tem prioridade sobre o `.env`; reinicie o
 Uma falha de conexão ou timeout durante a verificação de credencial permite tentar os caches locais, com aviso; as bibliotecas de modelos também podem usar seus caches quando a rede falha. Isso não garante fallback para toda falha: erros de autenticação, permissão, servidor ou transferência podem interromper a execução. Um cache incompleto também causa erro.
 
 Na consulta, mensagens `INFO` indicam o carregamento dos modelos. A validação da credencial é informada quando concluída; usar um cache ou baixar um recurso público por si só não comprova autenticação. Os logs não exibem o token e não confirmam qual transporte foi usado.
+
+Para executar os comandos de aceleração opcional em diferentes notebooks (Intel com GPU integrada Iris/UHD, AMD Ryzen/Radeon ou CPU-only), configure as variáveis abaixo no `.env` (todas usam `auto` por padrão e fazem fallback silencioso para `torch` caso bibliotecas opcionais não estejam instaladas):
+
+- `EMB_BACKEND`: `auto | openvino | onnx | torch`
+- `LLM_BACKEND`: `auto | openvino | onnx | torch`
+- `DISPOSITIVO_IA`: `auto | CPU | GPU`
+- `LLM_QUANTIZACAO`: `auto | fp32 | fp16 | int8 | int4`
+- `LLM_MODEL`: identificador do modelo LLM local no Hugging Face (vazio usa `HuggingFaceTB/SmolLM2-1.7B-Instruct`; ex.: `Qwen/Qwen2.5-1.5B-Instruct`)
+
+Para instalar os runtimes opcionais de aceleração (`openvino`, `openvino-genai` e `openvino-tokenizers` para Intel CPU/GPU Iris Xe, ou `onnxruntime` / `onnxruntime-directml` para AMD/universal), sem conflito com `transformers>=5.23` nem `huggingface_hub>=1.33`:
+
+```powershell
+python -m pip install -r busca\requirements-aceleracao.txt
+```
+
+Quando o backend `openvino` for usado no LLM local, `LLM_QUANTIZACAO=auto` prioriza `int8` (melhor fidelidade em citações; se o cache `int8` não existir e já houver cache `int4` pronto, reutiliza `int4` automaticamente). Você também pode alternar explicitamente entre `int4`, `int8`, `fp16` e `fp32` via `.env`. A exportação/quantização é executada **uma única vez** em um ambiente efêmero isolado via `uv run` (separando *build* de *runtime* para não forçar *downgrade* de pacotes no `.venv` principal) e salva em `busca/cache_indice/ov_*`. Para pré-exportar manualmente a partir da raiz:
+
+```powershell
+python -m infraestrutura.aceleracao --exportar-llm HuggingFaceTB/SmolLM2-1.7B-Instruct --quant int8
+```
 
 ## Organização
 
@@ -147,7 +167,7 @@ python consultar.py -p "Who is Captain Ahab?" --trechos
 | `--k` | Número de trechos recuperados por pergunta | `3` |
 | `--semente` | Semente usada na amostragem do corpus | `42` |
 | `--min-sim` | Similaridade cosseno mínima (não é porcentagem) para a busca semântica; não se aplica a consultas diretas de metadados ou frases | `0.4` |
-| `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct |
+| `--llm` | Identificador do modelo de geração | SmolLM2-1.7B-Instruct (ou `LLM_MODEL` no `.env`) |
 | `--sem-llm` | Recupera trechos sem gerar resposta | — |
 | `--max-tokens` | Limite de tokens da resposta | `200` |
 | `--trechos` | Exibe o texto dos trechos recuperados | — |
@@ -158,7 +178,7 @@ Exemplo com mais passagens:
 python consultar.py --n 50000 --k 5 -p "Who is Captain Ahab?"
 ```
 
-O índice contém uma passagem de cada livro amostrado (o embedding dos 10 GB inteiros não é viável em CPU). Se nenhuma passagem passar o limiar ou o modelo não citar uma passagem válida, a resposta será "contexto insuficiente". Isso evita respostas sem citação, mas não garante por si só que uma citação válida sustente semanticamente a resposta.
+O índice contém uma passagem de cada livro amostrado (o embedding dos 10 GB inteiros não é viável em CPU). Se nenhuma passagem passar o limiar ou o modelo não citar uma passagem válida, a resposta será "contexto insuficiente". O sistema aplica validação sintática (`validar_citacoes`) e verificação automática de suporte semântico mínimo (`_validar_suporte_semantico`, limiar cosseno `0.30`); ainda assim, essa heurística de similaridade não substitui verificação factual humana.
 
 ### Busca experimental em todo o corpus
 
@@ -171,7 +191,8 @@ python indice_lexical.py
 O índice SQLite é salvo em `cache_indice\gutenberg_lexical_v1.sqlite`. A construção lê os 10 GB,
 pode demorar bastante e necessita de espaço adicional em disco. Se interrompida, execute o mesmo
 comando para retomá-la; um índice incompleto não é usado para consultas. Se o corpus mudar, crie
-um novo índice em outro caminho com `--indice CAMINHO`.
+um novo índice em outro caminho com `--indice CAMINHO` ou use `--reconstruir` para apagar o índice
+anterior e reconstruí-lo do zero.
 
 Depois de concluída a construção, consulte:
 
@@ -214,8 +235,7 @@ Por exemplo, no PowerShell:
 python consultar.py --indice-completo --trechos -p "Where does the phrase tranquillise the mind as a steady purpose come from?"
 ```
 
-Para outras perguntas, o LLM ainda pode citar uma passagem que não sustenta a resposta: o validador
-verifica os números das citações, mas não confirma automaticamente seu suporte semântico.
+Para outras perguntas, as citações passam por validação sintática (`validar_citacoes`) e verificação automática de suporte semântico mínimo (`_validar_suporte_semantico`, limiar cosseno `0.30`), embora essa heurística de similaridade não substitua verificação factual humana.
 
 ## 🖥️ Interface web
 
@@ -274,7 +294,9 @@ Opcionalmente informe um caminho após `--indice-completo`; `--n` só se aplica 
 O índice deve existir, estar completo e corresponder ao corpus. O servidor mostra erro na
 inicialização caso contrário; não muda silenciosamente para a amostra. A interface indica o modo
 ativo. `--min-sim` controla o limiar cosseno da busca comum (padrão `0.4`), sem garantir que uma
-fonte sustente a resposta. Para inspecionar trechos sem geração, use `--sem-llm`.
+fonte sustente a resposta (a resposta final também passa por validação sintática e semântica das
+citações `[n]`). Para trocar o modelo local sem alterar o `.env`, use `--llm HF_ID`; para
+inspecionar trechos sem geração, use `--sem-llm`.
 
 ## 🧪 Avaliação e testes
 

@@ -43,44 +43,56 @@ def manifesto(contato):
     return dict(sorted(arquivos.items()))
 
 
+def calcular_sha256(caminho):
+    """Retorna o objeto hashlib com o SHA-256 do arquivo, lido em blocos de 1 MiB."""
+    digest = hashlib.sha256()
+    with caminho.open("rb") as arquivo:
+        for bloco in iter(lambda: arquivo.read(1024 * 1024), b""):
+            digest.update(bloco)
+    return digest
+
+
+def _verificar_existente(destino, tamanho, esperado):
+    if destino.stat().st_size != tamanho or calcular_sha256(destino).hexdigest() != esperado:
+        raise ValueError(f"Arquivo existente inválido: {destino}")
+    print(f"Verificado: {destino.name}", flush=True)
+
+
+def _gravar_fluxo(resposta, parcial, digest, existente, tamanho):
+    """Anexa o corpo da resposta a `parcial` e atualiza `digest`; recusa exceder `tamanho`."""
+    recebido = existente
+    with parcial.open("ab" if existente else "xb") as arquivo:
+        for bloco in iter(lambda: resposta.read(1024 * 1024), b""):
+            arquivo.write(bloco)
+            digest.update(bloco)
+            recebido += len(bloco)
+            if recebido > tamanho:
+                raise ValueError(f"Download excedeu o tamanho esperado: {parcial}")
+
+
+def _baixar_restante(url, destino, parcial, existente, tamanho, contato, digest):
+    cabecalhos = agente(contato)
+    if existente:
+        cabecalhos["Range"] = f"bytes={existente}-"
+    print(f"Baixando {destino.name}: {existente:,} de {tamanho:,} bytes", flush=True)
+    with urlopen(Request(url, headers=cabecalhos), timeout=180) as resposta:
+        if existente and resposta.status != 206:
+            raise RuntimeError(f"Servidor não aceitou continuar o download de {destino.name}.")
+        _gravar_fluxo(resposta, parcial, digest, existente, tamanho)
+
+
 def baixar_continuavel(url, destino, esperado, tamanho, contato):
     """Baixa com retomada (.part) e valida tamanho e SHA-256."""
-    def calcular_hash(caminho):
-        digest = hashlib.sha256()
-        with caminho.open("rb") as arquivo:
-            for bloco in iter(lambda: arquivo.read(1024 * 1024), b""):
-                digest.update(bloco)
-        return digest
-
     if destino.exists():
-        if destino.stat().st_size != tamanho or calcular_hash(destino).hexdigest() != esperado:
-            raise ValueError(f"Arquivo existente inválido: {destino}")
-        print(f"Verificado: {destino.name}", flush=True)
+        _verificar_existente(destino, tamanho, esperado)
         return
     parcial = destino.with_name(destino.name + ".part")
     existente = parcial.stat().st_size if parcial.exists() else 0
     if existente > tamanho:
         raise ValueError(f"Arquivo parcial maior que o esperado: {parcial}")
-    digest = calcular_hash(parcial) if existente else hashlib.sha256()
+    digest = calcular_sha256(parcial) if existente else hashlib.sha256()
     if existente < tamanho:
-        cabecalhos = agente(contato)
-        if existente:
-            cabecalhos["Range"] = f"bytes={existente}-"
-        print(f"Baixando {destino.name}: {existente:,} de {tamanho:,} bytes", flush=True)
-        with urlopen(Request(url, headers=cabecalhos), timeout=180) as resposta:
-            if existente and resposta.status != 206:
-                raise RuntimeError(f"Servidor não aceitou continuar o download de {destino.name}.")
-            with parcial.open("ab" if existente else "xb") as arquivo:
-                recebido = existente
-                while True:
-                    bloco = resposta.read(1024 * 1024)
-                    if not bloco:
-                        break
-                    arquivo.write(bloco)
-                    digest.update(bloco)
-                    recebido += len(bloco)
-                    if recebido > tamanho:
-                        raise ValueError(f"Download excedeu o tamanho esperado: {parcial}")
+        _baixar_restante(url, destino, parcial, existente, tamanho, contato, digest)
     if parcial.stat().st_size != tamanho or digest.hexdigest() != esperado:
         raise ValueError(f"Download incompleto ou checksum incorreto: {parcial}")
     parcial.rename(destino)
@@ -113,7 +125,9 @@ def normalizar(texto):
     A diferença entre uma e duas linhas em branco marca os parágrafos em parte dos livros, por isso é preservada.
     """
     texto = texto.replace("\r\n", "\n").replace("\r", "\n")
-    return re.sub(r"\n{4,}", "\n\n\n", re.sub(r"[ \t]+\n", "\n", texto)).strip()
+    # Remover espaços finais linha a linha evita a regex `[ \t]+\n`, que tem backtracking quadrático.
+    texto = "\n".join(linha.rstrip(" \t") for linha in texto.split("\n"))
+    return re.sub(r"\n{4,}", "\n\n\n", texto).strip()
 
 
 def extrair(livros, saida, meta=META):
@@ -142,7 +156,7 @@ def extrair(livros, saida, meta=META):
     return relatorio
 
 
-def coletar(contato, cache=CACHE, saida=SAIDA, meta=META):
+def coletar(contato, cache=CACHE, saida=SAIDA, meta=META, limpar_parquets=False):
     cache.mkdir(parents=True, exist_ok=True)
     disponiveis = manifesto(contato)
 
@@ -152,7 +166,12 @@ def coletar(contato, cache=CACHE, saida=SAIDA, meta=META):
             baixar_continuavel(BASE_HF + caminho, destino, sha256, tamanho, contato)
             yield destino
 
-    return extrair(livros_dos_arquivos(arquivos()), saida, meta)
+    relatorio = extrair(livros_dos_arquivos(arquivos()), saida, meta)
+    if limpar_parquets and relatorio.get("atingiu_meta"):
+        for padrao in ("*.parquet", "*.parquet.part"):
+            for arq in cache.glob(padrao):
+                arq.unlink(missing_ok=True)
+    return relatorio
 
 
 if __name__ == "__main__":
@@ -161,5 +180,7 @@ if __name__ == "__main__":
     ap.add_argument("--meta", type=int, default=META, help="Bytes de texto a coletar (padrão: 10 GB decimais).")
     ap.add_argument("--cache", type=Path, default=CACHE)
     ap.add_argument("--saida", type=Path, default=SAIDA)
+    ap.add_argument("--limpar-parquets", action="store_true",
+                        help="remove os parquets em --cache após concluir a extração")
     a = ap.parse_args()
-    print(coletar(a.contato, a.cache, a.saida, a.meta))
+    print(coletar(a.contato, a.cache, a.saida, a.meta, limpar_parquets=a.limpar_parquets))
