@@ -7,6 +7,7 @@ import platform
 import re
 import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import numpy as np
@@ -211,12 +212,14 @@ def _resolver_llm(solicitado, dispositivo_solicitado, quant_solicitada, caps, fa
                 quant = "int8"
             elif quant_solicitada == "int4" and pode_quant:
                 quant = "int4"
+            elif quant_solicitada == "fp32":
+                quant = "fp32"
             elif quant_solicitada == "fp16" or (quant_solicitada == "auto" and usar_gpu):
                 quant = "fp16"
             else:
-                if quant_solicitada in ("int4", "int8") and not pode_quant:
-                    fallbacks.append(f"llm: suporte à quantização {quant_solicitada} ausente; usando fp32.")
                 quant = "fp32" if disp == "CPU" else "fp16"
+                if quant_solicitada in ("int4", "int8") and not pode_quant:
+                    fallbacks.append(f"llm: suporte à quantização {quant_solicitada} ausente; usando {quant}.")
             return "openvino", disp, quant, None
         fallbacks.append("llm: openvino/openvino-genai indisponível; fallback para torch.")
 
@@ -228,9 +231,9 @@ def _resolver_llm(solicitado, dispositivo_solicitado, quant_solicitada, caps, fa
                 fallbacks.append("llm: provider GPU ONNX indisponível; usando CPUExecutionProvider.")
             disp = "GPU" if usar_gpu else "CPU"
             prov = gpu_prov if usar_gpu else "CPUExecutionProvider"
-            quant = "fp16" if (quant_solicitada == "fp16" or (quant_solicitada == "auto" and usar_gpu)) else "fp32"
-            if quant_solicitada in ("int4", "int8"):
-                fallbacks.append(f"llm: quantização {quant_solicitada} direta indisponível para ONNX; usando {quant}.")
+            quant = "fp32"
+            if quant_solicitada in ("fp16", "int4", "int8"):
+                fallbacks.append(f"llm: precisão/quantização {quant_solicitada} direta indisponível para ONNX; usando fp32.")
             return "onnx", disp, quant, prov
         fallbacks.append("llm: onnxruntime/optimum-onnxruntime indisponível; fallback para torch.")
 
@@ -433,7 +436,13 @@ class ModeloEmbeddingsONNX(_ModeloEmbeddingsBase):
             **kw_hub,
         )
         providers = [provider, "CPUExecutionProvider"] if provider != "CPUExecutionProvider" else ["CPUExecutionProvider"]
-        session = ort.InferenceSession(str(onnx_path), providers=providers)
+        sess_kwargs = {"providers": providers}
+        if provider == "DmlExecutionProvider":
+            sess_options = ort.SessionOptions()
+            sess_options.enable_mem_pattern = False
+            sess_options.execution_mode = ort.ExecutionMode.ORT_SEQUENTIAL
+            sess_kwargs["sess_options"] = sess_options
+        session = ort.InferenceSession(str(onnx_path), **sess_kwargs)
         return cls(session, tokenizer), offline
 
 
@@ -442,12 +451,14 @@ def caminho_cache_llm_openvino(llm_nome, quantizacao="int4"):
     return RAIZ / "busca" / "cache_indice" / f"ov_{slug}_{quantizacao}"
 
 
+def _ir_valido(pasta):
+    return (pasta / "openvino_model.xml").is_file() and (pasta / "openvino_model.bin").is_file()
+
+
 def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=False):
     """Exporta e quantiza (1x) o LLM oficial para OpenVINO IR via `uv run` isolado."""
     destino = Path(destino) if destino is not None else caminho_cache_llm_openvino(llm_nome, quantizacao)
-    xml_ok = (destino / "openvino_model.xml").is_file()
-    bin_ok = (destino / "openvino_model.bin").is_file()
-    if xml_ok and bin_ok:
+    if _ir_valido(destino):
         return destino
     if offline:
         raise FileNotFoundError(
@@ -458,9 +469,8 @@ def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=Fa
         raise FileNotFoundError("Executável 'uv' não encontrado para exportar o modelo OpenVINO isoladamente.")
 
     destino.parent.mkdir(parents=True, exist_ok=True)
-    tmp = destino.with_name(destino.name + ".tmp")
-    if tmp.exists():
-        shutil.rmtree(tmp, ignore_errors=True)
+    tmp_base = Path(tempfile.mkdtemp(prefix=f"{destino.name}.tmp.", dir=destino.parent))
+    tmp = tmp_base / "ir"
 
     peso = quantizacao if quantizacao in ("int4", "int8", "fp16", "fp32") else "int4"
     cmd = [
@@ -478,14 +488,22 @@ def exportar_llm_openvino(llm_nome, quantizacao="int4", destino=None, offline=Fa
     LOG.info("Exportando e quantizando %s (%s) para OpenVINO IR em %s...", llm_nome, peso, destino)
     try:
         subprocess.run(cmd, check=True)
-        if not ((tmp / "openvino_model.xml").is_file() and (tmp / "openvino_model.bin").is_file()):
+        if not _ir_valido(tmp):
             raise RuntimeError(f"Exportação OpenVINO não gerou openvino_model.xml/.bin em {tmp}.")
-        if destino.exists():
-            shutil.rmtree(destino, ignore_errors=True)
-        tmp.rename(destino)
-    except Exception:
-        shutil.rmtree(tmp, ignore_errors=True)
-        raise
+        if _ir_valido(destino):
+            return destino
+        try:
+            tmp.rename(destino)
+        except OSError:
+            if _ir_valido(destino):
+                return destino
+            if destino.exists():
+                shutil.rmtree(destino, ignore_errors=True)
+                tmp.rename(destino)
+            else:
+                raise
+    finally:
+        shutil.rmtree(tmp_base, ignore_errors=True)
     return destino
 
 
@@ -537,6 +555,10 @@ def _device_torch(config_execucao, dispositivo_label):
     return "cpu"
 
 
+def _eh_erro_http_404(exc):
+    return getattr(getattr(exc, "response", None), "status_code", None) == 404
+
+
 def carregar_modelo_embeddings(modelo_nome, revisao, offline, config_execucao,
                                carregar_fn=carregar_modelo, st_cls=None):
     """Carrega embeddings via OpenVINO/ONNX nativos ou fallback silencioso para PyTorch."""
@@ -555,9 +577,9 @@ def carregar_modelo_embeddings(modelo_nome, revisao, offline, config_execucao,
             return ModeloEmbeddingsOpenVINO.from_pretrained(
                 modelo_nome, revisao=revisao, dispositivo=disp, offline=offline, carregar_fn=carregar_fn
             )
-        except HfHubHTTPError:
-            raise
         except Exception as exc:
+            if isinstance(exc, HfHubHTTPError) and not _eh_erro_http_404(exc):
+                raise
             motivo = f"embeddings: falha ao carregar OpenVINO/{disp} ({exc}); fallback para torch/CPU."
             LOG.warning(motivo)
             config_execucao["fallbacks"].append(motivo)
@@ -570,9 +592,9 @@ def carregar_modelo_embeddings(modelo_nome, revisao, offline, config_execucao,
             return ModeloEmbeddingsONNX.from_pretrained(
                 modelo_nome, revisao=revisao, provider=prov, offline=offline, carregar_fn=carregar_fn
             )
-        except HfHubHTTPError:
-            raise
         except Exception as exc:
+            if isinstance(exc, HfHubHTTPError) and not _eh_erro_http_404(exc):
+                raise
             motivo = f"embeddings: falha ao carregar ONNX/{disp} ({exc}); fallback para torch/CPU."
             LOG.warning(motivo)
             config_execucao["fallbacks"].append(motivo)
@@ -591,9 +613,9 @@ def carregar_modelo_embeddings(modelo_nome, revisao, offline, config_execucao,
                 modelo_nome,
                 **kwargs_opt,
             )
-        except HfHubHTTPError:
-            raise
         except Exception as exc:
+            if isinstance(exc, HfHubHTTPError) and not _eh_erro_http_404(exc):
+                raise
             motivo = f"embeddings: falha ao carregar com {backend}/{disp} ({exc}); fallback para torch/CPU."
             LOG.warning(motivo)
             config_execucao["fallbacks"].append(motivo)
@@ -713,11 +735,11 @@ def carregar_modelo_llm(llm_nome, offline, config_execucao,
             backend, disp, quant = "torch", "CPU", "fp32"
 
     torch_dev = _device_torch(config_execucao, disp)
-    if quant == "int4" and torch_dev == "cuda":
+    if quant in ("int4", "int8") and torch_dev == "cuda":
         try:
             from transformers import BitsAndBytesConfig
 
-            bnb = BitsAndBytesConfig(load_in_4bit=True)
+            bnb = BitsAndBytesConfig(load_in_4bit=True) if quant == "int4" else BitsAndBytesConfig(load_in_8bit=True)
             lm, offline = carregar_fn(
                 f"o modelo de geração {llm_nome}",
                 auto_model_cls.from_pretrained,
@@ -731,7 +753,7 @@ def carregar_modelo_llm(llm_nome, offline, config_execucao,
         except HfHubHTTPError:
             raise
         except Exception as exc:
-            motivo = f"llm: falha no int4 torch ({exc}); fallback para fp32."
+            motivo = f"llm: falha no {quant} torch ({exc}); fallback para fp32."
             LOG.warning(motivo)
             config_execucao["fallbacks"].append(motivo)
             config_execucao["llm_quantizacao"] = "fp32"
@@ -750,6 +772,7 @@ def carregar_modelo_llm(llm_nome, offline, config_execucao,
         try:
             lm = lm.to(torch_dev)
         except Exception as exc:
+            lm = lm.to("cpu", dtype=torch.float32)
             motivo = f"llm: falha ao mover modelo para {torch_dev} ({exc}); usando CPU."
             LOG.warning(motivo)
             config_execucao["fallbacks"].append(motivo)

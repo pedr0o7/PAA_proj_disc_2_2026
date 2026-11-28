@@ -410,15 +410,8 @@ class SistemaRAG:
             sim = float(np.max(vet_trecho @ vet_resp))
             if sim >= min_suporte:
                 suportadas.append(idx)
-        if not suportadas:
+        if not suportadas or len(suportadas) < len(citados):
             return SEM_CONTEXTO, []
-        if len(suportadas) < len(citados):
-            permitidas = set(suportadas)
-            resposta = re.sub(
-                r"\[(\d+)\]",
-                lambda m: m.group(0) if int(m.group(1)) in permitidas else "",
-                resposta,
-            ).strip()
         return resposta, suportadas
 
     def gerar(self, pergunta, trechos):
@@ -509,6 +502,7 @@ class SistemaRAG:
             resposta, citados = self._validar_suporte_semantico(resposta, trechos, citados)
         else:
             citados = []
+        t3 = time.perf_counter()
         return {"pergunta": pergunta, "resposta": resposta, "trechos": trechos, "citados": citados,
                 "descartados": [t for t in candidatos if t["similaridade"] < self.min_sim],
-                "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t2 - t0}
+                "tempo_recuperacao": t1 - t0, "tempo_geracao": t2 - t1, "tempo_total": t3 - t0}

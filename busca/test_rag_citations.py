@@ -1,5 +1,6 @@
+import time
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 
@@ -69,6 +70,36 @@ class SuporteSemanticoCitacoesTest(unittest.TestCase):
         sistema.modelo_emb = None
         self.assertEqual(sistema._validar_suporte_semantico("Answer [1].", [{"texto": "t"}], [1]),
                          ("Answer [1].", [1]))
+
+    def test_rejeita_resposta_inteira_se_alguma_citacao_falhar_no_suporte_semantico(self):
+        trecho_ok = {"titulo": "Book 1", "autores": "A", "texto": "Ahab hunts the white whale."}
+        trecho_ruim = {"titulo": "Book 2", "autores": "B", "texto": "Unrelated gardening tips."}
+        sistema = self._sistema_com_emb({
+            "Ahab hunts the whale.  Cooking tips.": [1.0, 0.0],
+            "Book 1 by A. Ahab hunts the white whale.": [1.0, 0.0],
+            "Book 2 by B. Unrelated gardening tips.": [0.0, 1.0],
+        })
+        resp, cit = sistema._validar_suporte_semantico(
+            "Ahab hunts the whale. [1] Cooking tips. [2]", [trecho_ok, trecho_ruim], [1, 2], min_suporte=0.3
+        )
+        self.assertEqual((resp, cit), (SEM_CONTEXTO, []))
+
+    def test_tempo_total_inclui_validacao_semantica(self):
+        sistema = SistemaRAG.__new__(SistemaRAG)
+        sistema.indice_lexical = None
+        sistema.k = 1
+        sistema.min_sim = 0.0
+        sistema.lm = object()
+        sistema.recuperar = lambda p: [{"id": 1, "titulo": "T", "autores": "A", "texto": "x", "similaridade": 0.9}]
+        sistema.gerar = lambda p, t: "Answer [1]."
+
+        def validar_lento(resp, trechos, citados):
+            time.sleep(0.05)
+            return resp, citados
+
+        sistema._validar_suporte_semantico = validar_lento
+        res = sistema.perguntar("Question?")
+        self.assertGreaterEqual(res["tempo_total"], res["tempo_recuperacao"] + res["tempo_geracao"] + 0.04)
 
 
 class GerarMensagensTest(unittest.TestCase):

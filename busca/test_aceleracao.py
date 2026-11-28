@@ -417,5 +417,164 @@ class TestWrappersOpenVINO(unittest.TestCase):
             cls.assert_called_once()
 
 
+class TestCorrecoesRevisaoPR(unittest.TestCase):
+    def test_openvino_gpu_respeita_fp32_explicito_e_onnx_reporta_fp32(self):
+        caps_ov = {
+            "cpu_vendor": "intel", "openvino": True, "openvino_gpu": True, "nncf": True,
+            "onnxruntime": False, "optimum_onnx": False, "onnx_gpu_provider": None,
+            "torch_device": "cpu", "bitsandbytes": False,
+        }
+        cfg_ov = aceleracao.resolver_config_execucao(
+            env={"LLM_BACKEND": "openvino", "DISPOSITIVO_IA": "GPU", "LLM_QUANTIZACAO": "fp32"},
+            capacidades=caps_ov, usar_llm=True,
+        )
+        self.assertEqual(cfg_ov["llm_quantizacao"], "fp32")
+
+        caps_onnx = {
+            "cpu_vendor": "amd", "openvino": False, "openvino_gpu": False, "nncf": False,
+            "onnxruntime": True, "optimum_onnx": True, "onnx_gpu_provider": "DmlExecutionProvider",
+            "torch_device": "cpu", "bitsandbytes": False,
+        }
+        cfg_onnx = aceleracao.resolver_config_execucao(
+            env={"LLM_BACKEND": "onnx", "DISPOSITIVO_IA": "GPU", "LLM_QUANTIZACAO": "fp16"},
+            capacidades=caps_onnx, usar_llm=True,
+        )
+        self.assertEqual(cfg_onnx["llm_quantizacao"], "fp32")
+        self.assertTrue(any("fp16" in f and "ONNX" in f for f in cfg_onnx["fallbacks"]))
+
+    def test_onnx_directml_configura_session_options_sequencial(self):
+        fake_ort = Mock()
+        fake_opts = Mock()
+        fake_ort.SessionOptions.return_value = fake_opts
+        fake_ort.ExecutionMode.ORT_SEQUENTIAL = "SEQ"
+        fake_sess = Mock()
+        inp_ids, inp_mask = Mock(), Mock()
+        inp_ids.name, inp_mask.name = "input_ids", "attention_mask"
+        fake_sess.get_inputs.return_value = [inp_ids, inp_mask]
+        fake_sess.get_outputs.return_value = [Mock(shape=[None, None, 2])]
+        fake_ort.InferenceSession.return_value = fake_sess
+
+        def fake_carregar(desc, fn, *args, retornar_offline=False, **kwargs):
+            return (Mock() if fn is not None else None), False
+
+        with patch.dict("sys.modules", {"onnxruntime": fake_ort}), \
+             patch("transformers.AutoTokenizer.from_pretrained", return_value=Mock()):
+            modelo, _ = aceleracao.ModeloEmbeddingsONNX.from_pretrained(
+                "m/emb", provider="DmlExecutionProvider", offline=False, carregar_fn=fake_carregar
+            )
+        self.assertIsInstance(modelo, aceleracao.ModeloEmbeddingsONNX)
+        self.assertFalse(fake_opts.enable_mem_pattern)
+        self.assertEqual(fake_opts.execution_mode, "SEQ")
+        self.assertIn("sess_options", fake_ort.InferenceSession.call_args.kwargs)
+
+    def test_exportar_llm_openvino_isola_tmp_e_respeita_publicacao_concorrente(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            destino = Path(tmpdir) / "ov_modelo"
+
+            def simular_concorrencia(cmd, check=True):
+                tmp_ir = Path(cmd[-1])
+                tmp_ir.mkdir(parents=True, exist_ok=True)
+                (tmp_ir / "openvino_model.xml").write_text("<tmp/>", encoding="utf-8")
+                (tmp_ir / "openvino_model.bin").write_bytes(b"tmp")
+                # Simula outro processo publicando o destino válido antes do rename
+                destino.mkdir(parents=True, exist_ok=True)
+                (destino / "openvino_model.xml").write_text("<vencedor/>", encoding="utf-8")
+                (destino / "openvino_model.bin").write_bytes(b"vencedor")
+
+            with patch.object(aceleracao.shutil, "which", return_value="uv"), \
+                 patch.object(aceleracao.subprocess, "run", side_effect=simular_concorrencia):
+                res = aceleracao.exportar_llm_openvino("m/teste", "int8", destino=destino, offline=False)
+
+            self.assertEqual(res, destino)
+            self.assertEqual((destino / "openvino_model.xml").read_text(encoding="utf-8"), "<vencedor/>")
+            restantes = [p.name for p in Path(tmpdir).iterdir()]
+            self.assertEqual(restantes, ["ov_modelo"])
+
+    def test_embeddings_404_faz_fallback_para_torch_e_401_propaga(self):
+        from huggingface_hub.errors import HfHubHTTPError
+
+        err_404 = HfHubHTTPError("404 Not Found", response=Mock(status_code=404))
+        err_401 = HfHubHTTPError("401 Unauthorized", response=Mock(status_code=401))
+
+        def fake_st(nome, **kwargs):
+            return Mock(name="torch_emb")
+
+        fake_st.__name__ = "SentenceTransformer"
+
+        def fake_carregar(desc, fn, *args, retornar_offline=False, **kwargs):
+            return fn(*args, **kwargs), False
+
+        for backend in ("openvino", "onnx"):
+            cfg = {
+                "emb_backend": backend, "emb_dispositivo": "GPU",
+                "emb_provider": "CPUExecutionProvider", "torch_device": "cpu", "fallbacks": [],
+            }
+            cls_alvo = aceleracao.ModeloEmbeddingsOpenVINO if backend == "openvino" else aceleracao.ModeloEmbeddingsONNX
+            with patch.object(cls_alvo, "from_pretrained", side_effect=err_404), \
+                 self.assertLogs("busca.aceleracao", level="WARNING"):
+                modelo, _ = aceleracao.carregar_modelo_embeddings(
+                    "m/sem-ir", "rev", False, cfg, carregar_fn=fake_carregar, st_cls=fake_st
+                )
+            self.assertEqual(cfg["emb_backend"], "torch")
+            self.assertIsNotNone(modelo)
+
+            cfg_auth = {
+                "emb_backend": backend, "emb_dispositivo": "GPU",
+                "emb_provider": "CPUExecutionProvider", "torch_device": "cpu", "fallbacks": [],
+            }
+            with patch.object(cls_alvo, "from_pretrained", side_effect=err_401):
+                with self.assertRaises(HfHubHTTPError):
+                    aceleracao.carregar_modelo_embeddings(
+                        "m/privado", "rev", False, cfg_auth, carregar_fn=fake_carregar, st_cls=fake_st
+                    )
+
+    def test_torch_cuda_int8_usa_bitsandbytes_e_fallback_converte_para_cpu_fp32(self):
+        cfg_bnb = {
+            "llm_backend": "torch", "llm_dispositivo": "GPU",
+            "llm_quantizacao": "int8", "torch_device": "cuda", "fallbacks": [],
+        }
+        fake_bnb_cls = Mock()
+        fake_lm = Mock()
+        fake_lm.eval.return_value = fake_lm
+        fake_auto = Mock()
+        fake_auto.from_pretrained.return_value = fake_lm
+
+        def fake_carregar(desc, fn, *args, retornar_offline=False, **kwargs):
+            return fn(*args, **kwargs), False
+
+        with patch("transformers.BitsAndBytesConfig", fake_bnb_cls):
+            lm, _ = aceleracao.carregar_modelo_llm(
+                "m/llm", False, cfg_bnb, carregar_fn=fake_carregar, auto_model_cls=fake_auto
+            )
+        self.assertIs(lm, fake_lm)
+        fake_bnb_cls.assert_called_once_with(load_in_8bit=True)
+
+        # Falha em .to("cuda") deve converter efetivamente para CPU/fp32
+        cfg_fb = {
+            "llm_backend": "torch", "llm_dispositivo": "GPU",
+            "llm_quantizacao": "fp16", "torch_device": "cuda", "fallbacks": [],
+        }
+        lm_gpu = Mock()
+        lm_cpu = Mock()
+        lm_cpu.eval.return_value = lm_cpu
+
+        def fake_to(*args, **kwargs):
+            if args == ("cuda",):
+                raise RuntimeError("CUDA OOM")
+            return lm_cpu
+
+        lm_gpu.to.side_effect = fake_to
+        fake_auto_fb = Mock()
+        fake_auto_fb.from_pretrained.return_value = lm_gpu
+        with self.assertLogs("busca.aceleracao", level="WARNING"):
+            lm_res, _ = aceleracao.carregar_modelo_llm(
+                "m/llm", False, cfg_fb, carregar_fn=fake_carregar, auto_model_cls=fake_auto_fb
+            )
+        self.assertIs(lm_res, lm_cpu)
+        lm_gpu.to.assert_any_call("cpu", dtype=torch.float32)
+        self.assertEqual(cfg_fb["llm_dispositivo"], "CPU")
+        self.assertEqual(cfg_fb["llm_quantizacao"], "fp32")
+
+
 if __name__ == "__main__":
     unittest.main()
