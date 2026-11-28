@@ -26,7 +26,7 @@ O projeto está em desenvolvimento. Entre as próximas melhorias estão:
 - [x] Interface web de chat com respostas em tempo real e fontes clicáveis
 - [x] Ampliar e melhorar a cobertura do corpus (corpus Project Gutenberg de 10 GB + deduplicação lexical entre edições)
 - [x] Aprimorar a extração e a validação de citações (normalização de formatos, *few-shot* multipassagem `EXEMPLOS_GERACAO` e `_validar_suporte_semantico`)
-- [ ] Concluir avaliação completa com juiz RAGAS (107 testes automatizados e benchmarks comparativos `torch` vs. `openvino` já implementados)
+- [x] Concluir avaliação completa com juiz RAGAS (`avaliar.py --q 12 --indice-completo`, 117 testes automatizados e benchmarks comparativos `torch` vs. `openvino` implementados)
 
 ## 💻 Pré-requisitos
 

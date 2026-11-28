@@ -615,6 +615,64 @@ class TestCorrecoesRevisaoPR(unittest.TestCase):
             meta = json.loads((destino / "metadados_ir.json").read_text(encoding="utf-8"))
             self.assertEqual(meta["revisao"], "rev-2")
 
+    def test_avaliar_ragas_aceita_wrapper_openvino_genai_sem_transformers_pipeline(self):
+        import types
+        import sys
+        import avaliar
+
+        fake_tok = Mock()
+        fake_tok.apply_chat_template.return_value = {"input_ids": torch.tensor([[1, 2, 3]], dtype=torch.long)}
+        fake_tok.decode.side_effect = ["Prompt", '```json\n{"verdict": 1}\n```']
+        fake_pipe = Mock()
+        fake_pipe.generate.return_value = '```json\n{"verdict": 1}\n```'
+        fake_tok.encode.return_value = [10, 11]
+        lm_ov = aceleracao.ModeloLLMOpenVINOGenAI("pasta", "GPU", fake_tok, pipe=fake_pipe)
+
+        lc_llm = avaliar._criar_llm_langchain_openvino(fake_tok, lm_ov)
+        self.assertEqual(lc_llm._llm_type, "openvino_genai")
+        self.assertEqual(lc_llm._call("Evaluate"), '{"verdict": 1}')
+
+        sistema = Mock(offline=False, tok=fake_tok, lm=lm_ov, config_execucao={"llm_modelo": "Qwen/Qwen2.5-1.5B-Instruct"})
+        itens = [{"pergunta": "p", "referencia": "r", "titulo_esperado": "t"}]
+        resultados = [{"resposta": "resp [1]", "trechos": [{"texto": "ctx"}]}]
+        df = Mock()
+        df.columns = ["faithfulness"]
+        col = Mock()
+        col.dropna.return_value = Mock(empty=False)
+        col.mean.return_value = 0.8
+        col.isna.return_value = Mock(sum=Mock(return_value=0))
+        df.__getitem__ = Mock(return_value=col)
+
+        fake_lc_hf = types.ModuleType("langchain_huggingface")
+        fake_lc_hf.HuggingFaceEmbeddings = lambda **kwargs: Mock()
+        fake_lc_hf.HuggingFacePipeline = lambda **kwargs: Mock()
+        fake_ragas = types.ModuleType("ragas")
+        fake_ragas.EvaluationDataset = lambda x: x
+        fake_ragas.SingleTurnSample = lambda **kwargs: kwargs
+        fake_ragas.evaluate = lambda *args, **kwargs: Mock(to_pandas=lambda: df)
+        fake_ragas_emb = types.ModuleType("ragas.embeddings")
+        fake_ragas_emb.LangchainEmbeddingsWrapper = lambda x: x
+        fake_ragas_llms = types.ModuleType("ragas.llms")
+        fake_ragas_llms.LangchainLLMWrapper = lambda x: x
+        fake_ragas_metrics = types.ModuleType("ragas.metrics")
+        for nome in ("Faithfulness", "LLMContextPrecisionWithReference", "LLMContextRecall",
+                     "ResponseRelevancy", "SemanticSimilarity"):
+            setattr(fake_ragas_metrics, nome, lambda **kwargs: nome)
+        fake_ragas_rc = types.ModuleType("ragas.run_config")
+        fake_ragas_rc.RunConfig = lambda **kwargs: kwargs
+
+        with patch.dict(sys.modules, {
+            "langchain_huggingface": fake_lc_hf,
+            "ragas": fake_ragas,
+            "ragas.embeddings": fake_ragas_emb,
+            "ragas.llms": fake_ragas_llms,
+            "ragas.metrics": fake_ragas_metrics,
+            "ragas.run_config": fake_ragas_rc,
+        }), patch("transformers.pipeline", side_effect=AssertionError("não deveria chamar pipeline")):
+            scores, nans = avaliar.avaliar_ragas(sistema, itens, resultados, "Qwen/Qwen2.5-1.5B-Instruct")
+        self.assertEqual(scores["faithfulness"], 0.8)
+        self.assertEqual(nans["faithfulness"], 0)
+
 
 if __name__ == "__main__":
     unittest.main()

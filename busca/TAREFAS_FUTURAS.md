@@ -63,8 +63,8 @@ isso a mudança não pode entrar sem regenerar `resultados.json` e revisar o tex
 Itens ainda não validados de ponta a ponta. Detalhes em
 `MIGRACAO_HUGGING_FACE.md`, seção "Validações realizadas e limites":
 
-- [ ] Execução completa de `busca/avaliar.py` com `ragas.evaluate` e LLM juiz
-      real.
+- [x] Execução completa de `busca/avaliar.py` com `ragas.evaluate` e LLM juiz
+      real (`busca/avaliacao_resultados_ragas.json`, 12 perguntas em `openvino/GPU int8`).
 - [ ] Retomada HTTP real de shards `.part` (~330 MB) com rede de verdade; hoje
       só há testes simulados.
 - [ ] Lockfile de dependências (`datasets`, `pyarrow`, `huggingface_hub`,

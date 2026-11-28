@@ -1,0 +1,228 @@
+{
+ "llm": "Qwen/Qwen2.5-1.5B-Instruct",
+ "k": 3,
+ "min_sim": 0.4,
+ "indice_completo": "C:\\Users\\mauro\\.gemini\\antigravity\\worktrees\\PAA_proj_disc_2_2026\\otimizacao_portabilidade_gutenberg\\busca\\cache_indice\\gutenberg_lexical_v1.sqlite",
+ "execucao": {
+  "emb_backend": "openvino",
+  "emb_dispositivo": "GPU",
+  "emb_provider": null,
+  "llm_backend": "openvino",
+  "llm_dispositivo": "GPU",
+  "llm_quantizacao": "int8",
+  "llm_provider": null,
+  "hardware_cpu": "intel",
+  "torch_device": "cpu",
+  "solicitado": {
+   "emb_backend": "openvino",
+   "llm_backend": "openvino",
+   "dispositivo": "GPU",
+   "llm_quantizacao": "int8"
+  },
+  "fallbacks": [],
+  "llm_modelo": "Qwen/Qwen2.5-1.5B-Instruct"
+ },
+ "perguntas": 12,
+ "proprias": {
+  "hit_at_k": 0.5,
+  "mrr": 0.4166666666666667,
+  "respostas_com_citacao": 0.4166666666666667,
+  "citacao_da_fonte_correta": 0.25,
+  "respostas_abstidas": 0.5833333333333334
+ },
+ "tempo_s": {
+  "tempo_recuperacao": {
+   "media": 10.473460108323101,
+   "mediana": 10.595436049974523,
+   "p95": 17.990042200079188
+  },
+  "tempo_geracao": {
+   "media": 6.770604508327476,
+   "mediana": 5.60311184998136,
+   "p95": 10.914693200029433
+  },
+  "tempo_total": {
+   "media": 17.334464591685293,
+   "mediana": 18.41294355003629,
+   "p95": 24.430220399983227
+  }
+ },
+ "ragas": {
+  "faithfulness": 0.25,
+  "answer_relevancy": 0.28472623848558787,
+  "llm_context_precision_with_reference": 0.6805555555229166,
+  "context_recall": 0.9166666666666666,
+  "semantic_similarity": 0.3303290582452306
+ },
+ "ragas_nan": {
+  "faithfulness": 0,
+  "answer_relevancy": 0,
+  "llm_context_precision_with_reference": 0,
+  "context_recall": 0,
+  "semantic_similarity": 0
+ },
+ "ragas_juiz": "Qwen/Qwen2.5-1.5B-Instruct",
+ "detalhe": [
+  {
+   "pergunta": "What is the purpose of the Carets on Mars?",
+   "referencia": "The Carets serve as natural reservoirs for water near the poles, providing ideal facilities for the preservation of an adequate supply.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Planet Mars and Its Inhabitants, a Psychic Revelation",
+   "fontes": [
+    "To Mars via the Moon: An Astronomical Story",
+    "The Planet Mars and Its Inhabitants, a Psychic Revelation",
+    "To Mars via the Moon: An Astronomical Story"
+   ],
+   "citados": [],
+   "tempo_total": 12.225547899957746
+  },
+  {
+   "pergunta": "What is the author's justification for his actions during the Battle of Platsaumbe?",
+   "referencia": "The author justifies his actions during the Battle of Platsaumbe by stating that he did nothing personally more effectively than his comrades.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Campaigns of the British Army at Washington and New Orleans 1814-1815",
+   "fontes": [
+    "The Battle of Blenheim"
+   ],
+   "citados": [],
+   "tempo_total": 19.85196750005707
+  },
+  {
+   "pergunta": "Who are some notable individuals involved in betting on gladiatorial contests in Quo Vadis?",
+   "referencia": "Priests, Vestals, Senators, Knights, and people of the crowd.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Quo Vadis: A Narrative of the Time of Nero",
+   "fontes": [],
+   "citados": [],
+   "tempo_total": 5.072601999971084
+  },
+  {
+   "pergunta": "What is the process of replacing a phase unit on the first sled from the spaceship?",
+   "referencia": "The process involves Harcraft performing the task while Arnold watches and provides instructions via the suit's inter-com.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Unspecialist",
+   "fontes": [
+    "Unspecialist"
+   ],
+   "citados": [],
+   "tempo_total": 7.5571340000024065
+  },
+  {
+   "pergunta": "What does the author mean when he says \"knowledge bears no blossoms till quickened by the life\"?",
+   "referencia": "In this context, the author means that true understanding and wisdom come only through living and experiencing life, rather than just accumulating knowledge.",
+   "resposta": "The author means that true knowledge, once awakened by divine inspiration, blossoms into enlightenment and understanding [1]. Confucius emphasizes the importance of living an upright life and being open-minded towards different perspectives [2]. Education should foster intellectual growth and emotional depth, making learning both intellectually stimulating and emotionally enriching [3].",
+   "fonte_esperada": "The Story of Chautauqua",
+   "fontes": [
+    "The Story of Chautauqua",
+    "Chips from a German Workshop, Volume 1 Essays on the Science of Religion",
+    "Education and the Higher Life"
+   ],
+   "citados": [
+    1,
+    2,
+    3
+   ],
+   "tempo_total": 21.528738200082444
+  },
+  {
+   "pergunta": "What is the purpose of the two stallions being taken out of the corral?",
+   "referencia": "The purpose of taking the two stallions out of the corral is to secure them and prevent them from running away during the cattle drive.",
+   "resposta": "To prevent the wild stallions from attacking the English horse and driving away his mares, the young English stallion was brought out of the corral to protect the captured stock [1]. The boys then drove the rest of the captured stock from the canvas prison [2]. To ensure the safety of the captured stock, the boys took the two stallions outside the corral and secured them [3].",
+   "fonte_esperada": "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze",
+   "fontes": [
+    "The Descent of Man, and Selection in Relation to Sex",
+    "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze",
+    "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze"
+   ],
+   "citados": [
+    1,
+    2,
+    3
+   ],
+   "tempo_total": 18.95675100001972
+  },
+  {
+   "pergunta": "What activity is Joe doing when he catches flies and lets them go again?",
+   "referencia": "Joe is catching flies and letting them go again without their wings.",
+   "resposta": "Joe is catching flies and letting them go again while playing checkers [3].",
+   "fonte_esperada": "On Our Selection",
+   "fontes": [
+    "Baseball Joe of the Silver Stars; or, The Rivals of Riverside",
+    "Beautiful Joe: An Autobiography",
+    "The Mule-Bone: A Comedy of Negro Life in Three Acts"
+   ],
+   "citados": [
+    3
+   ],
+   "tempo_total": 17.869136100052856
+  },
+  {
+   "pergunta": "What is the author's sentiment towards nature and its changing seasons in the poem?",
+   "referencia": "The author expresses a melancholic view on the passing of time and the decline of natural beauty, as seen through the eyes of an observer who remains unaffected by these changes.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "My Schools and Schoolmasters; Or, The Story of My Education",
+   "fontes": [
+    "The Germ: Thoughts towards Nature in Poetry, Literature and Art",
+    "The Germ: Thoughts towards Nature in Poetry, Literature and Art",
+    "Recreations of Christopher North, Volume 2"
+   ],
+   "citados": [],
+   "tempo_total": 28.2783458000049
+  },
+  {
+   "pergunta": "What does Rocdiane think about the protagonist's preference for older men over younger ones?",
+   "referencia": "Rocdiane believes that the protagonist likely prefers older men due to their maturity and experience, rather than just youthful charm.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Strong as Death",
+   "fontes": [
+    "Strong as Death",
+    "Strong as Death"
+   ],
+   "citados": [],
+   "tempo_total": 24.430220399983227
+  },
+  {
+   "pergunta": "What does Bragg plan to do when he returns?",
+   "referencia": "Bragg plans to settle with the villain Botts.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Funny Philosophers, or Wags and Sweethearts. A Novel",
+   "fontes": [
+    "A Rebel War Clerk's Diary at the Confederate States Capital",
+    "A Rebel War Clerk's Diary at the Confederate States Capital",
+    "Chattanooga and Chickamauga Reprint of Gen. H. V. Boynton's letters to the Cincinnati Commercial Gazette, August, 1888."
+   ],
+   "citados": [],
+   "tempo_total": 16.918290800065733
+  },
+  {
+   "pergunta": "What is the name of the species of sunbird found around Naini Tal in the Himalayas?",
+   "referencia": "The Himalayan yellow-backed sunbird (Æthopyga scheriæ)",
+   "resposta": "The species of sunbird found around Naini Tal in the Himalayas is the Himalayan yellow-backed sunbird [1].",
+   "fonte_esperada": "Birds of the Indian Hills",
+   "fontes": [
+    "Birds of the Indian Hills",
+    "Birds of the Indian Hills",
+    "Birds of the Indian Hills"
+   ],
+   "citados": [
+    1
+   ],
+   "tempo_total": 14.544924300047569
+  },
+  {
+   "pergunta": "What was the name given to the tribe that lived mainly by fishing and root-digging?",
+   "referencia": "The Klamaths",
+   "resposta": "The name given to the tribe that lived mainly by fishing and root-digging was Diggers [2].",
+   "fonte_esperada": "Descriptive Catalogue of Photographs of North American Indians",
+   "fontes": [
+    "Darius the Great Makers of History",
+    "Handbook to the new Gold-fields",
+    "Odd People: Being a Popular Description of Singular Races of Man"
+   ],
+   "citados": [
+    2
+   ],
+   "tempo_total": 20.779917099978775
+  }
+ ]
+}

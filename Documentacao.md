@@ -794,42 +794,42 @@ Se fosse \do_sample=True\ com `temperature=0.7`:
 
 ## 14. Avaliação da LLM pelo Framework RAGAS
 
-### Avaliação Realizada
+### Avaliação Realizada (`--indice-completo`, `openvino/GPU int8`)
 
-**Dataset**: 20 perguntas  
-**Modelo**: SmolLM2-1.7B-Instruct  
-**Framework**: RAGAS v0.3.9
+- **Dataset:** 12 primeiras perguntas de `busca/avaliacao_dataset.json` (todas presentes nos 27.740 livros do corpus)
+- **Arquivo de saída:** `busca/avaliacao_resultados_ragas.json` (`k = 3`, `min_sim = 0.4`, `--indice-completo`)
+- **Modelo gerador e juiz local:** `Qwen/Qwen2.5-1.5B-Instruct` via `openvino/GPU (int8)` (`ModeloLLMOpenVINOGenAI` adaptado para LangChain)
+- **Framework:** RAGAS v0.3.9 + `all-MiniLM-L6-v2` (embeddings)
 
-### Resultados - Métricas Próprias (✅ Completas)
+### Resultados — Métricas Próprias e Tempos (✅ Completas)
 
-```json
-{
-  "hit_at_k": 1.0,                           // 100% - fonte correta nos top-3
-  "mrr": 1.0,                                // 100% - fonte em posição 1
-  "respostas_com_citacao": 0.45,             // 45% citam algo
-  "citacao_da_fonte_correta": 0.45           // 45% citam fonte correta
-}
-```
+| Métrica | Valor | Observação |
+|---|---:|---|
+| `hit_at_k` (`k = 3`) | **0,500** | 6/12 perguntas recuperaram o livro esperado no top-3 |
+| `mrr` | **0,417** | Posição recíproca média |
+| `respostas_com_citacao` | **0,417** | 5/12 respostas passaram nas validações sintática e semântica |
+| `citacao_da_fonte_correta` | **0,250** | 3/12 citaram exatamente o `id_esperado` |
+| `respostas_abstidas` | **0,583** | 7/12 abstenções conservadoras (`SEM_CONTEXTO`) |
+| Recuperação média / P95 | **10,47 s** / 17,99 s | FTS5 + reranking semântico em 50 candidatos (11,7M passagens) |
+| Geração média / P95 | **6,77 s** / 10,91 s | `Qwen2.5-1.5B-Instruct` em `openvino/GPU (int8)` |
+| Total médio / P95 | **17,33 s** / 24,43 s | Inclui recuperação + geração + validação semântica |
 
-**Análise**:
-- ✅ Recuperação: Perfeita (hit_at_k = 100%)
-- ❌ Citação: Problemática (45% - parser regex)
+### Resultados — Métricas RAGAS (✅ Completas, `0` NaN)
 
-### Resultados - Métricas RAGAS (❌ Incompletas)
+| Métrica RAGAS | Média (12 perguntas) | `NaN` | Significado |
+|---|---:|---:|---|
+| `faithfulness` | **0,250** | 0 | Fidelidade das afirmações aos trechos recuperados (abstenções pontuam 0) |
+| `answer_relevancy` | **0,285** | 0 | Aderência da resposta à pergunta (abstenções reduzem a média) |
+| `llm_context_precision_with_reference` | **0,681** | 0 | Precisão dos contextos recuperados frente à resposta de referência |
+| `context_recall` | **0,917** | 0 | Cobertura da resposta de referência pelos trechos recuperados |
+| `semantic_similarity` | **0,330** | 0 | Similaridade semântica resposta × referência |
 
-```python
-# Tentativa de avaliação com RAGAS não completou
-# Erro: Provavelmente memória insuficiente ou timeout
+### Análise dos Resultados
 
-Métricas Esperadas:
-- Faithfulness: Resposta é fiel ao contexto?
-- Answer Relevancy: Resposta é relevante?
-- Context Precision: Contexto recuperado é relevante?
-- Context Recall: Contexto cobre dados necessários?
-- Semantic Similarity: Resposta é similar à referência?
-
-Resultado: Não calculado (erro técnico)
-```
+1. **Execução integral sem falhas:** ao adaptar o wrapper `ModeloLLMOpenVINOGenAI` para o RAGAS em `openvino/GPU (int8)`, todas as 60 avaliações (`12 × 5` métricas) completaram em ~13 minutos com **`0` erros/`NaN`**.
+2. **Recuperação forte em cobertura (`context_recall = 0,917`, `context_precision = 0,681`):** o índice completo FTS5 + reranking semântico encontra passagens semanticamente ricas; parte dos `hit_at_k = 0,50` ocorre porque o Gutenberg traz múltiplas edições/obras com termos semelhantes (ex.: outro `id` do mesmo texto ou obra correlata).
+3. **Impacto das abstenções nas médias (`58,3%` de `SEM_CONTEXTO`):** perguntas muito específicas do dataset (como detalhes pontuais de poemas ou capítulos isolados) levam o sistema conservador (`_validar_suporte_semantico` + regras estritas de `PROMPT_SISTEMA`) a preferir `SEM_CONTEXTO` em vez de alucinar — o que protege contra respostas inventadas, mas penaliza `faithfulness`, `answer_relevancy` e `semantic_similarity` no RAGAS (que pontuam `0` em abstenções).
+4. **Limitação do juiz local compacto (1,5B):** um modelo de 1,5B parâmetros consegue devolver JSON válido (`0` `NaN`), porém é menos rigoroso na decomposição de afirmações do que juízes comerciais maiores (7B+ / APIs).
 
 ### Exemplo de Teste Individual (Histórico — Corpus Wikipédia)
 
@@ -850,20 +850,19 @@ RESULTADO:
 
 ### Conclusões da Avaliação
 
-1. ✅ **Recuperação funciona bem**: Hit@3 = 100%
-2. ❌ **Mas corpus tem gaps**: Fatos simples faltam
-3. ❌ **Citação problemática**: Parsing regex falha
-4. ⚠️ **LLM usa conhecimento próprio**: Responde sem contexto adequado
-5. ⚠️ **RAGAS não completou**: Limite de memória
+1. ✅ **RAGAS completo executado localmente:** 12 perguntas avaliadas em `openvino/GPU (int8)` com **`0` `NaN`** em todas as 5 métricas.
+2. ✅ **Boa cobertura de contexto (`context_recall = 0,917`):** o `--indice-completo` FTS5 localiza conteúdo relevante nos 27.740 livros sem gaps da amostra.
+3. ✅ **Postura conservadora anti-alucinação:** o par `validar_citacoes` + `_validar_suporte_semantico` evita respostas inventadas (`58,3%` de abstenção quando o trecho não sustenta claramente a pergunta).
+4. ⚠️ **Compromisso entre segurança e recall de resposta:** abstenções reduzem as médias de `faithfulness` (`0,250`) e `answer_relevancy` (`0,285`).
 
 ### Recomendações para Melhoria
 
 - **Concluídos:**
-  - ✅ **Parser/normalização de citações + validação semântica:** `validar_citacoes` normaliza formatos (`[Passage n]`, `Source [n]`) e `_validar_suporte_semantico` (limiar cosseno `0,30`) rejeita citações sem suporte no trecho.
+  - ✅ **Parser/normalização de citações + validação semântica:** `validar_citacoes` normaliza formatos (`[Passage n]`, `Source [n]`) e `_validar_suporte_semantico` (limiar cosseno `0,30`, por frase citada) rejeita citações sem suporte no trecho.
   - ✅ **Cobertura de corpus e deduplicação:** benchmarks em 20k passagens e índice lexical completo FTS5 (27.740 livros / 11,7M passagens) com deduplicação lexical por 4-gramas entre edições.
   - ✅ **Ajuste de prompt e escolha do LLM:** `PROMPT_SISTEMA` estruturado em 5 regras, `EXEMPLOS_GERACAO` (*few-shot* multipassagem + abstenção) e suporte a `LLM_MODEL` / `--llm` (ex.: `Qwen/Qwen2.5-1.5B-Instruct`).
+  - ✅ **Avaliação completa com RAGAS:** executada em `busca/avaliar.py` com 12 perguntas sobre `--indice-completo` usando `Qwen/Qwen2.5-1.5B-Instruct` em `openvino/GPU (int8)` (`0` `NaN`).
 - **Pendentes:**
-  - ⏳ **Avaliação completa com RAGAS:** executar `avaliar.py` com 10–15 perguntas e LLM juiz real (e otimizar/quantizar o juiz em CPU).
   - ⏳ **Modelos maiores / treino específico para RAG:** avaliar LLMs de 3–7B ou *fine-tuning* dedicado em hardware com maior VRAM/RAM.
   - ⏳ **Modelos OpenVINO IR pré-convertidos do Hub:** suportar download direto de repositórios oficiais `OpenVINO/` no Hugging Face Hub (ex.: `OpenVINO/Qwen2.5-1.5B-Instruct-int8-ov`), dispensando a conversão local via `uv`/`optimum-intel` para modelos já pré-exportados.
 
@@ -887,7 +886,7 @@ RESULTADO:
 | **11** | Tempo Fases | Coleta 10 GB (~48 min), FTS5 11,7M passagens (~36 min), Embedding 20k: 78 s (Iris Xe) / 389 s (CPU). |
 | **12** | Tempo Training × Qualidade | Sem treinamento. max_tokens=200 é ótimo. Corpus completo FTS5 supera gaps da amostragem. |
 | **13** | Tempo Inferência × Qualidade | `openvino/GPU (int4)` reduz geração média para 5,36 s (7,2× mais rápido que `torch/CPU`). |
-| **14** | Avaliação RAGAS | Avaliação `--sem-ragas` medida em 20 perguntas (`torch` vs `openvino`); execução com juiz RAGAS pendente. |
+| **14** | Avaliação RAGAS | RAGAS completo em 12 perguntas (`--indice-completo`, `Qwen2.5-1.5B` `openvino/GPU int8`, `0` NaN): `context_recall=0,917`, `context_precision=0,681`, `faithfulness=0,250`, `answer_relevancy=0,285`, `semantic_similarity=0,330`. |
 
 ### Próximos Passos Recomendados
 
@@ -901,7 +900,7 @@ RESULTADO:
 - Gerar variações da pergunta e combinar resultados na recuperação híbrida.
 
 **4. Pendências de validação e engenharia (⏳ Pendente — ver [`busca/TAREFAS_FUTURAS.md`](busca/TAREFAS_FUTURAS.md))**
-- Executar avaliação completa com juiz RAGAS (10–15 perguntas), validar retomada HTTP real de shards `.part`, gerar *lockfile* de dependências, otimizar `metodo_tfidf` em `busca/benchmark.py` e suportar download direto de modelos OpenVINO IR pré-convertidos do Hub (`OpenVINO/*-ov`).
+- Validar retomada HTTP real de shards `.part`, gerar *lockfile* de dependências, otimizar `metodo_tfidf` em `busca/benchmark.py` e suportar download direto de modelos OpenVINO IR pré-convertidos do Hub (`OpenVINO/*-ov`). *(Avaliação completa com juiz RAGAS já concluída em `busca/avaliacao_resultados_ragas.json`.)*
 
 ---
 
@@ -939,9 +938,10 @@ RESULTADO:
 | 1.0 | 2026-11-11 | Documentação completa das 13 questões + resumo executivo |
 | 2.0 | 2026-11-27 | Portabilidade via `.env` (OpenVINO/ONNX/PyTorch), auditoria de complexidade PAA, índice lexical FTS5, quantização INT4 e benchmarks reais no Project Gutenberg |
 | 2.1 | 2026-11-27 | Validação semântica de citações (`_validar_suporte_semantico`), `LLM_MODEL`/`--llm`, deduplicação lexical entre edições, `EXEMPLOS_GERACAO`, flags `--reconstruir`/`--limpar-parquets`, integração da documentação do frontend (PR #7) e registro de RAM/armazenamento |
+| 2.2 | 2026-11-28 | Avaliação RAGAS completa (12 perguntas sobre `--indice-completo` com juiz `Qwen/Qwen2.5-1.5B-Instruct` em `openvino/GPU int8`, `0` NaN) e atualização das seções de avaliação |
 
 ---
 
 **Autor**: Sistema de Documentação Automática  
-**Última atualização**: 2026-11-27 23:15:00 UTC-03:00  
+**Última atualização**: 2026-11-28 02:35:00 UTC-03:00  
 **Status**: ✅ Completo e Verificado

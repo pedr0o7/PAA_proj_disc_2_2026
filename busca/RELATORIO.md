@@ -66,6 +66,19 @@ Setup: 20 perguntas (`avaliacao_dataset.json`), `k = 3`, `min_sim = 0.4`, amostr
 - **Nota sobre citações e modelos (`SmolLM2-1.7B` vs. `Qwen2.5-1.5B`):** em teste controlado adicional com 4 perguntas literárias (`max_tokens=80`, 3 com contexto e 1 fora de contexto), `SmolLM2-1.7B-Instruct` em `openvino/GPU (int8)` atingiu `3,74 s` médios (5,2× sobre `fp32` em CPU, `19,32 s`), mas omitiu `[1]` nas 3 respostas válidas e alucinou `[1]` na pergunta sem contexto (assim como no `fp32`). Já `Qwen/Qwen2.5-1.5B-Instruct` em `openvino/GPU (int8)` com o `PROMPT_SISTEMA` estruturado atingiu **`3,54 s`** médios (**5,5×** sobre `fp32` em CPU) e **4/4 de acerto** (citou `[1]` corretamente e com suporte semântico em 3/3 das perguntas válidas e recusou corretamente com `SEM_CONTEXTO` a pergunta sem suporte). Além disso, `rag.py` agora aplica validação semântica das citações (`_validar_suporte_semantico`, limiar cosseno `0,30`) para bloquear citações alucinadas.
 - **Nota sobre Hit@3 (0,15):** `avaliacao_dataset.json` foi gerado sobre uma amostra anterior; na amostra atual de 15.251 passagens, apenas 15% das fontes esperadas estavam presentes no índice amostral. Para cobertura total dos 27.740 livros, recomenda-se usar `--indice-completo` (`gutenberg_lexical_v1.sqlite`, 11.741.620 passagens).
 
+### Avaliação RAGAS Completa (`--indice-completo`, `openvino/GPU int8`)
+
+Execução oficial com juiz local (`avaliar.py --q 12 --indice-completo --min-sim 0.4 --saida busca/avaliacao_resultados_ragas.json`), utilizando `Qwen/Qwen2.5-1.5B-Instruct` em `openvino/GPU (int8)` tanto na geração quanto como juiz RAGAS (via adaptador `ModeloLLMOpenVINOGenAI` para LangChain):
+
+| Métrica | Valor | Observação |
+|---|---:|---|
+| `hit_at_k` (`k = 3`) / `mrr` | **0,500** / **0,417** | 12 perguntas presentes nos 27.740 livros |
+| `respostas_com_citacao` / `citacao_da_fonte_correta` | **0,417** / **0,250** | 58,3% de abstenções conservadoras (`SEM_CONTEXTO`) |
+| Tempo médio: recuperação / geração / total | 10,47 s / 6,77 s / **17,33 s** | Inclui reranking semântico e validação |
+| `context_recall` (RAGAS, `0` NaN) | **0,917** | Alta cobertura dos trechos recuperados |
+| `llm_context_precision_with_reference` (RAGAS, `0` NaN) | **0,681** | Precisão dos contextos frente à referência |
+| `faithfulness` / `answer_relevancy` / `semantic_similarity` (`0` NaN) | 0,250 / 0,285 / 0,330 | Médias reduzidas pelo alto índice de abstenções anti-alucinação |
+
 ### Comportamento por categoria de pergunta e lições aprendidas (`--indice-completo`)
 
 No modo `--indice-completo`, [`SistemaRAG.perguntar()`](./rag.py) roteia as perguntas do usuário por três caminhos distintos:
