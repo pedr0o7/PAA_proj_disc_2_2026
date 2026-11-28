@@ -127,6 +127,27 @@ Quando o backend `openvino` for usado no LLM local, `LLM_QUANTIZACAO=auto` prior
 python -m infraestrutura.aceleracao --exportar-llm HuggingFaceTB/SmolLM2-1.7B-Instruct --quant int8
 ```
 
+#### Modelo OpenVINO IR pré-exportado (sem `uv` e sem reconversão)
+
+Para testar localmente **sem instalar `uv`** e pulando todo o pipeline pesado de preparação em `exportar_llm_openvino()` (sem baixar os pesos originais FP16/BF16 de ~3 GB do Hugging Face e sem a carga pesada de CPU e RAM da conversão PyTorch → OpenVINO IR e quantização `int8` via NNCF), utilize a pasta pré-exportada disponível no Google Drive:
+
+- **Pasta no Google Drive (`cache_indice/ov_Qwen_Qwen2.5-1.5B-Instruct_int8_ff36b9d256/`):** https://drive.google.com/drive/folders/1q8n85VgS4NsVNPSgO-2emMMDIa23WSGl
+
+1. Baixe a pasta `ov_Qwen_Qwen2.5-1.5B-Instruct_int8_ff36b9d256/` para `busca/cache_indice/ov_Qwen_Qwen2.5-1.5B-Instruct_int8_ff36b9d256/`.
+2. Instale apenas as dependências de aceleração:
+   ```powershell
+   python -m pip install -r busca\requirements-aceleracao.txt
+   ```
+3. Configure `LLM_MODEL=Qwen/Qwen2.5-1.5B-Instruct` no `.env` (ou passe `--llm Qwen/Qwen2.5-1.5B-Instruct` na CLI/servidor).
+
+Com o cache no lugar, o sistema pula a exportação e permite execução 100% offline (`HF_HUB_OFFLINE=1`). Na primeira carga em GPU, ocorre apenas a compilação rápida de kernels para o driver local (alguns segundos).
+
+**Quando esta opção se aplica (compatibilidade de hardware):**
+- **GPU Intel integrada ou dedicada** (Iris Xe, UHD Graphics, Intel Arc): selecionada automaticamente no modo `auto` (`openvino/GPU int8`).
+- **CPU Intel** (sem GPU Intel ou com `DISPOSITIVO_IA=CPU`): selecionada automaticamente no modo `auto` (`openvino/CPU int8`).
+- **CPU AMD ou ARM (ex.: Apple Silicon):** também reutiliza a mesma pasta pronta em CPU, mas exige definir `LLM_BACKEND=openvino` (e opcionalmente `DISPOSITIVO_IA=CPU`) no `.env`, pois o modo `auto` só seleciona `openvino` automaticamente em CPUs Intel.
+- **GPUs NVIDIA (CUDA) e AMD (ROCm/DirectML):** o plugin `GPU` do OpenVINO não acelera nessas placas; para aceleração em GPU NVIDIA ou AMD, use `torch` (CUDA) ou `onnx` (DirectML/ROCm), que não leem a pasta `ov_*` (ainda sendo possível usar a pasta `ov_*` em CPU com `LLM_BACKEND=openvino` e `DISPOSITIVO_IA=CPU`).
+
 ## Organização
 
 `infraestrutura/` concentra a configuração de acesso ao Hub e componentes de

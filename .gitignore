@@ -10,13 +10,6 @@ busca/cache_indice/
 # Dados coletados (Project Gutenberg) e caches
 cache_gutenberg/
 gutenberg_10gb/
-# Dados locais da fase anterior (Wikipédia)
-cache_ingles/
-wikipedia_en_10gb/
 
-# Dados geográficos e caches relacionados
-geografia_coleta/
-cache_lote/
-geografia_lote/
-geografia_lote_verificada/
-geografia_ingles/
+# código fonte, amostra dos dados de treinamento e tudo desenvolvido no projeto (submetido no aprender3)
+PAA_*_Proj.zip
