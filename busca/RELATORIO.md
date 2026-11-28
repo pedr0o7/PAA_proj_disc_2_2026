@@ -39,6 +39,7 @@ Reprodução (PowerShell, na raiz):
 | Sentence + HNSW (`openvino/GPU`) | 0,530 | 0,620 | 0,557 | 87,73 s | 13,47 ms (busca: 0,80 ms) | 61,5 MB |
 
 **Comparativo de embeddings (`torch/CPU` vs. `openvino/GPU` em N = 20.000):**
+
 - Codificação de 20.000 passagens caiu de **388,69 s** (~6,5 min) para **77,95 s** (**5,0× mais rápido** na Iris Xe), preservando praticamente os mesmos `recall@10` e `MRR@10` (paridade cosseno $> 0{,}99999$).
 - Na busca HNSW, a latência total caiu de **16,24 ms** para **13,47 ms**; o `recall_vs_exato@10` do HNSW ficou em **0,948** (`torch`) / **0,947** (`openvino`).
 
@@ -63,7 +64,7 @@ Setup: 20 perguntas (`avaliacao_dataset.json`), `k = 3`, `min_sim = 0.4`, amostr
 | `openvino/GPU (int4)` | 0,141 s | **5,36 s** | **5,59 s** | **10,97 s** | 0,15 | 100% |
 
 - **Speedup de geração:** **`7,2×`** na média (`38,63 s → 5,36 s`) e **`7,6×`** no P95 (`83,40 s → 10,97 s`).
-- **Nota sobre citações e modelos (`SmolLM2-1.7B` vs. `Qwen2.5-1.5B`):** em teste controlado adicional com 4 perguntas literárias (`max_tokens=80`, 3 com contexto e 1 fora de contexto), `SmolLM2-1.7B-Instruct` em `openvino/GPU (int8)` atingiu `3,74 s` médios (5,2× sobre `fp32` em CPU, `19,32 s`), mas omitiu `[1]` nas 3 respostas válidas e alucinou `[1]` na pergunta sem contexto (assim como no `fp32`). Já `Qwen/Qwen2.5-1.5B-Instruct` em `openvino/GPU (int8)` com o `PROMPT_SISTEMA` estruturado atingiu **`3,54 s`** médios (**5,5×** sobre `fp32` em CPU) e **4/4 de acerto** (citou `[1]` corretamente e com suporte semântico em 3/3 das perguntas válidas e recusou corretamente com `SEM_CONTEXTO` a pergunta sem suporte). Além disso, `rag.py` agora aplica validação semântica das citações (`_validar_suporte_semantico`, limiar cosseno `0,30`) para bloquear citações alucinadas.
+- **Nota sobre citações e modelos (`SmolLM2-1.7B` vs. `Qwen2.5-1.5B`):** em teste exploratório anterior às melhorias de prompt e validação (`max_tokens=80`, 4 perguntas), `SmolLM2-1.7B-Instruct` em `openvino/GPU (int8)` atingiu `3,74 s` médios (`5,2×` sobre `fp32` em CPU, `19,32 s`), mas omitiu `[1]` nas respostas válidas e alucinou `[1]` sem contexto. Em **reteste atualizado sobre o código final** (`--indice-completo`, `min_sim=0.4`, `max_tokens=200`, `openvino/GPU int8`, 4 perguntas + teste direto com passagem distratora), `SmolLM2-1.7B-Instruct` obteve **2/4** (`10,13 s` médios — acertou a pergunta factual com `[1]` e recusou corretamente fora do corpus, mas absteve em 2 perguntas abertas de personagem), enquanto `Qwen/Qwen2.5-1.5B-Instruct` atingiu **4/4** (`7,58 s` médios, com `[1]`–`[3]` e recusa correta). Além disso, `rag.py` aplica validação semântica das citações (`_validar_suporte_semantico`, limiar cosseno `0,30`) para bloquear citações alucinadas.
 - **Nota sobre Hit@3 (0,15):** `avaliacao_dataset.json` foi gerado sobre uma amostra anterior; na amostra atual de 15.251 passagens, apenas 15% das fontes esperadas estavam presentes no índice amostral. Para cobertura total dos 27.740 livros, recomenda-se usar `--indice-completo` (`gutenberg_lexical_v1.sqlite`, 11.741.620 passagens).
 
 ### Avaliação RAGAS Completa (`--indice-completo`, `openvino/GPU int8`)
@@ -75,7 +76,7 @@ Execução oficial com juiz local (`avaliar.py --q 12 --indice-completo --min-si
 | `hit_at_k` (`k = 3`) / `mrr` | **0,500** / **0,417** | 12 perguntas presentes nos 27.740 livros |
 | `respostas_com_citacao` / `citacao_da_fonte_correta` | **0,417** / **0,250** | 58,3% de abstenções conservadoras (`SEM_CONTEXTO`) |
 | Tempo médio: recuperação / geração / total | 10,47 s / 6,77 s / **17,33 s** | Inclui reranking semântico e validação |
-| `context_recall` (RAGAS, `0` NaN) | **0,917** | Alta cobertura dos trechos recuperados |
+| `context_recall` (RAGAS, `0` NaN) | **0,917** | Alta cobertura pelo juiz local 1,5B (`Hit@3` real = `0,500`) |
 | `llm_context_precision_with_reference` (RAGAS, `0` NaN) | **0,681** | Precisão dos contextos frente à referência |
 | `faithfulness` / `answer_relevancy` / `semantic_similarity` (`0` NaN) | 0,250 / 0,285 / 0,330 | Médias reduzidas pelo alto índice de abstenções anti-alucinação |
 
@@ -90,6 +91,7 @@ No modo `--indice-completo`, [`SistemaRAG.perguntar()`](./rag.py) roteia as perg
 | **Pergunta aberta sobre personagem/enredo** (`Who is Captain Ahab in Moby Dick?`) | Pipeline RAG completo | **Sim** | Único fluxo que depende de busca híbrida, síntese pelo LLM e validação sintática/semântica de citações `[n]`. |
 
 **Lições aprendidas em consultas literárias abertas:**
+
 - **Síntese sem verbete enciclopédico:** romances não trazem definições biográficas diretas de personagens; a resposta precisa ser sintetizada a partir de múltiplas cenas recuperadas.
 - **Duplicação entre edições do Project Gutenberg:** sem deduplicação, janelas sobrepostas da mesma cena em edições distintas (ex.: *Moby-Dick* `#2489`, `#15`, `#2701`) ocupavam todos os 3 slots de `k = 3`. A inclusão do filtro por sobreposição de 4-gramas (`_shingles_texto` / `_trecho_duplicado`, limiar `0,25`) em `SistemaRAG.recuperar()` garantiu 3 cenas distintas (`#2489`, `#2489`, `#2701`).
 - **Omissão de `[n]` em contextos longos:** modelos compactos (1,5B–1,7B), diante de ~3.000 caracteres de contexto e perguntas famosas do tipo `"Who is X in Y?"`, tendiam a responder em "modo enciclopédia" omitindo `[n]`, levando `validar_citacoes()` a descartar a resposta como `SEM_CONTEXTO`. Alinhar `EXEMPLOS_GERACAO` (*few-shot* multipassagem + exemplo de abstenção no mesmo cabeçalho `(Title by Author)`) e adicionar o lembrete final de citação em `SistemaRAG.gerar()` estabilizou a saída (`citados = [1, 2, 3]` consistentes em `"Who is Captain Ahab in Moby Dick?"` e abstenção segura em `"What is the current population of Tokyo in 2026?"`).

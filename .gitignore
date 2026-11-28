@@ -13,3 +13,7 @@ gutenberg_10gb/
 
 # código fonte, amostra dos dados de treinamento e tudo desenvolvido no projeto (submetido no aprender3)
 PAA_*_Proj.zip
+
+# Exportações da apresentação (geradas apenas na versão final para o ZIP de entrega)
+apresentacao/*.pptx
+apresentacao/*.pdf
