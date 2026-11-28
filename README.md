@@ -246,7 +246,7 @@ a resposta é apresentada após a validação das citações, sem mostrar texto 
 
 | Camada | Tecnologia | Licença | Uso |
 |---|---|---|---|
-| Servidor | [FastAPI](https://fastapi.tiangolo.com/) | MIT | Rotas HTTP (`/`, `/info`, `/perguntar`) e resposta em fluxo |
+| Servidor | [FastAPI](https://fastapi.tiangolo.com/) | MIT | Rotas HTTP (`/`, `/info`, `/perguntar`) e envio dos eventos de progresso em NDJSON |
 | Servidor | [Uvicorn](https://www.uvicorn.org/) | BSD-3-Clause | Servidor ASGI que executa a aplicação |
 | Servidor | [Pydantic](https://docs.pydantic.dev/) | MIT | Validação da pergunta recebida (1 a 2000 caracteres) |
 | Página | HTML5, CSS3 e JavaScript puro | — | Interface sem frameworks, sem Node.js e sem etapa de build |
@@ -276,15 +276,22 @@ Fontes do próprio sistema operacional (serifada para as respostas, sem serifa p
 
 ### Executando
 
-Com o ambiente virtual ativo, a partir da pasta `busca`:
+Pré-requisito: o corpus coletado (veja [Coletar o corpus](#coletar-o-corpus)). Com o ambiente
+virtual ativo, a partir da pasta `busca`:
 
 ```bash
 python -m pip install -r ../frontend/requirements.txt
 python ../frontend/servidor.py
 ```
 
-Por padrão o servidor usa uma amostra de até 5.000 passagens. Para consultar o índice completo já
-construído, execute:
+Aguarde a linha `Uvicorn running on http://127.0.0.1:8000` e abra http://localhost:8000 no navegador.
+A mensagem `Pronto` é exibida antes de o servidor ocupar a porta; se a porta estiver em uso, o
+servidor encerra com erro mesmo depois dela. Na primeira execução, a amostragem e os embeddings são
+calculados e os modelos são carregados, o que pode levar alguns minutos. Para encerrar, use `Ctrl+C`.
+
+Por padrão o servidor usa uma amostra de até 5.000 passagens, uma por livro (o `consultar.py` usa
+20.000). Para consultar o índice completo, construa-o uma vez com `python indice_lexical.py`
+(veja [Busca experimental em todo o corpus](#busca-experimental-em-todo-o-corpus)) e execute:
 
 ```powershell
 python ..\frontend\servidor.py --indice-completo
@@ -293,10 +300,18 @@ python ..\frontend\servidor.py --indice-completo
 Opcionalmente informe um caminho após `--indice-completo`; `--n` só se aplica à amostragem.
 O índice deve existir, estar completo e corresponder ao corpus. O servidor mostra erro na
 inicialização caso contrário; não muda silenciosamente para a amostra. A interface indica o modo
-ativo. `--min-sim` controla o limiar cosseno da busca comum (padrão `0.4`), sem garantir que uma
-fonte sustente a resposta (a resposta final também passa por validação sintática e semântica das
-citações `[n]`). Para trocar o modelo local sem alterar o `.env`, use `--llm HF_ID`; para
-inspecionar trechos sem geração, use `--sem-llm`.
+ativo no topo da página (`Amostra` ou `Índice completo`, além do resumo de execução `backend/dispositivo/quantização`).
+
+| Opção | Descrição | Padrão |
+|---|---|---:|
+| `--n` | Passagens da amostra (ignorado com `--indice-completo`) | `5000` |
+| `--k` | Trechos recuperados por pergunta (mínimo 1) | `3` |
+| `--min-sim` | Similaridade cosseno mínima da busca comum (a resposta final também passa por validação sintática e semântica de citações `[n]`) | `0.4` |
+| `--llm` | Identificador do modelo local de geração (HF id) | `SmolLM2-1.7B-Instruct` (ou `LLM_MODEL` no `.env`) |
+| `--max-tokens` | Limite de tokens da resposta | `200` |
+| `--porta` | Porta do servidor local | `8000` |
+| `--sem-llm` | Mostra só os trechos encontrados, sem carregar o LLM | — |
+| `--indice-completo [CAMINHO]` | Usa o índice lexical completo em vez da amostra | — |
 
 ## 🧪 Avaliação e testes
 
@@ -320,6 +335,12 @@ Para testar a configuração do Hugging Face e os downloads do corpus:
 
 ```powershell
 py -3.12 -m unittest discover -s busca -p "test_*.py" -v
+```
+
+Para testar a interface web (não carrega os modelos):
+
+```powershell
+py -3.12 -m unittest discover -s frontend -p "test_*.py" -v
 ```
 
 ## 📚 Documentação

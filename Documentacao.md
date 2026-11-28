@@ -34,6 +34,7 @@
 ### Linguagens Principais
 - **Python 3.12** - Linguagem principal
 - **JSON** - Formato de armazenamento de dados
+- **HTML5, CSS3 e JavaScript** (sem frameworks) - Página da interface web em `frontend/static/index.html`
 
 ### Bibliotecas Utilizadas
 
@@ -52,6 +53,12 @@
 | scikit-learn | - | BSD 3-Clause | Utilitários de ML |
 | numpy | - | BSD | Computação numérica |
 | datasets | - | Apache 2.0 | Download de datasets HF |
+| fastapi | - | MIT | Servidor web da interface (rotas `/`, `/info`, `/perguntar`) |
+| uvicorn | - | BSD 3-Clause | Servidor ASGI que executa o FastAPI |
+| pydantic | - | MIT | Validação da pergunta recebida pela interface (1 a 2000 caracteres) |
+| httpx | - | BSD 3-Clause | Cliente HTTP (acesso ao Hub e testes da interface com `TestClient`) |
+| openvino / openvino-genai / openvino-tokenizers | opcionais | Apache 2.0 | Inferência acelerada em CPU Intel e iGPU Iris Xe / UHD Graphics |
+| onnxruntime / onnxruntime-directml | opcionais | MIT | Inferência de embeddings portátil (CPU e GPU via DirectML) |
 
 **Resumo de Licenças**: Todas são permissivas/open-source, compatíveis com uso comercial e acadêmico.
 
@@ -60,9 +67,12 @@
 ## 3. Programas e Infraestrutura
 
 ### Servidor
-- **CLI interativa**: `busca/consultar.py`
-- **Interface web local**: `frontend/servidor.py` (FastAPI + Uvicorn + NDJSON streaming + `frontend/static/index.html`)
-- **Portabilidade via `.env`**: `EMB_BACKEND`, `LLM_BACKEND`, `DISPOSITIVO_IA` e `LLM_QUANTIZACAO` (padrão `auto`, com *fallback* silencioso para `torch`). Os wrappers nativos (`openvino.Core`, `openvino_genai.LLMPipeline`, `onnxruntime.InferenceSession`) rodam sem `optimum-intel`/`optimum-onnx` no `.venv` principal; a exportação quantizada (`int4`/`int8`) do LLM ocorre uma única vez em ambiente efêmero isolado via `uv run`, salvando o IR em `busca/cache_indice/ov_*`.
+### Servidor
+- **Servidor web local**: FastAPI executado pelo Uvicorn em `127.0.0.1:8000` (só aceita conexões da própria máquina), em `frontend/servidor.py`
+- **Cliente**: navegador comum abrindo `http://localhost:8000`; a página é um único arquivo estático (`frontend/static/index.html`), sem Node.js nem etapa de build
+- **Alternativa sem navegador**: CLI interativa em `busca/consultar.py`
+- Os dois usam o mesmo `SistemaRAG` de `busca/rag.py`; detalhes do fluxo no [item 9](#9-formação-de-resposta-do-servidor)
+- **Portabilidade via `.env`**: `EMB_BACKEND`, `LLM_BACKEND`, `DISPOSITIVO_IA`, `LLM_QUANTIZACAO` e `LLM_MODEL` (padrão `auto`, com *fallback* silencioso para `torch`). Os wrappers nativos (`openvino.Core`, `openvino_genai.LLMPipeline`, `onnxruntime.InferenceSession`) rodam sem `optimum-intel`/`optimum-onnx` no `.venv` principal; a exportação quantizada (`int4`/`int8`) do LLM ocorre uma única vez em ambiente efêmero isolado via `uv run`, salvando o IR em `busca/cache_indice/ov_*`.
 
 ### Banco de Dados
 - **Armazenamento em disco**:
@@ -124,9 +134,20 @@
 
 ### Características Principais
 - ✅ **Offline**: Não requer internet após download
-- ✅ **CPU viável**: Roda em i5-13420H (16GB RAM)
+- ✅ **Execução local viável**: Roda em notebooks Intel com CPU ou iGPU (ex.: `i5-1135G7` com 40 GB RAM + Iris Xe e `i5-13420H` com 16 GB RAM + Intel UHD Graphics)
 - ✅ **Rastreável**: Sempre cita fontes
 - ✅ **Avaliável**: Integrado com RAGAS
+- ✅ **Interface web**: chat no navegador com as fontes em cartões e as citações `[n]` clicáveis
+
+### Uso pela interface web
+
+A pessoa digita a pergunta na página `http://localhost:8000`. O navegador envia a pergunta ao
+servidor (`POST /perguntar`), que executa a recuperação e a geração descritas acima e devolve
+eventos de progresso. A página mostra um indicador com o tempo decorrido e, ao final, a resposta, os
+trechos usados como fonte (título, trecho, similaridade ou tipo de correspondência e link para o
+livro no Project Gutenberg) e os tempos de busca e geração. Cada `[n]` da resposta é um link para o
+trecho `n`, e as fontes citadas ficam destacadas. O topo da página indica o modo de busca ativo
+(`Amostra` ou `Índice completo`) e o resumo de execução (`backend/dispositivo/quantização`).
 
 
 ---
@@ -492,6 +513,47 @@ No modo `--indice-completo`, `SistemaRAG.perguntar()` não envia todas as pergun
 
 **Gargalo**: 99.9% do tempo é geração LLM, não recuperação!
 
+### Servidor web (arquivo: `frontend/servidor.py`)
+
+Na interface web, a resposta é formada pelo mesmo `SistemaRAG.perguntar()` da CLI. O servidor só
+recebe a pergunta, controla a concorrência e entrega o resultado ao navegador:
+
+```
+Navegador                         Servidor (FastAPI)                      SistemaRAG (busca/rag.py)
+   │  POST /perguntar {pergunta}       │                                        │
+   ├──────────────────────────────────►│ valida (Pydantic, 1–2000 caracteres)   │
+   │◄── status "Consultando…" ─────────┤                                        │
+   │                                   │ aguarda a trava (threading.Lock)       │
+   │                                   ├──────── perguntar(pergunta) ──────────►│ metadados, frase literal
+   │                                   │                                        │ ou busca + LLM + citações
+   │                                   │◄────── resposta, trechos, citados ─────┤
+   │◄── fontes (trechos e aviso) ──────┤                                        │
+   │◄── resposta (texto completo) ─────┤  (só quando o LLM está carregado)      │
+   │◄── fim (citados, tempos) ─────────┤                                        │
+```
+
+- **Formato da resposta:** NDJSON, um objeto JSON por linha (`status`, `fontes`, `resposta`, `fim`
+  ou `erro`). O navegador lê as linhas conforme chegam com `fetch` + `ReadableStream`.
+- **Uma pergunta por vez:** uma `threading.Lock` serializa as chamadas a `perguntar()`. Há um único
+  LLM local (CPU ou GPU integrada); duas gerações em paralelo só disputariam os mesmos recursos e
+  ficariam ambas mais lentas. Perguntas simultâneas esperam na fila.
+- **Resposta inteira, não token a token:** o texto só é enviado depois que `perguntar()` valida as
+  citações, para não mostrar um texto provisório que depois seria trocado por "contexto
+  insuficiente". O custo é que a tela mostra apenas o indicador de progresso durante a geração.
+- **Erros:** qualquer exceção vira um evento `erro` exibido na página, em vez de cortar a conexão.
+- **Na página:** o texto é escapado (evita injeção de HTML), cada `[n]` válido vira link para o
+  cartão da fonte `n` e as fontes citadas são destacadas.
+
+| Etapa no servidor/página | Complexidade | Tempo |
+|---|---|---|
+| Validação da pergunta | O(tamanho da pergunta) | desprezível |
+| Espera na trava | O(perguntas na fila × tempo de uma pergunta) | 0 com um usuário |
+| `perguntar()` (busca + LLM) | ver tabela acima | domina o total |
+| Serialização em JSON | O(k × tamanho do trecho) | < 1 ms |
+| Montagem da tela (escape + citações) | O(tamanho da resposta + k) | < 1 ms |
+
+O servidor e a página acrescentam um custo desprezível ao tempo do `SistemaRAG`.
+
 ---
 
 ## 10. Recursos Computacionais Disponíveis
@@ -501,8 +563,23 @@ No modo `--indice-completo`, `SistemaRAG.perguntar()` não envia todas as pergun
 ```text
 CPU: 11th Gen Intel Core i5-1135G7 (4 cores / 8 threads, 2.40 GHz)
 GPU integrada: Intel Iris Xe Graphics (suportada via OpenVINO e OpenVINO GenAI)
+RAM: 40 GB (39,73 GiB utilizáveis)
+Armazenamento: SSD NVMe Kingston KC3000 (KINGSTON SKC3000S1024G, 1 TB / 953,9 GiB; partição C: de 546,6 GiB)
 Sistema Operacional: Windows 11
 ```
+
+> **Compatibilidade com a máquina anterior da equipe (`i5-13420H`, 16 GB RAM, 13ª geração):** a GPU integrada do `i5-13420H` (**Intel UHD Graphics**, arquitetura Xe-LP) também é suportada nativamente pelo OpenVINO e OpenVINO GenAI (`EMB_BACKEND=auto`, `LLM_BACKEND=auto`, `DISPOSITIVO_IA=GPU`), mantendo *fallback* automático para `torch/CPU` caso os runtimes opcionais não estejam instalados.
+
+### Armazenamento Utilizado na Execução do Projeto
+
+| Componente | Caminho | Espaço medido | Observação |
+|---|---|---:|---|
+| **Corpus extraído** | `dados/gutenberg_10gb/` | `9,32 GiB` (`10,00 GB`) | 27.740 livros em UTF-8 + metadados |
+| **Índice lexical completo (FTS5)** | `busca/cache_indice/gutenberg_lexical_v1.sqlite` | `23,30 GiB` (`~25,02 GB`) | 11.741.620 passagens indexadas |
+| **Modelos OpenVINO IR** | `busca/cache_indice/ov_*` | `3,94 GiB` (3 caches) | `0,88 GiB` (`SmolLM2 int4`), `1,60 GiB` (`SmolLM2 int8`), `1,46 GiB` (`Qwen2.5-1.5B int8`); ~0,9–1,6 GiB para 1 modelo |
+| **Caches amostrais** | `busca/cache_indice/passagens_*`, `embeddings_v1_*.npz` | `~0,05 GiB` | Amostra de 20.000 passagens e vetores L2 |
+| **Ambiente virtual** | `.venv/` | `1,34 GiB` | 128 pacotes (Python 3.12 + OpenVINO + PyTorch) |
+| **Total persistente no workspace** | — | **`~38,0 GiB`** | Após `--limpar-parquets`; durante a coleta são necessários `~6 GB` temporários adicionais em `dados/cache_gutenberg/` |
 
 ### O que é Possível Fazer
 
@@ -568,7 +645,7 @@ LONGO PRAZO:
 
 ## 11. Tempo de Execução de Cada Fase
 
-### Fases do Projeto (medidas no corpus Project Gutenberg — i5-1135G7 + Iris Xe)
+### Fases do Projeto (medidas no corpus Project Gutenberg — i5-1135G7, 40 GB RAM, Iris Xe, SSD NVMe)
 
 | Fase | Atividade | Tempo Medido | Notas |
 |---|---|---|---|
@@ -608,7 +685,17 @@ TEMPO POR QUERY: ~1-3 minutos
 | 50.000 | 20 min | 3 min | 15ms | 20-50s | ~23-24 min |
 | 100.000 | 40 min | 6 min | 20ms | 20-50s | ~46-47 min |
 
-**Hardware**: CPU i5-13420H, 16GB RAM
+**Hardware dos benchmarks atuais**: `i5-1135G7` (40 GB RAM, Intel Iris Xe, SSD NVMe). Os tempos estimados de referência da v1.0 em `i5-13420H` (16 GB RAM) referiam-se ao corpus Wikipédia em `torch/CPU` puro.
+
+### Interface web
+
+| Fase | Tempo medido (Project Gutenberg) | Notas |
+|---|---|---|
+| Subir o servidor (`--sem-llm`) | segundos | Carrega apenas o modelo de embeddings e abre o índice |
+| Subir o servidor com LLM | poucos segundos (`openvino/GPU` com IR em cache) / ~1 min (`torch/CPU fp32`) | Na 1ª execução de amostra sem cache, somam-se amostragem e embeddings |
+| Pergunta na tela (`--indice-completo`, `openvino/GPU int8` + `Qwen2.5-1.5B`) | **~5–10 s** | Busca híbrida `~1,4 s` + geração `~4–9 s` |
+| Pergunta na tela (referência `torch/CPU fp32`, `SmolLM2-1.7B`) | **~38,6 s** médios | Sem aceleração OpenVINO |
+| Servidor + página | `< 1 ms` | Validação Pydantic, NDJSON e montagem dos cartões/citações |
 
 ---
 
@@ -703,7 +790,6 @@ Se fosse \do_sample=True\ com `temperature=0.7`:
 
 **Conclusão**: A combinação OpenVINO + OpenVINO GenAI reduz o gargalo de geração para **3,54–3,74 s** (`int8`) na Intel Iris Xe (**5,2×–5,5×** mais rápido que `torch/CPU fp32`). Em teste controlado com 4 perguntas literárias, `SmolLM2-1.7B-Instruct` apresentou baixa adesão ao marcador obrigatório `[1]` tanto em `int8`/`int4` quanto em `fp32`, enquanto `Qwen/Qwen2.5-1.5B-Instruct` (`int8`) com o `PROMPT_SISTEMA` estruturado obteve `3,54 s` médios e **4/4 de acerto** (3/3 citações válidas + recusa correta sem contexto). Para mitigar citações alucinadas independentemente do LLM escolhido, `busca/rag.py` aplica validação semântica (`_validar_suporte_semantico`), e `LLM_MODEL` / `LLM_QUANTIZACAO` permitem alternar o modelo e a precisão via `.env`. Já o `Hit@3 = 0,15` na amostra de 15k passagens evidencia a importância do `--indice-completo` (`gutenberg_lexical_v1.sqlite`) para perguntas sobre qualquer um dos 27.740 livros.
 
-
 ---
 
 ## 14. Avaliação da LLM pelo Framework RAGAS
@@ -788,15 +874,15 @@ RESULTADO:
 
 | # | Pergunta | Resposta |
 |---|---|---|
-| **2** | Linguagens/Bibliotecas | Python 3.12 + 13 libs open-source (Apache 2.0/MIT/BSD) |
-| **3** | Programas/Infraestrutura | CLI Python (`consultar.py`) + servidor web FastAPI (`frontend/servidor.py`) + caches `.npz`/`.sqlite` |
-| **4** | Tema/Funcionamento | RAG: busca híbrida no Project Gutenberg + LLM 1.7B gera resposta com citações |
+| **2** | Linguagens/Bibliotecas | Python 3.12 + HTML5/CSS3/JS + libs open-source (FastAPI, Uvicorn, Pydantic, PyTorch, OpenVINO/ONNX opcionais) |
+| **3** | Programas/Infraestrutura | Servidor web local (FastAPI + Uvicorn) com página HTML/JS, CLI alternativa (`consultar.py`), caches `.npz`/`.sqlite` e portabilidade `.env` |
+| **4** | Tema/Funcionamento | RAG: busca híbrida no Project Gutenberg + LLM local gera resposta com citações `[n]` |
 | **5** | Dados de Treinamento | 27.740 livros, 10.000.018.524 bytes extraídos do Project Gutenberg; índice amostra de 20.000 passagens ou completo em FTS5 |
 | **6** | Pré-processamento | Amostragem $O(L + m \log m + B_{\text{lidos}})$, embedding linear, HNSW $O(n \log n)$ |
 | **7** | Busca Semântica | HNSW: 13,5 ms total em `openvino/GPU` (0,8 ms busca pura). Em 1M de vetores: 1,85 ms vs 86,45 ms força bruta. |
 | **8** | Treinamento LLM | SEM treinamento local. SmolLM2-1.7B: 38,6 s/resp em `torch/CPU (fp32)` vs **5,36 s/resp** em `openvino/GPU (int4)`. |
-| **9** | Formação Resposta | Recupera 3 trechos (~140 ms) → Monta prompt → LLM gera tokens → Valida citações. |
-| **10** | Recursos Disponíveis | Intel i5-1135G7 + Intel Iris Xe Graphics; índice completo FTS5 ocupa ~25 GB em disco. |
+| **9** | Formação Resposta | Recupera 3 trechos deduplicados (~140 ms) → Monta prompt/few-shot → LLM gera tokens → Valida citações (regex + semântica). Na interface web, envia eventos NDJSON, uma pergunta por vez. |
+| **10** | Recursos Disponíveis | Intel i5-1135G7, 40 GB RAM, Intel Iris Xe, SSD NVMe; ~38 GiB em disco no modo completo (compatível com i5-13420H + Intel UHD). |
 | **11** | Tempo Fases | Coleta 10 GB (~48 min), FTS5 11,7M passagens (~36 min), Embedding 20k: 78 s (Iris Xe) / 389 s (CPU). |
 | **12** | Tempo Training × Qualidade | Sem treinamento. max_tokens=200 é ótimo. Corpus completo FTS5 supera gaps da amostragem. |
 | **13** | Tempo Inferência × Qualidade | `openvino/GPU (int4)` reduz geração média para 5,36 s (7,2× mais rápido que `torch/CPU`). |
@@ -823,6 +909,10 @@ RESULTADO:
 - **rag.py** - Implementação do sistema RAG (recuperação + geração)
 - **corpus.py** - Amostragem e carregamento de passagens
 - **consultar.py** - Interface CLI interativa
+- **frontend/servidor.py** - Servidor web (FastAPI) da interface de chat
+- **frontend/static/index.html** - Página do chat (HTML, CSS e JavaScript em um único arquivo)
+- **frontend/test_servidor.py** - Testes automáticos da interface web
+- **infraestrutura/aceleracao.py** - Portabilidade OpenVINO/ONNX/PyTorch e exportação quantizada via `uv run`
 - **avaliar.py** - Avaliação com RAGAS
 - **benchmark.py** - Comparação de métodos de busca
 - **dados/coletar_gutenberg.py** - Coleta e extração do corpus de livros
@@ -847,10 +937,10 @@ RESULTADO:
 |---|---|---|
 | 1.0 | 2026-11-11 | Documentação completa das 13 questões + resumo executivo |
 | 2.0 | 2026-11-27 | Portabilidade via `.env` (OpenVINO/ONNX/PyTorch), auditoria de complexidade PAA, índice lexical FTS5, quantização INT4 e benchmarks reais no Project Gutenberg |
-| 2.1 | 2026-11-27 | Validação semântica de citações (`_validar_suporte_semantico`), `LLM_MODEL`/`--llm`, deduplicação lexical entre edições, `EXEMPLOS_GERACAO`, flags `--reconstruir`/`--limpar-parquets` e atualização do status das tarefas |
+| 2.1 | 2026-11-27 | Validação semântica de citações (`_validar_suporte_semantico`), `LLM_MODEL`/`--llm`, deduplicação lexical entre edições, `EXEMPLOS_GERACAO`, flags `--reconstruir`/`--limpar-parquets`, integração da documentação do frontend (PR #7) e registro de RAM/armazenamento |
 
 ---
 
 **Autor**: Sistema de Documentação Automática  
-**Última atualização**: 2026-11-27 01:03:00 UTC-03:00  
+**Última atualização**: 2026-11-27 23:15:00 UTC-03:00  
 **Status**: ✅ Completo e Verificado

@@ -1,6 +1,6 @@
 # Busca semântica: comparação de métodos
 
-> Resultados medidos sobre o corpus atual do **Project Gutenberg** (`dados\gutenberg_10gb\textos.txt`: 27.740 livros, 10.000.018.524 bytes) em **Intel Core i5-1135G7 + Intel Iris Xe Graphics** (`torch/CPU` vs. `openvino/GPU`).
+> Resultados medidos sobre o corpus atual do **Project Gutenberg** (`dados\gutenberg_10gb\textos.txt`: 27.740 livros, 10.000.018.524 bytes) em **Intel Core i5-1135G7 (40 GB RAM, SSD NVMe) + Intel Iris Xe Graphics** (`torch/CPU` vs. `openvino/GPU`).
 
 Scripts: [benchmark.py](./benchmark.py) (qualidade e latência em passagens reais),
 [escala.py](./escala.py) (busca vetorial pura em N até 1 milhão) e
@@ -25,7 +25,7 @@ Reprodução (PowerShell, na raiz):
   2. **Word2Vec médio** (gensim, 100 dim, treinado na própria amostra, média ponderada por IDF).
   3. **Sentence embeddings** (`all-MiniLM-L6-v2`, 384 dim) com cosseno exato (força bruta), medido em `torch/CPU` e `openvino/GPU`.
   4. **Sentence embeddings + HNSW** (usearch, M = 16, efConstruction = 128, efSearch = 64), medido em `torch/CPU` e `openvino/GPU`.
-- Hardware: Intel Core i5-1135G7 (4C/8T) + Intel Iris Xe Graphics, Windows 11.
+- Hardware: Intel Core i5-1135G7 (4C/8T, 40 GB RAM, SSD NVMe) + Intel Iris Xe Graphics, Windows 11.
 
 ## Resultados de Recuperação (N = 20.000 — Project Gutenberg)
 
