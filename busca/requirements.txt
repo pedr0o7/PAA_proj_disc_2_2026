@@ -1,3 +1,4 @@
+# Dependências padrão (CPU/torch). Para aceleração opcional (ONNX/OpenVINO), veja busca/requirements-aceleracao.txt.
 numpy
 scikit-learn
 gensim

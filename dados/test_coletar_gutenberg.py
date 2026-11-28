@@ -1,3 +1,5 @@
+import hashlib
+import io
 import json
 import tempfile
 import unittest
@@ -30,6 +32,106 @@ class NormalizarTest(unittest.TestCase):
     def test_crlf_espacos_e_linhas_em_branco(self):
         self.assertEqual(cg.normalizar("a  \r\n    \r\n\r\n\r\n\r\n\r\nb\r\n"), "a\n\n\nb")
         self.assertEqual(cg.normalizar("a\r\n\r\nb"), "a\n\nb")
+
+    def test_remove_tabs_e_espacos_no_fim_de_cada_linha(self):
+        self.assertEqual(cg.normalizar("a \t \nb\t\n\t\nc   "), "a\nb\n\nc")
+        self.assertEqual(cg.normalizar("  início\n\tmeio\t"), "início\n\tmeio")
+        self.assertEqual(cg.normalizar(""), "")
+
+
+class FakeResposta:
+    """Simula urlopen: entrega `dados` em blocos e expõe o status HTTP."""
+
+    def __init__(self, dados, status=200):
+        self.buf = io.BytesIO(dados)
+        self.status = status
+
+    def read(self, n=-1):
+        return self.buf.read(n)
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+
+class BaixarContinuavelTest(unittest.TestCase):
+    CONTEUDO = b"0123456789" * 1000
+    URL = "https://exemplo.invalido/arquivo.parquet"
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.dir = Path(self.tmp.name)
+        self.destino = self.dir / "train.parquet"
+        self.parcial = self.dir / "train.parquet.part"
+        self.chamadas = []
+        self.resposta = None
+        self._urlopen = cg.urlopen
+        cg.urlopen = self._fake_urlopen
+
+    def tearDown(self):
+        cg.urlopen = self._urlopen
+        self.tmp.cleanup()
+
+    def _fake_urlopen(self, req, timeout=None):
+        self.chamadas.append(req)
+        return self.resposta
+
+    def baixar(self, esperado=None, tamanho=None):
+        cg.baixar_continuavel(self.URL, self.destino,
+                              esperado or hashlib.sha256(self.CONTEUDO).hexdigest(),
+                              tamanho if tamanho is not None else len(self.CONTEUDO), "teste")
+
+    def test_download_novo_valida_e_renomeia(self):
+        self.resposta = FakeResposta(self.CONTEUDO)
+        self.baixar()
+        self.assertEqual(self.destino.read_bytes(), self.CONTEUDO)
+        self.assertFalse(self.parcial.exists())
+        self.assertNotIn("Range", self.chamadas[0].headers)
+
+    def test_arquivo_existente_valido_nao_baixa_de_novo(self):
+        self.destino.write_bytes(self.CONTEUDO)
+        self.baixar()
+        self.assertEqual(self.chamadas, [])
+
+    def test_arquivo_existente_invalido_levanta_erro(self):
+        self.destino.write_bytes(b"x" * len(self.CONTEUDO))
+        with self.assertRaisesRegex(ValueError, "Arquivo existente inválido"):
+            self.baixar()
+
+    def test_retoma_a_partir_do_parcial_com_range(self):
+        metade = len(self.CONTEUDO) // 2
+        self.parcial.write_bytes(self.CONTEUDO[:metade])
+        self.resposta = FakeResposta(self.CONTEUDO[metade:], status=206)
+        self.baixar()
+        self.assertEqual(self.chamadas[0].headers["Range"], f"bytes={metade}-")
+        self.assertEqual(self.destino.read_bytes(), self.CONTEUDO)
+        self.assertFalse(self.parcial.exists())
+
+    def test_servidor_sem_suporte_a_range_levanta_erro(self):
+        self.parcial.write_bytes(self.CONTEUDO[:10])
+        self.resposta = FakeResposta(self.CONTEUDO, status=200)
+        with self.assertRaisesRegex(RuntimeError, "não aceitou continuar"):
+            self.baixar()
+
+    def test_checksum_incorreto_mantem_parcial_e_nao_cria_destino(self):
+        self.resposta = FakeResposta(self.CONTEUDO)
+        with self.assertRaisesRegex(ValueError, "checksum incorreto"):
+            self.baixar(esperado="0" * 64)
+        self.assertTrue(self.parcial.exists())
+        self.assertFalse(self.destino.exists())
+
+    def test_download_maior_que_o_esperado_levanta_erro(self):
+        self.resposta = FakeResposta(self.CONTEUDO)
+        with self.assertRaisesRegex(ValueError, "excedeu"):
+            self.baixar(tamanho=len(self.CONTEUDO) - 1)
+
+    def test_parcial_maior_que_o_esperado_levanta_erro(self):
+        self.parcial.write_bytes(self.CONTEUDO)
+        with self.assertRaisesRegex(ValueError, "maior que o esperado"):
+            self.baixar(tamanho=len(self.CONTEUDO) - 1)
+        self.assertEqual(self.chamadas, [])
 
 
 class ExtrairTest(unittest.TestCase):
@@ -69,6 +171,26 @@ class ExtrairTest(unittest.TestCase):
         pq.write_table(pa.table({"TEXT": ["um", "dois"], "SOURCE": ["g", "g"], "METADATA": [meta(1), meta(2)]}), arq)
         rel = cg.extrair(cg.livros_dos_arquivos([arq]), self.saida / "out", meta=10_000)
         self.assertEqual(rel["livros_unicos"], 2)
+
+
+class ColetarLimpezaTest(unittest.TestCase):
+    def test_limpar_parquets_remove_apenas_quando_solicitado_e_atingiu_meta(self):
+        from unittest import mock
+
+        with tempfile.TemporaryDirectory() as tmp:
+            raiz = Path(tmp)
+            cache = raiz / "cache"
+            cache.mkdir()
+            arq = cache / "train-00000-of-00001.parquet"
+            pq.write_table(pa.table({"TEXT": ["a" * 20], "SOURCE": ["g"], "METADATA": [meta(1)]}), arq)
+            manifesto_fake = {"train-00000-of-00001.parquet": ("p", "0" * 64, 1)}
+
+            with mock.patch.object(cg, "manifesto", return_value=manifesto_fake), \
+                 mock.patch.object(cg, "baixar_continuavel"):
+                cg.coletar("c", cache=cache, saida=raiz / "s1", meta=10, limpar_parquets=False)
+                self.assertTrue(arq.exists())
+                cg.coletar("c", cache=cache, saida=raiz / "s2", meta=10, limpar_parquets=True)
+                self.assertFalse(arq.exists())
 
 
 if __name__ == "__main__":

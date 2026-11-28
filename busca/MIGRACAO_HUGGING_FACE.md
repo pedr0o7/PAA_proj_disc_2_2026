@@ -5,6 +5,8 @@ executiva das decisões tomadas, os passos para atualizar os ambientes da equipe
 e os pontos de validação. A migração não treina modelos nem garante a qualidade
 das respostas.
 
+> **Nota de atualização (2026-11-27):** este arquivo preserva o registro histórico da migração do acesso ao Hugging Face Hub. No estado atual do repositório: (a) o corpus ativo é o **Project Gutenberg** (`dados/coletar_gutenberg.py`, 27.740 livros / 10 GB) e o legado `infraestrutura/wikipedia.py` foi removido; (b) a suíte automatizada soma **107 testes** (`80` em `busca/`, `18` em `dados/` e `9` em `frontend/`); e (c) os três limites pendentes (execução completa de `avaliar.py` com juiz RAGAS real, retomada HTTP real de shards `.part` e *lockfile* de dependências) seguem acompanhados em [`busca/TAREFAS_FUTURAS.md`](TAREFAS_FUTURAS.md).
+
 ## Visão executiva
 
 ### 1. Cumprimento dos objetivos iniciais

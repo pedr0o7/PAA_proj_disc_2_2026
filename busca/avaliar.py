@@ -134,6 +134,7 @@ def main():
 
     saida = {"llm": a.llm, "k": a.k, "min_sim": a.min_sim,
              "indice_completo": str(a.indice_completo) if a.indice_completo else None,
+             "execucao": getattr(sistema, "config_execucao", None),
              "perguntas": len(itens), "proprias": metricas_proprias(itens, resultados),
              "tempo_s": metricas_tempo(resultados)}
     if not a.sem_ragas:

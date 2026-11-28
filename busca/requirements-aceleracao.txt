@@ -1,0 +1,11 @@
+# Dependências opcionais para aceleração Intel OpenVINO (EMB_BACKEND / LLM_BACKEND)
+# Runtimes nativos sem conflito com transformers>=5.23:
+#
+# Intel (CPU e GPU integrada Iris Xe / UHD / Arc):
+openvino
+openvino-genai
+openvino-tokenizers
+#
+# Para ONNX Runtime em AMD / universal (NÃO instale os dois juntos; escolha apenas um):
+#   AMD / GPU Windows (DirectML): python -m pip install onnxruntime-directml
+#   ONNX CPU universal:           python -m pip install onnxruntime

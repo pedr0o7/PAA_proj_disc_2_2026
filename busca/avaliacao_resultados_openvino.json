@@ -1,0 +1,284 @@
+{
+ "llm": "HuggingFaceTB/SmolLM2-1.7B-Instruct",
+ "k": 3,
+ "min_sim": 0.4,
+ "indice_completo": null,
+ "execucao": {
+  "emb_backend": "openvino",
+  "emb_dispositivo": "GPU",
+  "emb_provider": null,
+  "llm_backend": "openvino",
+  "llm_dispositivo": "GPU",
+  "llm_quantizacao": "int4",
+  "llm_provider": null,
+  "hardware_cpu": "intel",
+  "torch_device": "cpu",
+  "solicitado": {
+   "emb_backend": "openvino",
+   "llm_backend": "openvino",
+   "dispositivo": "GPU",
+   "llm_quantizacao": "int4"
+  },
+  "fallbacks": []
+ },
+ "perguntas": 20,
+ "proprias": {
+  "hit_at_k": 0.15,
+  "mrr": 0.15,
+  "respostas_com_citacao": 0.0,
+  "citacao_da_fonte_correta": 0.0,
+  "respostas_abstidas": 1.0
+ },
+ "tempo_s": {
+  "tempo_recuperacao": {
+   "media": 0.14107453499163966,
+   "mediana": 0.14131335000274703,
+   "p95": 0.2004423999460414
+  },
+  "tempo_geracao": {
+   "media": 5.364847034995909,
+   "mediana": 5.590052499988815,
+   "p95": 10.965214199968614
+  },
+  "tempo_total": {
+   "media": 5.5059215699875494,
+   "mediana": 5.717132699966896,
+   "p95": 11.123824800015427
+  }
+ },
+ "detalhe": [
+  {
+   "pergunta": "What is the purpose of the Carets on Mars?",
+   "referencia": "The Carets serve as natural reservoirs for water near the poles, providing ideal facilities for the preservation of an adequate supply.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Planet Mars and Its Inhabitants, a Psychic Revelation",
+   "fontes": [],
+   "citados": [],
+   "tempo_total": 0.06912339996779338
+  },
+  {
+   "pergunta": "What is the author's justification for his actions during the Battle of Platsaumbe?",
+   "referencia": "The author justifies his actions during the Battle of Platsaumbe by stating that he did nothing personally more effectively than his comrades.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Campaigns of the British Army at Washington and New Orleans 1814-1815",
+   "fontes": [
+    "A Short Narrative of the Life and Actions of His Grace John, D. of Marlborogh",
+    "Brave Deeds of Union Soldiers",
+    "History of the Wars, Books III and IV: The Vandalic War"
+   ],
+   "citados": [],
+   "tempo_total": 11.382209900009912
+  },
+  {
+   "pergunta": "Who are some notable individuals involved in betting on gladiatorial contests in Quo Vadis?",
+   "referencia": "Priests, Vestals, Senators, Knights, and people of the crowd.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Quo Vadis: A Narrative of the Time of Nero",
+   "fontes": [
+    "Utopia"
+   ],
+   "citados": [],
+   "tempo_total": 6.25873220001813
+  },
+  {
+   "pergunta": "What is the process of replacing a phase unit on the first sled from the spaceship?",
+   "referencia": "The process involves Harcraft performing the task while Arnold watches and provides instructions via the suit's inter-com.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Unspecialist",
+   "fontes": [],
+   "citados": [],
+   "tempo_total": 0.1735181999974884
+  },
+  {
+   "pergunta": "What does the author mean when he says \"knowledge bears no blossoms till quickened by the life\"?",
+   "referencia": "In this context, the author means that true understanding and wisdom come only through living and experiencing life, rather than just accumulating knowledge.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Story of Chautauqua",
+   "fontes": [
+    "The Story of Chautauqua",
+    "Knowledge Is Power: A View of the Productive Forces of Modern Society and the Results of Labor, Capital and Skill.",
+    "The Imitation of Christ"
+   ],
+   "citados": [],
+   "tempo_total": 10.271175500005484
+  },
+  {
+   "pergunta": "What is the purpose of the two stallions being taken out of the corral?",
+   "referencia": "The purpose of taking the two stallions out of the corral is to secure them and prevent them from running away during the cattle drive.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Pony Rider Boys in the Alkali; Or, Finding a Key to the Desert Maze",
+   "fontes": [
+    "Susy, a Story of the Plains",
+    "Bred In The Bone 1908"
+   ],
+   "citados": [],
+   "tempo_total": 11.123824800015427
+  },
+  {
+   "pergunta": "What activity is Joe doing when he catches flies and lets them go again?",
+   "referencia": "Joe is catching flies and letting them go again without their wings.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "On Our Selection",
+   "fontes": [
+    "Joe Strong, the Boy Fish; or, Marvelous Doings in a Big Tank",
+    "Joe Strong on the Trapeze; Or, The Daring Feats of a Young Circus Performer"
+   ],
+   "citados": [],
+   "tempo_total": 5.960252399963792
+  },
+  {
+   "pergunta": "What is the author's sentiment towards nature and its changing seasons in the poem?",
+   "referencia": "The author expresses a melancholic view on the passing of time and the decline of natural beauty, as seen through the eyes of an observer who remains unaffected by these changes.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "My Schools and Schoolmasters; Or, The Story of My Education",
+   "fontes": [
+    "Jemima Placid; or, The Advantage of Good-Nature",
+    "The Mirror of Literature, Amusement, and Instruction. Volume 10, No. 283, November 17, 1827",
+    "Inebriety and The Candidate"
+   ],
+   "citados": [],
+   "tempo_total": 8.823257599957287
+  },
+  {
+   "pergunta": "What does Rocdiane think about the protagonist's preference for older men over younger ones?",
+   "referencia": "Rocdiane believes that the protagonist likely prefers older men due to their maturity and experience, rather than just youthful charm.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Strong as Death",
+   "fontes": [
+    "The White Riband; Or, A Young Female's Folly"
+   ],
+   "citados": [],
+   "tempo_total": 9.247265000012703
+  },
+  {
+   "pergunta": "What does Bragg plan to do when he returns?",
+   "referencia": "Bragg plans to settle with the villain Botts.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Funny Philosophers, or Wags and Sweethearts. A Novel",
+   "fontes": [],
+   "citados": [],
+   "tempo_total": 0.07786489999853075
+  },
+  {
+   "pergunta": "What is the name of the species of sunbird found around Naini Tal in the Himalayas?",
+   "referencia": "The Himalayan yellow-backed sunbird (Æthopyga scheriæ)",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Birds of the Indian Hills",
+   "fontes": [
+    "A Bird Calendar for Northern India",
+    "Himalayan Journals — Complete Or, Notes of a Naturalist in Bengal, the Sikkim and Nepal Himalayas, the Khasia Mountains, etc.",
+    "Birds from Coahuila, Mexico"
+   ],
+   "citados": [],
+   "tempo_total": 5.47401299997
+  },
+  {
+   "pergunta": "What was the name given to the tribe that lived mainly by fishing and root-digging?",
+   "referencia": "The Klamaths",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Descriptive Catalogue of Photographs of North American Indians",
+   "fontes": [
+    "Canadian Crusoes: A Tale of the Rice Lake Plains",
+    "The Iowa",
+    "Traditions of the North American Indians, Vol. 1"
+   ],
+   "citados": [],
+   "tempo_total": 3.704350699961651
+  },
+  {
+   "pergunta": "What is the name of the book \"Faces in the Fire, and Other Fancies\" written by Boreham, Frank?",
+   "referencia": "\"Faces in the Fire, and Other Fancies\"",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Faces in the Fire, and Other Fancies",
+   "fontes": [
+    "Faces in the Fire, and Other Fancies",
+    "Prose Fancies (Second Series)",
+    "Ernest Linwood; or, The Inner Life of the Author"
+   ],
+   "citados": [],
+   "tempo_total": 3.747656299965456
+  },
+  {
+   "pergunta": "What is the title of the book where the editor-in-chief of the Maison Mazarin aims to collect and present undying romances with the crown of merit awarded by the French Academy?",
+   "referencia": "The Immortals: Masterpieces of Fiction, Crowned by the French Academy",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Immortals: Masterpieces of Fiction, Crowned by the French Academy — Complete",
+   "fontes": [
+    "Another Study of Woman",
+    "Famous Affinities of History: The Romance of Devotion. Volume 2",
+    "Marie; a story of Russian love"
+   ],
+   "citados": [],
+   "tempo_total": 6.3241738000069745
+  },
+  {
+   "pergunta": "What is the name of the Greek-souled artist whose work is the sole focus of Rachel's dying gaze?",
+   "referencia": "The Greek-souled artist is Polymnia, the queen of legendary lore.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Poetical Works of Matthew Arnold",
+   "fontes": [
+    "Famous Affinities of History: The Romance of Devotion. Volume 3",
+    "Blackwood's Edinburgh Magazine — Volume 54, No. 333, July 1843"
+   ],
+   "citados": [],
+   "tempo_total": 2.4018692999961786
+  },
+  {
+   "pergunta": "What were the conquests of Justinian in the west, and what were the first campaigns of Belisarius?",
+   "referencia": "Conquests of Justinian in the west included the Vandal kingdom of Africa, Sicily, Naples, and Rome. Belisarius's first campaigns involved invading and subduing the Vandal kingdom of Africa.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "History of the Decline and Fall of the Roman Empire — Volume 4",
+   "fontes": [],
+   "citados": [],
+   "tempo_total": 0.13802800001576543
+  },
+  {
+   "pergunta": "Who made the decision to leave for Ostend by special steamer?",
+   "referencia": "Edward Alexander Powell",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "Fighting in Flanders",
+   "fontes": [
+    "More Cargoes 1897"
+   ],
+   "citados": [],
+   "tempo_total": 4.815821299969684
+  },
+  {
+   "pergunta": "What is the title of the book featuring illustrations of French cathedrals?",
+   "referencia": "The title of the book is \"Winkles's French Cathedrals.\"",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Comic Latin Grammar: A new and facetious introduction to the Latin tongue",
+   "fontes": [
+    "The Cathedrals of Northern France",
+    "The Cathedrals of Southern France",
+    "Cathedrals of Spain"
+   ],
+   "citados": [],
+   "tempo_total": 4.398104699968826
+  },
+  {
+   "pergunta": "What is the significance of Italian names being used in naming territories after Italy's decline in power?",
+   "referencia": "This phenomenon signifies that when Italian power waned, local languages and dialects became more prominent, and Italian names were gradually replaced with those of the respective regions.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "The Mirror of Literature, Amusement, and Instruction. Volume 10, No. 276, October 6, 1827",
+   "fontes": [
+    "A Short History of Italy (476-1900)"
+   ],
+   "citados": [],
+   "tempo_total": 8.851239699986763
+  },
+  {
+   "pergunta": "What does the title \"A Leap in the Dark\" suggest about the Home Rule Bill's impact on the UK?",
+   "referencia": "The title suggests that the Home Rule Bill represents a significant change in the governance structure of the entire United Kingdom, potentially leading to a leap into uncharted territory with far-reaching consequences for English institutions.",
+   "resposta": "The provided context is insufficient to answer this question.",
+   "fonte_esperada": "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893",
+   "fontes": [
+    "A Leap in the Dark A Criticism of the Principles of Home Rule as Illustrated by the Bill of 1893",
+    "England's Case Against Home Rule",
+    "The History of England, from the Accession of James II — Volume 5"
+   ],
+   "citados": [],
+   "tempo_total": 6.875950699963141
+  }
+ ]
+}

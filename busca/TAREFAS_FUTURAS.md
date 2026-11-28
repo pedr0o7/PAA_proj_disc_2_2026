@@ -3,6 +3,10 @@
 Registro de trabalho identificado mas deliberadamente adiado. Cada item diz por
 que não entrou na branch em que surgiu e o que precisa acontecer para fechá-lo.
 
+> **Nota da auditoria PAA (2026-11-26):** a complexidade declarada em `RELATORIO.md` e `Documentacao.md` foi alinhada à implementação atual (`O(nnz_visitado + N + k log k)`). O gargalo `O(N log N)` na seleção BM25 de `busca/rag.py` já foi corrigido com `np.argpartition`.
+>
+> **Atualização da esteira (2026-11-27):** já foram concluídos e validados na branch a portabilidade via `.env` (OpenVINO / ONNX / PyTorch com quantização `int8`/`int4` isolada via `uv run`), a remoção do legado `infraestrutura/wikipedia.py`, o índice lexical completo FTS5 (27.740 livros / 11,7M passagens) com deduplicação lexical entre edições, a validação semântica de citações (`_validar_suporte_semantico`) + `EXEMPLOS_GERACAO`, a seleção de modelo via `LLM_MODEL`/`--llm`, as flags `--reconstruir` e `--limpar-parquets` e a suíte de 107 testes automatizados (`80` em `busca/`, `18` em `dados/`, `9` em `frontend/`). Permanecem pendentes apenas os dois blocos abaixo.
+
 ## 1. Otimizar a busca TF-IDF em `benchmark.py`
 
 **Origem:** revisão do commit `2341baf` na branch
@@ -22,10 +26,12 @@ Em um corpus sintético com vocabulário comparável ao real (300 consultas):
 | 8.000 | 99 mil | 3,49 ms | 1,36 ms | idênticos |
 | 20.000 | 133 mil | 7,56 ms | 3,01 ms | idênticos |
 
-Na tabela de `RELATORIO.md` (N = 20.000), o TF-IDF aparece com 12 ms, próximo
-do sentence embedding (14–15 ms). Com a otimização, ficaria cerca de 3× mais
-rápido, o que altera a comparação de latência entre métodos. Por isso a mudança
-não pode entrar sem regenerar os resultados e revisar o texto.
+Na medição anterior (corpus Wikipédia, N = 20.000), o TF-IDF aparecia com 12 ms,
+próximo do sentence embedding (14–15 ms). Nos resultados atuais de `RELATORIO.md`
+(Project Gutenberg, N = 20.000), o TF-IDF está em 3,03 ms contra 13,47–19,63 ms
+do sentence embedding; com a otimização de índice invertido ou produto esparso ×
+denso, a latência tende a cair ainda mais, alterando os números publicados. Por
+isso a mudança não pode entrar sem regenerar `resultados.json` e revisar o texto.
 
 **Opções:**
 
@@ -48,7 +54,7 @@ não pode entrar sem regenerar os resultados e revisar o texto.
       `busca/resultados.json`.
 - [ ] Atualizar a tabela de resultados e a linha de complexidade do TF-IDF em
       `RELATORIO.md`, além de qualquer conclusão sobre latência relativa entre
-      métodos (`SUMARIO_EXECUTIVO.md`, se citar esses números).
+      métodos em `Documentacao.md`.
 - [ ] Mensagem de commit descrevendo a otimização como mudança de comportamento
       do benchmark, não como ajuste de tipagem.
 
@@ -63,3 +69,10 @@ Itens ainda não validados de ponta a ponta. Detalhes em
       só há testes simulados.
 - [ ] Lockfile de dependências (`datasets`, `pyarrow`, `huggingface_hub`,
       `hf-xet`) para tornar a instalação em ambiente limpo reproduzível.
+
+## 3. Evolução futura: modelos OpenVINO IR pré-convertidos do Hub
+
+**Motivação:** hoje a exportação/quantização do LLM para OpenVINO **IR** (*Intermediate Representation*, arquivos `openvino_model.xml` + `openvino_model.bin`) ocorre localmente na primeira execução via `uv run` isolado (`optimum-intel==2.2.0`), para não causar *downgrade* de `transformers>=5.23` e `huggingface_hub>=1.33` no `.venv` principal.
+
+**Melhoria proposta:**
+- [ ] Detectar/suportar repositórios oficiais já pré-convertidos em IR da organização `OpenVINO/` no Hugging Face Hub (ex.: `OpenVINO/Qwen2.5-1.5B-Instruct-int8-ov`), baixando `openvino_model.xml` e `openvino_model.bin` diretamente sem precisar de `uv` nem `optimum-intel` para esses modelos, mantendo o fluxo isolado via `uv run` como *fallback* genérico para qualquer `LLM_MODEL` em PyTorch.

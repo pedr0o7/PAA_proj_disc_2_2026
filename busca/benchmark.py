@@ -90,7 +90,12 @@ def cronometrar(funcao, entradas):
 def topk_cosseno(matriz, q, k):
     """Vetores já normalizados: cosseno = produto interno. Custo O(N*d) por consulta."""
     sims = matriz @ q
-    idx = np.argpartition(-sims, k)[:k]
+    k_eff = min(k, len(sims))
+    if k_eff <= 0:
+        return np.array([], dtype=np.int64)
+    if k_eff == len(sims):
+        return np.argsort(-sims)
+    idx = np.argpartition(-sims, k_eff - 1)[:k_eff]
     return idx[np.argsort(-sims[idx])]
 
 
@@ -154,6 +159,11 @@ def metodo_word2vec(passagens, consultas, k, dim=100, epocas=5):
 def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revisao=None,
                     offline=None):
     from acesso_hf import carregar_modelo, preparar_acesso_hub
+    from infraestrutura.aceleracao import (
+        carregar_modelo_embeddings,
+        normalizar_vetores,
+        resolver_config_execucao,
+    )
     from rag import MODELO_EMB, REVISAO_EMB
     from sentence_transformers import SentenceTransformer
     from usearch.index import Index
@@ -164,26 +174,28 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
         revisao = REVISAO_EMB
     if offline is None:
         offline = preparar_acesso_hub()
-    kwargs_modelo = {"device": "cpu", "local_files_only": offline, "retornar_offline": True}
-    if revisao is not None:
-        kwargs_modelo["revision"] = revisao
-    modelo, offline = carregar_modelo(
-        f"o modelo de embeddings {modelo_nome}", SentenceTransformer, modelo_nome,
-        **kwargs_modelo,
+    config_exec = resolver_config_execucao(usar_llm=False)
+    modelo, offline = carregar_modelo_embeddings(
+        modelo_nome, revisao, offline, config_exec,
+        carregar_fn=carregar_modelo, st_cls=SentenceTransformer,
     )
     modelo.max_seq_length = 128
     t = time.perf_counter()
-    mat = modelo.encode(passagens, batch_size=tamanho_lote, normalize_embeddings=True, show_progress_bar=False)
-    mat = mat.astype(np.float32)
+    mat = normalizar_vetores(
+        modelo.encode(passagens, batch_size=tamanho_lote, normalize_embeddings=True, show_progress_bar=False)
+    )
     codificacao = time.perf_counter() - t
 
     def consulta_vet(c):
-        return modelo.encode([c], normalize_embeddings=True, show_progress_bar=False)[0].astype(np.float32)
+        return normalizar_vetores(
+            modelo.encode([c], normalize_embeddings=True, show_progress_bar=False)[0]
+        )
 
     textos = [c for c, _ in consultas]
     # A codificação da consulta entra na latência total, pois faz parte do uso real.
     topos_bf, lat_bf = cronometrar(lambda c: topk_cosseno(mat, consulta_vet(c), k), textos)
-    res_bf = {"construcao_s": codificacao, "indice_mb": mat.nbytes / 2**20, **lat_bf}
+    res_bf = {"construcao_s": codificacao, "indice_mb": mat.nbytes / 2**20,
+              "execucao": f"{config_exec['emb_backend']}/{config_exec['emb_dispositivo']}", **lat_bf}
 
     t = time.perf_counter()
     indice = Index(ndim=mat.shape[1], metric="cos", connectivity=16, expansion_add=128, expansion_search=64)
@@ -191,7 +203,8 @@ def metodo_sentence(passagens, consultas, k, modelo_nome, tamanho_lote=64, revis
     constr_hnsw = time.perf_counter() - t
     topos_h, lat_h = cronometrar(lambda c: indice.search(consulta_vet(c), k).keys, textos)
     res_h = {"construcao_s": codificacao + constr_hnsw, "construcao_grafo_s": constr_hnsw,
-             "indice_mb": mat.nbytes / 2**20 + indice.memory_usage / 2**20, **lat_h}
+             "indice_mb": mat.nbytes / 2**20 + indice.memory_usage / 2**20,
+             "execucao": f"{config_exec['emb_backend']}/{config_exec['emb_dispositivo']}", **lat_h}
 
     # Latência só da busca vetorial (sem codificar a consulta), para isolar a complexidade.
     qs = list(np.stack([consulta_vet(c) for c in textos]))
